@@ -1713,135 +1713,151 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{A: 0}, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, 2)),
         )
 
-        spellsList := widget.NewList(
-            widget.ListOpts.EntryFontFace(&face),
-            widget.ListOpts.SliderParams(&widget.SliderParams{
-                TrackImage: &widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            }),
+        var spellsList *widget.List
+        var spellsAvailableList *widget.List
 
-            widget.ListOpts.HideHorizontalSlider(),
+        transferSpellToAvailable := func() {
+            spellEntry := spellsList.SelectedEntry()
+            if spellEntry != nil {
+                spellsList.RemoveEntry(spellEntry)
+                spellsAvailableList.AddEntry(spellEntry)
 
-            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 120,
+                entry := spellEntry.(string)
+
+                unit.Spells = slices.DeleteFunc(unit.Spells, func(a string) bool {
+                    return a == entry
+                })
+            }
+        }
+
+        transferAvailableToSpell := func() {
+            spellEntry := spellsAvailableList.SelectedEntry()
+            if spellEntry != nil {
+                spellsAvailableList.RemoveEntry(spellEntry)
+                spellsList.AddEntry(spellEntry)
+
+                entry := spellEntry.(string)
+                unit.Spells = append(unit.Spells, entry)
+            }
+        }
+
+        spellsList = (func() *widget.List {
+            doubleClick := make(map[string]uint64)
+            out := widget.NewList(
+                widget.ListOpts.EntryFontFace(&face),
+                widget.ListOpts.SliderParams(&widget.SliderParams{
+                    TrackImage: &widget.SliderTrackImage{
+                        Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                        Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    },
+                    HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
                 }),
-                widget.WidgetOpts.MinSize(0, 50),
-            )),
 
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    spell, _ := e.(string)
-                    return fmt.Sprintf("%v", spell)
-                },
-            ),
+                widget.ListOpts.HideHorizontalSlider(),
 
-            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                /*
-                entry := args.Entry.(*data.Ability)
+                widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 120,
+                    }),
+                    widget.WidgetOpts.MinSize(0, 50),
+                )),
 
-                newEdit := makeEditAbility(entry)
-                abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
-                editAbilityContainer = newEdit
+                widget.ListOpts.EntryLabelFunc(
+                    func (e any) string {
+                        spell, _ := e.(string)
+                        return fmt.Sprintf("%v", spell)
+                    },
+                ),
 
-                lastTime, ok := availableAbilityListTimer[entry.Ability]
-                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
-                if ok && engine.Counter - lastTime < 30 {
-                    // log.Printf("  adding %v to defending army", entry)
-                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+                widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                    entry := args.Entry.(string)
 
-                    list := availableAbilityList
-                    list.RemoveEntry(args.Entry)
-                    abilityList.AddEntry(args.Entry)
-
-                    unit.Abilities = append(unit.Abilities, *entry)
-                } else {
-                    availableAbilityListTimer[entry.Ability] = engine.Counter
-                }
-                */
-            }),
-
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
-            }),
-
-            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
-            }),
-
-            widget.ListOpts.AllowReselect(),
-        )
-
-        spellsAvailableList := widget.NewList(
-            widget.ListOpts.EntryFontFace(&face),
-            widget.ListOpts.SliderParams(&widget.SliderParams{
-                TrackImage: &widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            }),
-
-            widget.ListOpts.HideHorizontalSlider(),
-
-            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 120,
+                    lastTime, ok := doubleClick[entry]
+                    // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                    if ok && engine.Counter - lastTime < 30 {
+                        // log.Printf("  adding %v to defending army", entry)
+                        doubleClick[entry] = engine.Counter + 30
+                        transferSpellToAvailable()
+                    } else {
+                        doubleClick[entry] = engine.Counter
+                    }
                 }),
-                widget.WidgetOpts.MinSize(0, 50),
-            )),
 
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    spell, _ := e.(string)
-                    return fmt.Sprintf("%v", spell)
-                },
-            ),
+                widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                    Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                    Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+                }),
 
-            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                /*
-                entry := args.Entry.(*data.Ability)
+                widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
 
-                newEdit := makeEditAbility(entry)
-                abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
-                editAbilityContainer = newEdit
+                widget.ListOpts.AllowReselect(),
+            )
 
-                lastTime, ok := availableAbilityListTimer[entry.Ability]
-                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
-                if ok && engine.Counter - lastTime < 30 {
-                    // log.Printf("  adding %v to defending army", entry)
-                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+            return out
+        })()
 
-                    list := availableAbilityList
-                    list.RemoveEntry(args.Entry)
-                    abilityList.AddEntry(args.Entry)
+        spellsAvailableList = (func () *widget.List {
+            doubleClick := make(map[string]uint64)
+            out := widget.NewList(
+                widget.ListOpts.EntryFontFace(&face),
+                widget.ListOpts.SliderParams(&widget.SliderParams{
+                    TrackImage: &widget.SliderTrackImage{
+                        Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                        Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    },
+                    HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                }),
 
-                    unit.Abilities = append(unit.Abilities, *entry)
-                } else {
-                    availableAbilityListTimer[entry.Ability] = engine.Counter
-                }
-                */
-            }),
+                widget.ListOpts.HideHorizontalSlider(),
 
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
-            }),
+                widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                        MaxHeight: 120,
+                    }),
+                    widget.WidgetOpts.MinSize(0, 50),
+                )),
 
-            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
-            }),
+                widget.ListOpts.EntryLabelFunc(
+                    func (e any) string {
+                        spell, _ := e.(string)
+                        return fmt.Sprintf("%v", spell)
+                    },
+                ),
 
-            widget.ListOpts.AllowReselect(),
-        )
+                widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                    entry := args.Entry.(string)
+
+                    lastTime, ok := doubleClick[entry]
+                    // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                    if ok && engine.Counter - lastTime < 30 {
+                        // log.Printf("  adding %v to defending army", entry)
+                        doubleClick[entry] = engine.Counter + 30
+                        transferAvailableToSpell()
+                    } else {
+                        doubleClick[entry] = engine.Counter
+                    }
+                }),
+
+                widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                    Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                    Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+                }),
+
+                widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                    Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                    Disabled: fakeImage,
+                    Mask: fakeImage,
+                }),
+
+                widget.ListOpts.AllowReselect(),
+            )
+
+            return out
+        })()
 
         spellTransferButtons := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewRowLayout(
@@ -1856,15 +1872,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeLeftArrow(30)),
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-
-                spellEntry := spellsAvailableList.SelectedEntry()
-                if spellEntry != nil {
-                    spellsAvailableList.RemoveEntry(spellEntry)
-                    spellsList.AddEntry(spellEntry)
-
-                    entry := spellEntry.(string)
-                    unit.Spells = append(unit.Spells, entry)
-                }
+                transferAvailableToSpell()
             }),
         ))
 
@@ -1873,17 +1881,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
             widget.ButtonOpts.Image(makeRightArrow(30)),
             widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                spellEntry := spellsList.SelectedEntry()
-                if spellEntry != nil {
-                    spellsList.RemoveEntry(spellEntry)
-                    spellsAvailableList.AddEntry(spellEntry)
-
-                    entry := spellEntry.(string)
-
-                    unit.Spells = slices.DeleteFunc(unit.Spells, func(a string) bool {
-                        return a == entry
-                    })
-                }
+                transferSpellToAvailable()
             }),
         ))
 
@@ -1931,7 +1929,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
             widget.WindowOpts.TitleBar(titleContainer, 25),
             widget.WindowOpts.Draggable(),
             widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 700),
+            widget.WindowOpts.MinSize(500, 800),
         )
 
         return window
