@@ -741,10 +741,1006 @@ func (engine *Engine) MakeBugUI() *ebitenui.UI {
 
 }
 
+func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face text.Face, allSpells *spellbook.Spells, imageCache *util.ImageCache) *widget.Window {
+
+    fakeImage := ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})
+    transparent := uint8(240)
+
+    contents := widget.NewContainer(
+        widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(3),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+    )
+
+    makeWhiteText := func(label string) *widget.Text {
+        return widget.NewText(
+            widget.TextOpts.Text(label, &face, color.White),
+        )
+    }
+
+    five := 5
+
+    makeComboBox := func(entries []any, current any, onSelect func(any)) *widget.ListComboButton {
+        return widget.NewListComboButton(
+            widget.ListComboButtonOpts.Entries(entries),
+            widget.ListComboButtonOpts.MaxContentHeight(150),
+            widget.ListComboButtonOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                    VerticalPosition: widget.AnchorLayoutPositionCenter,
+                }),
+            ),
+            widget.ListComboButtonOpts.InitialEntry(current),
+            widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
+                Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
+                TextPadding: widget.NewInsetsSimple(5),
+                TextFace: &face,
+                TextColor: &widget.ButtonTextColor{
+                    Idle: color.White,
+                    Disabled: color.White,
+                },
+            }),
+            widget.ListComboButtonOpts.ListParams(&widget.ListParams{
+                ScrollContainerImage: &widget.ScrollContainerImage{
+                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                },
+                Slider: &widget.SliderParams{
+                    TrackImage: &widget.SliderTrackImage{
+                        Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                        Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
+                    },
+                    HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+                    MinHandleSize: &five,
+                    TrackPadding:  widget.NewInsetsSimple(2),
+                },
+                EntryFace: &face,
+                EntryColor: &widget.ListEntryColor{
+                    Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
+                    Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
+                    SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
+                    SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
+                    FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
+                    DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
+                    DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
+                    DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
+                },
+                EntryTextPadding: widget.NewInsetsSimple(5),
+                MinSize:          &image.Point{200, 0},
+            }),
+
+            widget.ListComboButtonOpts.EntryLabelFunc(
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+                func (e any) string {
+                    return fmt.Sprintf("%v", e)
+                },
+            ),
+
+            widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
+                onSelect(args.Entry)
+            }),
+        )
+    }
+
+    makeInput := func(placeHolder string, width int, accept func(string) bool, onSet func(string)) *widget.TextInput {
+        lastText := placeHolder
+        input := widget.NewTextInput(
+            widget.TextInputOpts.WidgetOpts(
+                // Set the layout information to center the textbox in the parent
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    Position: widget.RowLayoutPositionCenter,
+                    Stretch:  true,
+                }),
+                widget.WidgetOpts.MinSize(width * 10, 0),
+            ),
+
+            // Set the keyboard type when opened on mobile devices.
+            // widget.TextInputOpts.MobileInputMode(mobile.TEXT),
+
+            // Set the Idle and Disabled background image for the text input.
+            // If the NineSlice image has a minimum size, the widget will use that or
+            // widget.WidgetOpts.MinSize; whichever is greater.
+            widget.TextInputOpts.Image(&widget.TextInputImage{
+                Idle:     ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+                Disabled: ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
+            }),
+
+            // Set the font face and size for the widget
+            widget.TextInputOpts.Face(&face),
+
+            // Set the colors for the text and caret
+            widget.TextInputOpts.Color(&widget.TextInputColor{
+                Idle:          color.NRGBA{254, 255, 255, 255},
+                Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+                Caret:         color.NRGBA{254, 255, 255, 255},
+                DisabledCaret: color.NRGBA{R: 200, G: 200, B: 200, A: 255},
+            }),
+
+            // Set how much padding there is between the edge of the input and the text
+            widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
+
+            // This text is displayed if the input is empty
+            // widget.TextInputOpts.Placeholder(placeHolder),
+
+            // This is called when the user hits the "Enter" key.
+            // There are other options that can configure this behavior.
+            /*
+            widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
+                fmt.Println("Text Submitted: ", args.InputText)
+            }),
+            */
+
+            // This is called whenver there is a change to the text
+            widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
+                if !accept(args.InputText) {
+                    args.TextInput.SetText(lastText)
+                } else {
+                    lastText = args.InputText
+                    onSet(lastText)
+                }
+            }),
+        )
+
+        input.SetText(placeHolder)
+
+        return input
+    }
+
+    makeNumberInput := func (value *int) *widget.TextInput {
+        return makeInput(fmt.Sprintf("%d", *value), 4, func(text string) bool {
+            if text == "" {
+                return true
+            }
+            // every character must be a number
+            for _, char := range text {
+                if char < '0' || char > '9' {
+                    return false
+                }
+            }
+            return true
+        }, func(text string) {
+            num, err := strconv.Atoi(text)
+            if err == nil {
+                *value = num
+            }
+        })
+    }
+
+    makeTextInput := func(text *string) *widget.TextInput {
+        return makeInput(*text, 20, func(text string) bool {
+            return true
+        }, func(data string) {
+            *text = data
+        })
+    }
+
+    if unit.Name == "" {
+        unit.Name = "name"
+    }
+
+    contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput(&unit.Name)))
+
+    allRaces := append(append(data.ArcanianRaces(), data.MyrranRaces()...), []data.Race{data.RaceFantastic, data.RaceHero, data.RaceAll}...)
+
+    // add drop down of all races
+    var raceEntries []any
+    for _, race := range allRaces {
+        raceEntries = append(raceEntries, race)
+    }
+
+    if unit.Race == data.RaceNone {
+        unit.Race = data.RaceBarbarian
+    }
+
+    contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, unit.Race, func (selected any){
+        race, ok := selected.(data.Race)
+        if ok {
+            unit.Race = race
+        }
+    })))
+
+    makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
+        img := ebiten.NewImage(size, size)
+        img.Fill(col)
+        return img
+    }
+
+    makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
+        return widget.NewCheckbox(
+            widget.CheckboxOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+                    HorizontalPosition: widget.AnchorLayoutPositionCenter,
+                    VerticalPosition: widget.AnchorLayoutPositionCenter,
+                }),
+            ),
+            widget.CheckboxOpts.Image(&widget.CheckboxImage{
+                Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
+                Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
+            }),
+            widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
+                switch args.State {
+                case widget.WidgetChecked:
+                    changedHandler(true)
+                case widget.WidgetUnchecked:
+                    changedHandler(false)
+                }
+            }),
+            widget.CheckboxOpts.InitialState(func() widget.WidgetState {
+                if checked {
+                    return widget.WidgetChecked
+                }
+                return widget.WidgetUnchecked
+            }()),
+        )
+    }
+
+    makeIconText := func(icon *ebiten.Image, label string) *widget.Container {
+        return makeRow(3, widget.NewGraphic(widget.GraphicOpts.Image(icon)), makeWhiteText(label))
+    }
+
+    makeUnitViewIconText := func(index int, label string) *widget.Container {
+        icon, _ := imageCache.GetImageTransform("unitview.lbx", index, 0, "icon-enlarge", enlargeTransform(3))
+        return makeIconText(icon, label)
+    }
+
+    // Flying: checkbox
+
+
+    // Magic realm: combo box with all magic realms
+    // ranged attack combo box
+
+    inputs := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.Spacing(5, 2),
+        )),
+    )
+
+    var flyingCallbacks []func(bool)
+    inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
+        unit.Flying = flying
+        for _, callback := range flyingCallbacks {
+            callback(flying)
+        }
+    }))
+
+    makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
+        damageTypes := []any{
+            units.DamageRangedPhysical,
+            units.DamageRangedMagical,
+            units.DamageRangedBoulder,
+        }
+
+        initial := unit.RangedAttackDamageType
+        ok := false
+        for _, damageType := range damageTypes {
+            if damageType == initial {
+                ok = true
+                break
+            }
+        }
+
+        if !ok {
+            initial = damageTypes[0].(units.Damage)
+            unit.RangedAttackDamageType = initial
+        }
+
+        rangedAttackIndex := func () int {
+            switch unit.RangedAttackDamageType {
+                case units.DamageRangedPhysical: return 18
+                case units.DamageRangedMagical: return 14
+                case units.DamageRangedBoulder: return 19
+            }
+            return 0
+        }
+
+        rangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+        rangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+        // ranged attack power: text input as number
+        rangedAttackPowerRow := makeRow(5, rangedAttackPowerLabel, makeNumberInput(&unit.RangedAttackPower))
+
+        // ranged attacks: text input as number
+        rangedAttacksRow := makeRow(5, rangedAttacksLabel, makeNumberInput(&unit.RangedAttacks))
+
+        return []widget.PreferredSizeLocateableWidget{
+            makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, initial, func(selected any){
+                damage, ok := selected.(units.Damage)
+                if ok {
+                    unit.RangedAttackDamageType = damage
+                }
+
+                newRangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
+                newRangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
+
+                rangedAttackPowerRow.ReplaceChild(rangedAttackPowerLabel, newRangedAttackPowerLabel)
+                rangedAttacksRow.ReplaceChild(rangedAttacksLabel, newRangedAttacksLabel)
+
+                rangedAttackPowerLabel = newRangedAttackPowerLabel
+                rangedAttacksLabel = newRangedAttacksLabel
+            })),
+
+            rangedAttackPowerRow,
+
+            rangedAttacksRow,
+        }
+    }
+
+    rangedAttackArea := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(3),
+        )),
+    )
+
+    hasRanged := unit.RangedAttackDamageType != units.DamageNone
+    inputs.AddChild(makeWhiteText("Range Attack"), makeCheckbox(hasRanged, func(ranged bool){
+        hasRanged = ranged
+        rangedAttackArea.RemoveChildren()
+
+        if hasRanged {
+            rangedAttackArea.AddChild(makeRangedAttackElements()...)
+        } else {
+            unit.RangedAttackDamageType = units.DamageNone
+        }
+    }))
+
+    if hasRanged {
+        rangedAttackArea.AddChild(makeRangedAttackElements()...)
+    }
+
+    inputs.AddChild(rangedAttackArea, space(1))
+
+    // count: combo box, 1-8
+    inputs.AddChild(makeWhiteText("Count"), makeNumberInput(&unit.Count))
+
+    // movement speed: text input as number
+    flyingIndex := 25
+    walkingIndex := 24
+    movementIcon := makeUnitViewIconText(func () int {
+        if unit.Flying {
+            return flyingIndex
+        }
+        return walkingIndex
+    }(), "Movement Speed")
+    inputs.AddChild(movementIcon, makeNumberInput(&unit.MovementSpeed))
+
+    flyingCallbacks = append(flyingCallbacks, func(flying bool){
+        var newWidget *widget.Container
+        if flying {
+            newWidget = makeUnitViewIconText(flyingIndex, "Movement Speed")
+        } else {
+            newWidget = makeUnitViewIconText(walkingIndex, "Movement Speed")
+        }
+        inputs.ReplaceChild(movementIcon, newWidget)
+        movementIcon = newWidget
+    })
+
+    // melee attack power: text input as number
+    inputs.AddChild(makeUnitViewIconText(13, "Melee Attack Power"), makeNumberInput(&unit.MeleeAttackPower))
+
+    // defense: text input as number
+    inputs.AddChild(makeUnitViewIconText(22, "Defense"), makeNumberInput(&unit.Defense))
+
+    // resistance: text input as number
+    inputs.AddChild(makeUnitViewIconText(27, "Resistance"), makeNumberInput(&unit.Resistance))
+
+    // hit points: text input as number
+    inputs.AddChild(makeUnitViewIconText(23, "Hit Points"), makeNumberInput(&unit.HitPoints))
+
+    contents.AddChild(inputs)
+
+    // spells: set of spells this unit can cast
+    // abilities: set of abilities this unit has
+
+    titleContainer := widget.NewContainer(
+        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent})),
+        widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+    )
+    titleContainer.AddChild(widget.NewText(
+        widget.TextOpts.Text("Edit Unit", &face, color.White),
+        widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+            HorizontalPosition: widget.AnchorLayoutPositionCenter,
+            VerticalPosition: widget.AnchorLayoutPositionCenter,
+        })),
+    ))
+
+    var window *widget.Window
+
+    var abilityList *widget.List
+    var availableAbilityList *widget.List
+
+    makeEditAbility := func(ability *data.Ability) *widget.Container {
+
+        var row *widget.Container
+        text := makeWhiteText(ability.Name())
+
+        update := func() {
+            newText := makeWhiteText(ability.Name())
+            row.ReplaceChild(text, newText)
+            text = newText
+
+            for i := range unit.Abilities {
+                if unit.Abilities[i].Ability == ability.Ability {
+                    unit.Abilities[i] = *ability
+                }
+            }
+
+        }
+
+        up := widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+            widget.ButtonOpts.Text("+", &face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                ability.Value += 1
+                update()
+            }),
+        )
+
+        down := widget.NewButton(
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+            widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
+            widget.ButtonOpts.Text("-", &face, &widget.ButtonTextColor{
+                Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+                Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+                Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            }),
+            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
+                ability.Value -= 1
+                update()
+            }),
+        )
+
+        row = makeRow(5, text, up, down)
+        return row
+    }
+
+    var abilitiesContainer *widget.Container
+    editAbilityContainer := space(1)
+
+    abilityListTimer := make(map[data.AbilityType]uint64)
+    abilityList = widget.NewList(
+        widget.ListOpts.EntryFontFace(&face),
+        widget.ListOpts.SliderParams(&widget.SliderParams{
+            TrackImage: &widget.SliderTrackImage{
+                Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+            },
+            HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+        }),
+
+        widget.ListOpts.HideHorizontalSlider(),
+
+        widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: 120,
+            }),
+            widget.WidgetOpts.MinSize(0, 50),
+        )),
+
+        widget.ListOpts.EntryLabelFunc(
+            func (e any) string {
+                return fmt.Sprintf("%v", e)
+            },
+        ),
+
+        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+            entry := args.Entry.(*data.Ability)
+
+            newEdit := makeEditAbility(entry)
+            abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
+            editAbilityContainer = newEdit
+
+            lastTime, ok := abilityListTimer[entry.Ability]
+            // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+            if ok && engine.Counter - lastTime < 30 {
+                // log.Printf("  adding %v to defending army", entry)
+                abilityListTimer[entry.Ability] = engine.Counter + 30
+
+                list := abilityList
+                list.RemoveEntry(args.Entry)
+                availableAbilityList.AddEntry(args.Entry)
+
+                unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                    return a.Ability == entry.Ability
+                })
+            } else {
+                abilityListTimer[entry.Ability] = engine.Counter
+            }
+
+        }),
+
+        widget.ListOpts.EntryColor(&widget.ListEntryColor{
+            Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+        }),
+
+        widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+            Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+            Disabled: fakeImage,
+            Mask: fakeImage,
+        }),
+
+        widget.ListOpts.AllowReselect(),
+    )
+
+    availableAbilityListTimer := make(map[data.AbilityType]uint64)
+    availableAbilityList = widget.NewList(
+        widget.ListOpts.EntryFontFace(&face),
+        widget.ListOpts.SliderParams(&widget.SliderParams{
+            TrackImage: &widget.SliderTrackImage{
+                Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+            },
+            HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+        }),
+
+        widget.ListOpts.HideHorizontalSlider(),
+
+        widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                MaxHeight: 120,
+            }),
+            widget.WidgetOpts.MinSize(0, 50),
+        )),
+
+        widget.ListOpts.EntryLabelFunc(
+            func (e any) string {
+                return fmt.Sprintf("%v", e)
+            },
+        ),
+
+        widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+            entry := args.Entry.(*data.Ability)
+
+            newEdit := makeEditAbility(entry)
+            abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
+            editAbilityContainer = newEdit
+
+            lastTime, ok := availableAbilityListTimer[entry.Ability]
+            // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+            if ok && engine.Counter - lastTime < 30 {
+                // log.Printf("  adding %v to defending army", entry)
+                availableAbilityListTimer[entry.Ability] = engine.Counter + 30
+
+                list := availableAbilityList
+                list.RemoveEntry(args.Entry)
+                abilityList.AddEntry(args.Entry)
+
+                unit.Abilities = append(unit.Abilities, *entry)
+            } else {
+                availableAbilityListTimer[entry.Ability] = engine.Counter
+            }
+        }),
+
+        widget.ListOpts.EntryColor(&widget.ListEntryColor{
+            Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+            Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+        }),
+
+        widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+            Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+            Disabled: fakeImage,
+            Mask: fakeImage,
+        }),
+
+        widget.ListOpts.AllowReselect(),
+    )
+
+    transferButtons := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
+        )),
+    )
+
+    makeArrowImage := func(size int, fill color.NRGBA, edge color.NRGBA) *ebiten.Image {
+        img := ebiten.NewImage(size, size)
+
+        // img.Fill(color.NRGBA{R: 255, A: 255})
+
+        var path vector.Path
+
+        fsize := float32(size)
+
+        x1 := float32(1)
+        y1 := fsize * 0.30
+
+        x2 := fsize * 0.6
+        y2 := y1
+
+        x3 := x2
+        y3 := fsize * 0.1
+
+        x4 := fsize
+        y4 := fsize * 0.5
+
+        x5 := x3
+        y5 := fsize * 0.9
+
+        x6 := x2
+        y6 := fsize * 0.70
+
+        x7 := x1
+        y7 := y6
+
+        path.MoveTo(x1, y1)
+        path.LineTo(x2, y2)
+        path.LineTo(x3, y3)
+        path.LineTo(x4, y4)
+        path.LineTo(x5, y5)
+        path.LineTo(x6, y6)
+        path.LineTo(x7, y7)
+        path.Close()
+
+        var edgeScale ebiten.ColorScale
+        edgeScale.ScaleWithColor(edge)
+
+        var fillScale ebiten.ColorScale
+        fillScale.ScaleWithColor(fill)
+
+        vector.FillPath(img, &path, nil, &vector.DrawPathOptions{
+            ColorScale: fillScale,
+        })
+
+        vector.StrokePath(img, &path, &vector.StrokeOptions{
+            Width: 1,
+        }, &vector.DrawPathOptions{
+            ColorScale: edgeScale,
+        })
+
+        return img
+    }
+
+    makeLeftArrow := func(size int) *widget.ButtonImage {
+        mk := func (fill color.NRGBA, edge color.NRGBA) *ui_image.NineSlice {
+            img1 := makeArrowImage(size, fill, edge)
+            img := ebiten.NewImage(size, size)
+            op := &ebiten.DrawImageOptions{}
+            op.GeoM.Scale(-1, 1)
+            op.GeoM.Translate(float64(size), 0)
+            img.DrawImage(img1, op)
+            return ui_image.NewNineSliceSimple(img, 3, size - 3)
+        }
+
+        return &widget.ButtonImage{
+            Idle:  mk(color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}),
+            Hover: mk(color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+            Pressed: mk(color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
+        }
+    }
+
+    makeRightArrow := func(size int) *widget.ButtonImage {
+        return &widget.ButtonImage{
+            Idle:  ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}), 3, size - 3),
+            Hover: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+            Pressed: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
+        }
+    }
+
+    // available => abilities
+    transferButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeLeftArrow(30)),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+
+            availableEntry := availableAbilityList.SelectedEntry()
+            if availableEntry != nil {
+                availableAbilityList.RemoveEntry(availableEntry)
+                abilityList.AddEntry(availableEntry)
+
+                entry := availableEntry.(*data.Ability)
+                unit.Abilities = append(unit.Abilities, *entry)
+            }
+        }),
+    ))
+
+    // abilities => available
+    transferButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeRightArrow(30)),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            abilityEntry := abilityList.SelectedEntry()
+            if abilityEntry != nil {
+                abilityList.RemoveEntry(abilityEntry)
+                availableAbilityList.AddEntry(abilityEntry)
+
+                entry := abilityEntry.(*data.Ability)
+
+                unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
+                    return a.Ability == entry.Ability
+                })
+            }
+        }),
+    ))
+
+
+    hasAbilities := make(map[data.AbilityType]struct{})
+
+    for _, ability := range unit.Abilities {
+        abilityList.AddEntry(&ability)
+        hasAbilities[ability.Ability] = struct{}{}
+    }
+
+    for _, abilityType := range data.AllAbilities() {
+        _, has := hasAbilities[abilityType]
+        if !has {
+            ability := data.MakeAbility(abilityType)
+            availableAbilityList.AddEntry(&ability)
+        }
+    }
+
+    abilitiesContainer = widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{A: 0}, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, 2)),
+    )
+
+    abilitiesContainer.AddChild(
+        makeRow(20, 
+            makeColumn(5, makeWhiteText("Abilities"), abilityList),
+            makeColumn(5, transferButtons),
+            makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
+        ),
+    )
+
+    abilitiesContainer.AddChild(editAbilityContainer)
+
+    spellsContainer := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(padding(5)),
+        )),
+        widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{A: 0}, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, 2)),
+    )
+
+    var spellsList *widget.List
+    var spellsAvailableList *widget.List
+
+    transferSpellToAvailable := func() {
+        spellEntry := spellsList.SelectedEntry()
+        if spellEntry != nil {
+            spellsList.RemoveEntry(spellEntry)
+            spellsAvailableList.AddEntry(spellEntry)
+
+            entry := spellEntry.(string)
+
+            unit.Spells = slices.DeleteFunc(unit.Spells, func(a string) bool {
+                return a == entry
+            })
+        }
+    }
+
+    transferAvailableToSpell := func() {
+        spellEntry := spellsAvailableList.SelectedEntry()
+        if spellEntry != nil {
+            spellsAvailableList.RemoveEntry(spellEntry)
+            spellsList.AddEntry(spellEntry)
+
+            entry := spellEntry.(string)
+            unit.Spells = append(unit.Spells, entry)
+        }
+    }
+
+    spellsList = (func() *widget.List {
+        doubleClick := make(map[string]uint64)
+        out := widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 120,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    spell, _ := e.(string)
+                    return fmt.Sprintf("%v", spell)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(string)
+
+                lastTime, ok := doubleClick[entry]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    doubleClick[entry] = engine.Counter + 30
+                    transferSpellToAvailable()
+                } else {
+                    doubleClick[entry] = engine.Counter
+                }
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        return out
+    })()
+
+    spellsAvailableList = (func () *widget.List {
+        doubleClick := make(map[string]uint64)
+        out := widget.NewList(
+            widget.ListOpts.EntryFontFace(&face),
+            widget.ListOpts.SliderParams(&widget.SliderParams{
+                TrackImage: &widget.SliderTrackImage{
+                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
+                },
+                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
+            }),
+
+            widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
+                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+                    MaxHeight: 120,
+                }),
+                widget.WidgetOpts.MinSize(0, 50),
+            )),
+
+            widget.ListOpts.EntryLabelFunc(
+                func (e any) string {
+                    spell, _ := e.(string)
+                    return fmt.Sprintf("%v", spell)
+                },
+            ),
+
+            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
+                entry := args.Entry.(string)
+
+                lastTime, ok := doubleClick[entry]
+                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
+                if ok && engine.Counter - lastTime < 30 {
+                    // log.Printf("  adding %v to defending army", entry)
+                    doubleClick[entry] = engine.Counter + 30
+                    transferAvailableToSpell()
+                } else {
+                    doubleClick[entry] = engine.Counter
+                }
+            }),
+
+            widget.ListOpts.EntryColor(&widget.ListEntryColor{
+                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
+            }),
+
+            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
+                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
+                Disabled: fakeImage,
+                Mask: fakeImage,
+            }),
+
+            widget.ListOpts.AllowReselect(),
+        )
+
+        return out
+    })()
+
+    spellTransferButtons := widget.NewContainer(
+        widget.ContainerOpts.Layout(widget.NewRowLayout(
+            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+            widget.RowLayoutOpts.Spacing(5),
+            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
+        )),
+    )
+
+    // available spells => spells
+    spellTransferButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeLeftArrow(30)),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            transferAvailableToSpell()
+        }),
+    ))
+
+    // spells => available spells
+    spellTransferButtons.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeRightArrow(30)),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            transferSpellToAvailable()
+        }),
+    ))
+
+    hasSpells := make(map[string]struct{})
+    for _, spell := range unit.Spells {
+        spellsList.AddEntry(spell)
+        hasSpells[spell] = struct{}{}
+    }
+
+    for _, spell := range allSpells.CombatSpells(false).Spells {
+        _, has := hasSpells[spell.Name]
+        if !has {
+            spellsAvailableList.AddEntry(spell.Name)
+        }
+    }
+
+    spellsContainer.AddChild(
+        makeRow(20,
+            makeColumn(5, makeWhiteText("Spells"), spellsList),
+            spellTransferButtons,
+            makeColumn(5, makeWhiteText("Available Spells"), spellsAvailableList),
+        ),
+    )
+
+    contents.AddChild(makeRow(5, abilitiesContainer, spellsContainer))
+
+    // close button
+    contents.AddChild(widget.NewButton(
+        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
+        widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xf2, G: 0x00, B: 0x00, A: 0xff})),
+        widget.ButtonOpts.Text("Close", &face, &widget.ButtonTextColor{
+            Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+            Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
+            Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
+        }),
+        widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
+            window.Close()
+            onClose()
+        }),
+    ))
+
+    window = widget.NewWindow(
+        widget.WindowOpts.Contents(contents),
+        widget.WindowOpts.TitleBar(titleContainer, 25),
+        widget.WindowOpts.Draggable(),
+        widget.WindowOpts.Resizeable(),
+        widget.WindowOpts.MinSize(800, 750),
+    )
+
+    return window
+}
+
 func (engine *Engine) MakeUI() *ebitenui.UI {
     imageCache := util.MakeImageCache(engine.Cache)
 
     face, _ := loadFont(19)
+
+    allSpells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Cannot load spells: %v", err)
+        panic(err)
+    }
 
     backgroundImageRaw, _, err := ebitenutil.NewImageFromFileSystem(assets, "assets/box.png")
     if err != nil {
@@ -923,795 +1919,6 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
 
     var addWindow func(*widget.Window)
 
-    makeEditUnitWindow := func(unit *units.Unit, onClose func()) *widget.Window {
-
-        transparent := uint8(240)
-
-        contents := widget.NewContainer(
-            widget.ContainerOpts.BackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent}, color.NRGBA{R: 200, G: 200, B: 200, A: transparent}, 2)),
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(3),
-                widget.RowLayoutOpts.Padding(padding(5)),
-            )),
-        )
-
-        makeWhiteText := func(label string) *widget.Text {
-            return widget.NewText(
-                widget.TextOpts.Text(label, &face, color.White),
-            )
-        }
-
-        five := 5
-
-        makeComboBox := func(entries []any, current any, onSelect func(any)) *widget.ListComboButton {
-            return widget.NewListComboButton(
-                widget.ListComboButtonOpts.Entries(entries),
-                widget.ListComboButtonOpts.MaxContentHeight(150),
-                widget.ListComboButtonOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                        VerticalPosition: widget.AnchorLayoutPositionCenter,
-                    }),
-                ),
-                widget.ListComboButtonOpts.InitialEntry(current),
-                widget.ListComboButtonOpts.ButtonParams(&widget.ButtonParams{
-                    Image: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x52, G: 0x78, B: 0xc3, A: 0xff}),
-                    TextPadding: widget.NewInsetsSimple(5),
-                    TextFace: &face,
-                    TextColor: &widget.ButtonTextColor{
-                        Idle: color.White,
-                        Disabled: color.White,
-                    },
-                }),
-                widget.ListComboButtonOpts.ListParams(&widget.ListParams{
-                    ScrollContainerImage: &widget.ScrollContainerImage{
-                        Idle:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        Disabled: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        Mask:     ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                    },
-                    Slider: &widget.SliderParams{
-                        TrackImage: &widget.SliderTrackImage{
-                            Idle:  ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                            Hover: ui_image.NewNineSliceColor(color.NRGBA{100, 100, 100, 255}),
-                        },
-                        HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-                        MinHandleSize: &five,
-                        TrackPadding:  widget.NewInsetsSimple(2),
-                    },
-                    EntryFace: &face,
-                    EntryColor: &widget.ListEntryColor{
-                        Selected:                   color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused selected entry
-                        Unselected:                 color.NRGBA{254, 255, 255, 255},             //Foreground color for the unfocused unselected entry
-                        SelectedBackground:         color.NRGBA{R: 130, G: 130, B: 200, A: 255}, //Background color for the unfocused selected entry
-                        SelectedFocusedBackground:  color.NRGBA{R: 130, G: 130, B: 170, A: 255}, //Background color for the focused selected entry
-                        FocusedBackground:          color.NRGBA{R: 170, G: 170, B: 180, A: 255}, //Background color for the focused unselected entry
-                        DisabledUnselected:         color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled unselected entry
-                        DisabledSelected:           color.NRGBA{100, 100, 100, 255},             //Foreground color for the disabled selected entry
-                        DisabledSelectedBackground: color.NRGBA{100, 100, 100, 255},             //Background color for the disabled selected entry
-                    },
-                    EntryTextPadding: widget.NewInsetsSimple(5),
-                    MinSize:          &image.Point{200, 0},
-                }),
-
-                widget.ListComboButtonOpts.EntryLabelFunc(
-                    func (e any) string {
-                        return fmt.Sprintf("%v", e)
-                    },
-                    func (e any) string {
-                        return fmt.Sprintf("%v", e)
-                    },
-                ),
-
-                widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) {
-                    onSelect(args.Entry)
-                }),
-            )
-        }
-
-        makeInput := func(placeHolder string, width int, accept func(string) bool, onSet func(string)) *widget.TextInput {
-            lastText := placeHolder
-            input := widget.NewTextInput(
-                widget.TextInputOpts.WidgetOpts(
-                    // Set the layout information to center the textbox in the parent
-                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                        Position: widget.RowLayoutPositionCenter,
-                        Stretch:  true,
-                    }),
-                    widget.WidgetOpts.MinSize(width * 10, 0),
-                ),
-
-                // Set the keyboard type when opened on mobile devices.
-                // widget.TextInputOpts.MobileInputMode(mobile.TEXT),
-
-                // Set the Idle and Disabled background image for the text input.
-                // If the NineSlice image has a minimum size, the widget will use that or
-                // widget.WidgetOpts.MinSize; whichever is greater.
-                widget.TextInputOpts.Image(&widget.TextInputImage{
-                    Idle:     ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
-                    Disabled: ui_image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
-                }),
-
-                // Set the font face and size for the widget
-                widget.TextInputOpts.Face(&face),
-
-                // Set the colors for the text and caret
-                widget.TextInputOpts.Color(&widget.TextInputColor{
-                    Idle:          color.NRGBA{254, 255, 255, 255},
-                    Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
-                    Caret:         color.NRGBA{254, 255, 255, 255},
-                    DisabledCaret: color.NRGBA{R: 200, G: 200, B: 200, A: 255},
-                }),
-
-                // Set how much padding there is between the edge of the input and the text
-                widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
-
-                // This text is displayed if the input is empty
-                // widget.TextInputOpts.Placeholder(placeHolder),
-
-                // This is called when the user hits the "Enter" key.
-                // There are other options that can configure this behavior.
-                /*
-                widget.TextInputOpts.SubmitHandler(func(args *widget.TextInputChangedEventArgs) {
-                    fmt.Println("Text Submitted: ", args.InputText)
-                }),
-                */
-
-                // This is called whenver there is a change to the text
-                widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
-                    if !accept(args.InputText) {
-                        args.TextInput.SetText(lastText)
-                    } else {
-                        lastText = args.InputText
-                        onSet(lastText)
-                    }
-                }),
-            )
-
-            input.SetText(placeHolder)
-
-            return input
-        }
-
-        makeNumberInput := func (value *int) *widget.TextInput {
-            return makeInput(fmt.Sprintf("%d", *value), 4, func(text string) bool {
-                if text == "" {
-                    return true
-                }
-                // every character must be a number
-                for _, char := range text {
-                    if char < '0' || char > '9' {
-                        return false
-                    }
-                }
-                return true
-            }, func(text string) {
-                num, err := strconv.Atoi(text)
-                if err == nil {
-                    *value = num
-                }
-            })
-        }
-
-        makeTextInput := func(text *string) *widget.TextInput {
-            return makeInput(*text, 20, func(text string) bool {
-                return true
-            }, func(data string) {
-                *text = data
-            })
-        }
-
-        if unit.Name == "" {
-            unit.Name = "name"
-        }
-
-        contents.AddChild(makeRow(5, makeWhiteText("Name"), makeTextInput(&unit.Name)))
-
-        // add drop down of all races
-        var raceEntries []any
-        for _, race := range allRaces {
-            raceEntries = append(raceEntries, race)
-        }
-
-        if unit.Race == data.RaceNone {
-            unit.Race = data.RaceBarbarian
-        }
-
-        contents.AddChild(makeRow(5, makeWhiteText("Race"), makeComboBox(raceEntries, unit.Race, func (selected any){
-            race, ok := selected.(data.Race)
-            if ok {
-                unit.Race = race
-            }
-        })))
-
-        makeSquare := func(size int, col color.NRGBA) *ebiten.Image {
-            img := ebiten.NewImage(size, size)
-            img.Fill(col)
-            return img
-        }
-
-        makeCheckbox := func(checked bool, changedHandler func(bool)) *widget.Checkbox {
-            return widget.NewCheckbox(
-                widget.CheckboxOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                        HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                        VerticalPosition: widget.AnchorLayoutPositionCenter,
-                    }),
-                ),
-                widget.CheckboxOpts.Image(&widget.CheckboxImage{
-                    Unchecked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 96, G: 96, B: 96, A: 255})),
-                    Checked: ui_image.NewFixedNineSlice(makeSquare(20, color.NRGBA{R: 100, G: 255, B: 100, A: 255})),
-                }),
-                widget.CheckboxOpts.StateChangedHandler(func (args *widget.CheckboxChangedEventArgs) {
-                    switch args.State {
-                    case widget.WidgetChecked:
-                        changedHandler(true)
-                    case widget.WidgetUnchecked:
-                        changedHandler(false)
-                    }
-                }),
-                widget.CheckboxOpts.InitialState(func() widget.WidgetState {
-                    if checked {
-                        return widget.WidgetChecked
-                    }
-                    return widget.WidgetUnchecked
-                }()),
-            )
-        }
-
-        makeIconText := func(icon *ebiten.Image, label string) *widget.Container {
-            return makeRow(3, widget.NewGraphic(widget.GraphicOpts.Image(icon)), makeWhiteText(label))
-        }
-
-        makeUnitViewIconText := func(index int, label string) *widget.Container {
-            icon, _ := imageCache.GetImageTransform("unitview.lbx", index, 0, "icon-enlarge", enlargeTransform(3))
-            return makeIconText(icon, label)
-        }
-
-        // Flying: checkbox
-
-
-        // Magic realm: combo box with all magic realms
-        // ranged attack combo box
-
-        inputs := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewGridLayout(
-                widget.GridLayoutOpts.Columns(2),
-                widget.GridLayoutOpts.Spacing(5, 2),
-            )),
-        )
-
-        var flyingCallbacks []func(bool)
-        inputs.AddChild(makeWhiteText("Flying"), makeCheckbox(unit.Flying, func(flying bool){
-            unit.Flying = flying
-            for _, callback := range flyingCallbacks {
-                callback(flying)
-            }
-        }))
-
-        makeRangedAttackElements := func() []widget.PreferredSizeLocateableWidget {
-            damageTypes := []any{
-                units.DamageRangedPhysical,
-                units.DamageRangedMagical,
-                units.DamageRangedBoulder,
-            }
-
-            initial := unit.RangedAttackDamageType
-            ok := false
-            for _, damageType := range damageTypes {
-                if damageType == initial {
-                    ok = true
-                    break
-                }
-            }
-
-            if !ok {
-                initial = damageTypes[0].(units.Damage)
-                unit.RangedAttackDamageType = initial
-            }
-
-            rangedAttackIndex := func () int {
-                switch unit.RangedAttackDamageType {
-                    case units.DamageRangedPhysical: return 18
-                    case units.DamageRangedMagical: return 14
-                    case units.DamageRangedBoulder: return 19
-                }
-                return 0
-            }
-
-            rangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
-            rangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
-
-            // ranged attack power: text input as number
-            rangedAttackPowerRow := makeRow(5, rangedAttackPowerLabel, makeNumberInput(&unit.RangedAttackPower))
-
-            // ranged attacks: text input as number
-            rangedAttacksRow := makeRow(5, rangedAttacksLabel, makeNumberInput(&unit.RangedAttacks))
-
-            return []widget.PreferredSizeLocateableWidget{
-                makeRow(5, makeWhiteText("Ranged Attack Type"), makeComboBox(damageTypes, initial, func(selected any){
-                    damage, ok := selected.(units.Damage)
-                    if ok {
-                        unit.RangedAttackDamageType = damage
-                    }
-
-                    newRangedAttackPowerLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attack Power")
-                    newRangedAttacksLabel := makeUnitViewIconText(rangedAttackIndex(), "Ranged Attacks")
-
-                    rangedAttackPowerRow.ReplaceChild(rangedAttackPowerLabel, newRangedAttackPowerLabel)
-                    rangedAttacksRow.ReplaceChild(rangedAttacksLabel, newRangedAttacksLabel)
-
-                    rangedAttackPowerLabel = newRangedAttackPowerLabel
-                    rangedAttacksLabel = newRangedAttacksLabel
-                })),
-
-                rangedAttackPowerRow,
-
-                rangedAttacksRow,
-            }
-        }
-
-        rangedAttackArea := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(3),
-            )),
-        )
-
-        hasRanged := unit.RangedAttackDamageType != units.DamageNone
-        inputs.AddChild(makeWhiteText("Range Attack"), makeCheckbox(hasRanged, func(ranged bool){
-            hasRanged = ranged
-            rangedAttackArea.RemoveChildren()
-
-            if hasRanged {
-                rangedAttackArea.AddChild(makeRangedAttackElements()...)
-            } else {
-                unit.RangedAttackDamageType = units.DamageNone
-            }
-        }))
-
-        if hasRanged {
-            rangedAttackArea.AddChild(makeRangedAttackElements()...)
-        }
-
-        inputs.AddChild(rangedAttackArea, space(1))
-
-        // count: combo box, 1-8
-        inputs.AddChild(makeWhiteText("Count"), makeNumberInput(&unit.Count))
-
-        // movement speed: text input as number
-        flyingIndex := 25
-        walkingIndex := 24
-        movementIcon := makeUnitViewIconText(func () int {
-            if unit.Flying {
-                return flyingIndex
-            }
-            return walkingIndex
-        }(), "Movement Speed")
-        inputs.AddChild(movementIcon, makeNumberInput(&unit.MovementSpeed))
-
-        flyingCallbacks = append(flyingCallbacks, func(flying bool){
-            var newWidget *widget.Container
-            if flying {
-                newWidget = makeUnitViewIconText(flyingIndex, "Movement Speed")
-            } else {
-                newWidget = makeUnitViewIconText(walkingIndex, "Movement Speed")
-            }
-            inputs.ReplaceChild(movementIcon, newWidget)
-            movementIcon = newWidget
-        })
-
-        // melee attack power: text input as number
-        inputs.AddChild(makeUnitViewIconText(13, "Melee Attack Power"), makeNumberInput(&unit.MeleeAttackPower))
-
-        // defense: text input as number
-        inputs.AddChild(makeUnitViewIconText(22, "Defense"), makeNumberInput(&unit.Defense))
-
-        // resistance: text input as number
-        inputs.AddChild(makeUnitViewIconText(27, "Resistance"), makeNumberInput(&unit.Resistance))
-
-        // hit points: text input as number
-        inputs.AddChild(makeUnitViewIconText(23, "Hit Points"), makeNumberInput(&unit.HitPoints))
-
-        contents.AddChild(inputs)
-
-        // spells: set of spells this unit can cast
-        // abilities: set of abilities this unit has
-
-        titleContainer := widget.NewContainer(
-            widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: transparent})),
-            widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
-        )
-        titleContainer.AddChild(widget.NewText(
-            widget.TextOpts.Text("Edit Unit", &face, color.White),
-            widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-                HorizontalPosition: widget.AnchorLayoutPositionCenter,
-                VerticalPosition: widget.AnchorLayoutPositionCenter,
-            })),
-        ))
-
-        var window *widget.Window
-
-        /*
-        contents.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("Add Unit", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                    window.Close()
-                }),
-            ),
-        )
-
-        contents.AddChild(space(10))
-        */
-
-        var abilityList *widget.List
-        var availableAbilityList *widget.List
-
-        makeEditAbility := func(ability *data.Ability) *widget.Container {
-
-            var row *widget.Container
-            text := makeWhiteText(ability.Name())
-
-            update := func() {
-                newText := makeWhiteText(ability.Name())
-                row.ReplaceChild(text, newText)
-                text = newText
-
-                for i := range unit.Abilities {
-                    if unit.Abilities[i].Ability == ability.Ability {
-                        unit.Abilities[i] = *ability
-                    }
-                }
-
-            }
-
-            up := widget.NewButton(
-                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("+", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
-                    ability.Value += 1
-                    update()
-                }),
-            )
-
-            down := widget.NewButton(
-                widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(20, 20, 5, color.NRGBA{R: 0x00, G: 0xf0, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("-", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs){
-                    ability.Value -= 1
-                    update()
-                }),
-            )
-
-            row = makeRow(5, text, up, down)
-            return row
-        }
-
-        editAbilityContainer := space(1)
-
-        abilityListTimer := make(map[data.AbilityType]uint64)
-        abilityList = widget.NewList(
-            widget.ListOpts.EntryFontFace(&face),
-            widget.ListOpts.SliderParams(&widget.SliderParams{
-                TrackImage: &widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            }),
-
-            widget.ListOpts.HideHorizontalSlider(),
-
-            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 120,
-                }),
-                widget.WidgetOpts.MinSize(0, 50),
-            )),
-
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    return fmt.Sprintf("%v", e)
-                },
-            ),
-
-            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                entry := args.Entry.(*data.Ability)
-
-                newEdit := makeEditAbility(entry)
-                contents.ReplaceChild(editAbilityContainer, newEdit)
-                editAbilityContainer = newEdit
-
-                lastTime, ok := abilityListTimer[entry.Ability]
-                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
-                if ok && engine.Counter - lastTime < 30 {
-                    // log.Printf("  adding %v to defending army", entry)
-                    abilityListTimer[entry.Ability] = engine.Counter + 30
-
-                    list := abilityList
-                    list.RemoveEntry(args.Entry)
-                    availableAbilityList.AddEntry(args.Entry)
-
-                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
-                        return a.Ability == entry.Ability
-                    })
-                } else {
-                    abilityListTimer[entry.Ability] = engine.Counter
-                }
-
-            }),
-
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
-            }),
-
-            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
-            }),
-
-            widget.ListOpts.AllowReselect(),
-        )
-
-        availableAbilityListTimer := make(map[data.AbilityType]uint64)
-        availableAbilityList = widget.NewList(
-            widget.ListOpts.EntryFontFace(&face),
-            widget.ListOpts.SliderParams(&widget.SliderParams{
-                TrackImage: &widget.SliderTrackImage{
-                    Idle: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                    Hover: makeNineImage(makeRoundedButtonImage(20, 20, 5, color.NRGBA{R: 128, G: 128, B: 128, A: 255}), 5),
-                },
-                HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
-            }),
-
-            widget.ListOpts.HideHorizontalSlider(),
-
-            widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: 120,
-                }),
-                widget.WidgetOpts.MinSize(0, 50),
-            )),
-
-            widget.ListOpts.EntryLabelFunc(
-                func (e any) string {
-                    return fmt.Sprintf("%v", e)
-                },
-            ),
-
-            widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
-                entry := args.Entry.(*data.Ability)
-
-                newEdit := makeEditAbility(entry)
-                contents.ReplaceChild(editAbilityContainer, newEdit)
-                editAbilityContainer = newEdit
-
-                lastTime, ok := availableAbilityListTimer[entry.Ability]
-                // log.Printf("Entry %v lastTime %v counter %v ok %v", entry, lastTime, engine.Counter, ok)
-                if ok && engine.Counter - lastTime < 30 {
-                    // log.Printf("  adding %v to defending army", entry)
-                    availableAbilityListTimer[entry.Ability] = engine.Counter + 30
-
-                    list := availableAbilityList
-                    list.RemoveEntry(args.Entry)
-                    abilityList.AddEntry(args.Entry)
-
-                    unit.Abilities = append(unit.Abilities, *entry)
-                } else {
-                    availableAbilityListTimer[entry.Ability] = engine.Counter
-                }
-            }),
-
-            widget.ListOpts.EntryColor(&widget.ListEntryColor{
-                Selected: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                Unselected: color.NRGBA{R: 0, G: 255, B: 0, A: 255},
-            }),
-
-            widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
-                Idle: ui_image.NewNineSliceColor(color.NRGBA{R: 64, G: 64, B: 64, A: 255}),
-                Disabled: fakeImage,
-                Mask: fakeImage,
-            }),
-
-            widget.ListOpts.AllowReselect(),
-        )
-
-        transferButtons := widget.NewContainer(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-                widget.RowLayoutOpts.Spacing(5),
-                widget.RowLayoutOpts.Padding(&widget.Insets{Top: 20, Bottom: 20}),
-            )),
-        )
-
-        makeArrowImage := func(size int, fill color.NRGBA, edge color.NRGBA) *ebiten.Image {
-            img := ebiten.NewImage(size, size)
-
-            // img.Fill(color.NRGBA{R: 255, A: 255})
-
-            var path vector.Path
-
-            fsize := float32(size)
-
-            x1 := float32(1)
-            y1 := fsize * 0.30
-
-            x2 := fsize * 0.6
-            y2 := y1
-
-            x3 := x2
-            y3 := fsize * 0.1
-
-            x4 := fsize
-            y4 := fsize * 0.5
-
-            x5 := x3
-            y5 := fsize * 0.9
-
-            x6 := x2
-            y6 := fsize * 0.70
-
-            x7 := x1
-            y7 := y6
-
-            path.MoveTo(x1, y1)
-            path.LineTo(x2, y2)
-            path.LineTo(x3, y3)
-            path.LineTo(x4, y4)
-            path.LineTo(x5, y5)
-            path.LineTo(x6, y6)
-            path.LineTo(x7, y7)
-            path.Close()
-
-            var edgeScale ebiten.ColorScale
-            edgeScale.ScaleWithColor(edge)
-
-            var fillScale ebiten.ColorScale
-            fillScale.ScaleWithColor(fill)
-
-            vector.FillPath(img, &path, nil, &vector.DrawPathOptions{
-                ColorScale: fillScale,
-            })
-
-            vector.StrokePath(img, &path, &vector.StrokeOptions{
-                Width: 1,
-            }, &vector.DrawPathOptions{
-                ColorScale: edgeScale,
-            })
-
-            return img
-        }
-
-        makeLeftArrow := func(size int) *widget.ButtonImage {
-            mk := func (fill color.NRGBA, edge color.NRGBA) *ui_image.NineSlice {
-                img1 := makeArrowImage(size, fill, edge)
-                img := ebiten.NewImage(size, size)
-                op := &ebiten.DrawImageOptions{}
-                op.GeoM.Scale(-1, 1)
-                op.GeoM.Translate(float64(size), 0)
-                img.DrawImage(img1, op)
-                return ui_image.NewNineSliceSimple(img, 3, size - 3)
-            }
-
-            return &widget.ButtonImage{
-                Idle:  mk(color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}),
-                Hover: mk(color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
-                Pressed: mk(color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}),
-            }
-        }
-
-        makeRightArrow := func(size int) *widget.ButtonImage {
-            return &widget.ButtonImage{
-                Idle:  ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 128, G: 128, B: 128, A: 255}, color.NRGBA{R: 164, G: 164, B: 164, A: 255}), 3, size - 3),
-                Hover: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 192, G: 192, B: 192, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
-                Pressed: ui_image.NewNineSliceSimple(makeArrowImage(size, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, color.NRGBA{R: 200, G: 200, B: 200, A: 255}), 3, size - 3),
-            }
-        }
-
-        // available => abilities
-        transferButtons.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(makeLeftArrow(30)),
-            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-
-                availableEntry := availableAbilityList.SelectedEntry()
-                if availableEntry != nil {
-                    availableAbilityList.RemoveEntry(availableEntry)
-                    abilityList.AddEntry(availableEntry)
-
-                    entry := availableEntry.(*data.Ability)
-                    unit.Abilities = append(unit.Abilities, *entry)
-                }
-            }),
-        ))
-
-        // abilities => available
-        transferButtons.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-            widget.ButtonOpts.Image(makeRightArrow(30)),
-            widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                abilityEntry := abilityList.SelectedEntry()
-                if abilityEntry != nil {
-                    abilityList.RemoveEntry(abilityEntry)
-                    availableAbilityList.AddEntry(abilityEntry)
-
-                    entry := abilityEntry.(*data.Ability)
-
-                    unit.Abilities = slices.DeleteFunc(unit.Abilities, func(a data.Ability) bool {
-                        return a.Ability == entry.Ability
-                    })
-                }
-            }),
-        ))
-
-
-        hasAbilities := make(map[data.AbilityType]struct{})
-
-        for _, ability := range unit.Abilities {
-            abilityList.AddEntry(&ability)
-            hasAbilities[ability.Ability] = struct{}{}
-        }
-
-        for _, abilityType := range data.AllAbilities() {
-            _, has := hasAbilities[abilityType]
-            if !has {
-                ability := data.MakeAbility(abilityType)
-                availableAbilityList.AddEntry(&ability)
-            }
-        }
-
-        contents.AddChild(makeRow(20,
-            makeColumn(5, makeWhiteText("Abilities"), abilityList),
-            makeColumn(5, transferButtons),
-            makeColumn(5, makeWhiteText("Available Abilities"), availableAbilityList),
-        ))
-
-        contents.AddChild(editAbilityContainer)
-
-        // close button
-        contents.AddChild(widget.NewButton(
-            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-                widget.ButtonOpts.Image(makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xf2, G: 0x00, B: 0x00, A: 0xff})),
-                widget.ButtonOpts.Text("Close", &face, &widget.ButtonTextColor{
-                    Idle: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-                    Hover: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-                    Pressed: color.NRGBA{R: 255, G: 0, B: 0, A: 255},
-                }),
-                widget.ButtonOpts.ClickedHandler(func (args *widget.ButtonClickedEventArgs) {
-                    window.Close()
-                    onClose()
-                }),
-            ),
-        )
-
-        window = widget.NewWindow(
-            widget.WindowOpts.Contents(contents),
-            widget.WindowOpts.TitleBar(titleContainer, 25),
-            widget.WindowOpts.Draggable(),
-            widget.WindowOpts.Resizeable(),
-            widget.WindowOpts.MinSize(500, 700),
-        )
-
-        return window
-    }
 
     for _, race := range allRaces {
         clickTimer := make(map[string]uint64)
@@ -1859,7 +2066,7 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                     entry := unitList.SelectedEntry()
                     if entry != nil {
                         entry := entry.(*UnitItem)
-                        addWindow(makeEditUnitWindow(&entry.Unit, func(){}))
+                        addWindow(engine.makeEditUnitWindow(&entry.Unit, func(){}, face, &allSpells, &imageCache))
                     }
                 }),
             ),
@@ -1882,9 +2089,9 @@ func (engine *Engine) MakeUI() *ebitenui.UI {
                             Unit: clone,
                         }
 
-                        addWindow(makeEditUnitWindow(&newItem.Unit, func() {
+                        addWindow(engine.makeEditUnitWindow(&newItem.Unit, func() {
                             unitList.AddEntry(&newItem)
-                        }))
+                        }, face, &allSpells, &imageCache))
                     }
                 }),
             ),
