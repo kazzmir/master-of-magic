@@ -1157,6 +1157,9 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
     var availableAbilityList *widget.List
 
     makeEditAbility := func(ability *data.Ability) *widget.Container {
+        if !ability.SupportsValue() {
+            return space(1)
+        }
 
         var row *widget.Container
         text := makeWhiteText(ability.Name())
