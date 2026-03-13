@@ -1725,7 +1725,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
         widget.WindowOpts.TitleBar(titleContainer, 25),
         widget.WindowOpts.Draggable(),
         widget.WindowOpts.Resizeable(),
-        widget.WindowOpts.MinSize(500, 800),
+        widget.WindowOpts.MinSize(800, 750),
     )
 
     return window
