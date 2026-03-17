@@ -1569,6 +1569,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
                 HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
             }),
 
+            widget.ListOpts.EntrySortFunc(func (a, b any) int {
+                spellA := a.(string)
+                spellB := b.(string)
+
+                return cmp.Compare(spellA, spellB)
+            }),
+
             widget.ListOpts.HideHorizontalSlider(),
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
@@ -1629,6 +1636,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
             }),
 
             widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.EntrySortFunc(func (a, b any) int {
+                spellA := a.(string)
+                spellB := b.(string)
+
+                return cmp.Compare(spellA, spellB)
+            }),
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
