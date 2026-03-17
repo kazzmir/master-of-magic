@@ -1156,7 +1156,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
     var abilityList *widget.List
     var availableAbilityList *widget.List
 
-    makeEditAbility := func(ability *data.Ability) *widget.Container {
+    makeEditAbility := func(ability *data.Ability, list *widget.List) *widget.Container {
         if !ability.SupportsValue() {
             return space(1)
         }
@@ -1168,6 +1168,8 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
             newText := makeWhiteText(ability.Name())
             row.ReplaceChild(text, newText)
             text = newText
+
+            list.UpdateEntry(ability)
 
             for i := range unit.Abilities {
                 if unit.Abilities[i].Ability == ability.Ability {
@@ -1223,6 +1225,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
             HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
         }),
 
+        widget.ListOpts.EntrySortFunc(func (a, b any) int {
+            abilityA := a.(*data.Ability)
+            abilityB := b.(*data.Ability)
+
+            return cmp.Compare(abilityA.String(), abilityB.String())
+        }),
+
         widget.ListOpts.HideHorizontalSlider(),
 
         widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
@@ -1241,7 +1250,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
             entry := args.Entry.(*data.Ability)
 
-            newEdit := makeEditAbility(entry)
+            newEdit := makeEditAbility(entry, args.List)
             abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
             editAbilityContainer = newEdit
 
@@ -1291,6 +1300,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
 
         widget.ListOpts.HideHorizontalSlider(),
 
+        widget.ListOpts.EntrySortFunc(func (a, b any) int {
+            abilityA := a.(*data.Ability)
+            abilityB := b.(*data.Ability)
+
+            return cmp.Compare(abilityA.String(), abilityB.String())
+        }),
+
         widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
             widget.WidgetOpts.LayoutData(widget.RowLayoutData{
                 MaxHeight: 120,
@@ -1307,7 +1323,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
             entry := args.Entry.(*data.Ability)
 
-            newEdit := makeEditAbility(entry)
+            newEdit := makeEditAbility(entry, args.List)
             abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
             editAbilityContainer = newEdit
 
@@ -1553,6 +1569,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
                 HandleImage: makeNineRoundedButtonImage(40, 40, 5, color.NRGBA{R: 0xad, G: 0x8d, B: 0x55, A: 0xff}),
             }),
 
+            widget.ListOpts.EntrySortFunc(func (a, b any) int {
+                spellA := a.(string)
+                spellB := b.(string)
+
+                return cmp.Compare(spellA, spellB)
+            }),
+
             widget.ListOpts.HideHorizontalSlider(),
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
@@ -1613,6 +1636,13 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
             }),
 
             widget.ListOpts.HideHorizontalSlider(),
+
+            widget.ListOpts.EntrySortFunc(func (a, b any) int {
+                spellA := a.(string)
+                spellB := b.(string)
+
+                return cmp.Compare(spellA, spellB)
+            }),
 
             widget.ListOpts.ContainerOpts(widget.ContainerOpts.WidgetOpts(
                 widget.WidgetOpts.LayoutData(widget.RowLayoutData{
