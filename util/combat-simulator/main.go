@@ -1156,7 +1156,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
     var abilityList *widget.List
     var availableAbilityList *widget.List
 
-    makeEditAbility := func(ability *data.Ability) *widget.Container {
+    makeEditAbility := func(ability *data.Ability, list *widget.List) *widget.Container {
         if !ability.SupportsValue() {
             return space(1)
         }
@@ -1168,6 +1168,8 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
             newText := makeWhiteText(ability.Name())
             row.ReplaceChild(text, newText)
             text = newText
+
+            list.UpdateEntry(ability)
 
             for i := range unit.Abilities {
                 if unit.Abilities[i].Ability == ability.Ability {
@@ -1241,7 +1243,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
             entry := args.Entry.(*data.Ability)
 
-            newEdit := makeEditAbility(entry)
+            newEdit := makeEditAbility(entry, args.List)
             abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
             editAbilityContainer = newEdit
 
@@ -1307,7 +1309,7 @@ func (engine *Engine) makeEditUnitWindow(unit *units.Unit, onClose func(), face 
         widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
             entry := args.Entry.(*data.Ability)
 
-            newEdit := makeEditAbility(entry)
+            newEdit := makeEditAbility(entry, args.List)
             abilitiesContainer.ReplaceChild(editAbilityContainer, newEdit)
             editAbilityContainer = newEdit
 
