@@ -6,7 +6,7 @@ require (
 	github.com/ebitenui/ebitenui v0.7.3
 	github.com/hajimehoshi/ebiten/v2 v2.9.9
 	golang.org/x/exp v0.0.0-20260312153236-7ab1446f8b90
-	golang.org/x/image v0.37.0
+	golang.org/x/image v0.38.0
 )
 
 // replace github.com/ebitenui/ebitenui => /home/jon/tmp/ebitenui-kazzmir
