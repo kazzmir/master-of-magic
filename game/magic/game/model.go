@@ -5,7 +5,7 @@ import (
     "slices"
     "math"
     "math/rand/v2"
-    "log"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -1770,7 +1770,7 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
     to := path[0]
     path = path[1:]
 
-    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+    // log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) (playerlib.PathStack, bool) {
         found := player.FindStack(x, y, stack.Plane())
         return found, found != nil
