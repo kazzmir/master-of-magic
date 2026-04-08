@@ -1285,6 +1285,13 @@ func getExtra[T any](extras map[ExtraKind]ExtraTile, kind ExtraKind) T {
 }
 
 func (mapObject *Map) SetRoad(x int, y int, enchanted bool) {
+	if mapObject.ExtraMap == nil {
+        mapObject.ExtraMap = make(map[image.Point]map[ExtraKind]ExtraTile)
+    }
+    pt := image.Pt(x, y)
+    if mapObject.ExtraMap[pt] == nil {
+        mapObject.ExtraMap[pt] = make(map[ExtraKind]ExtraTile)
+    }
     mapObject.ExtraMap[image.Pt(x, y)][ExtraKindRoad] = &ExtraRoad{Map: mapObject, X: x, Y: y, Enchanted: enchanted}
 }
 

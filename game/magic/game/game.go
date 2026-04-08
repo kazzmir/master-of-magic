@@ -5457,6 +5457,26 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     newCity.ProducingBuilding = buildinglib.BuildingHousing
     newCity.ProducingUnit = units.UnitNone
 
+    //City default has road
+    x, y := settlers.GetX(), settlers.GetY()
+    plane := settlers.GetPlane()
+    m := game.GetMap(plane)
+    pt := image.Pt(x, y)
+
+    // Check if road exits
+    hasRoad := false
+    if extras, ok := m.ExtraMap[pt]; ok {
+        if _, roadExists := extras[maplib.ExtraKindRoad]; roadExists {
+            hasRoad = true
+        }
+    }
+
+    // if no, build road
+    if !hasRoad {
+        isEnchanted := (plane == data.PlaneMyrror)
+        m.SetRoad(x, y, isEnchanted)
+    }
+
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
     game.RefreshUI()
@@ -6656,6 +6676,11 @@ func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.
                 i += 1
 
                 // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
+            }
+
+            //Prevent boundry case, else system hang if build road across city
+            if i >= len(roadPath) {
+                  i = len(roadPath) - 1
             }
 
             stack.CurrentPath = roadPath[:i+1]
