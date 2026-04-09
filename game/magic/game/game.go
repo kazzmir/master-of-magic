@@ -5457,6 +5457,8 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     newCity.ProducingBuilding = buildinglib.BuildingHousing
     newCity.ProducingUnit = units.UnitNone
 
+    game.GetMap(settlers.GetPlane()).SetRoad(settlers.GetX(), settlers.GetY(), settlers.GetPlane() == data.PlaneMyrror)
+
     player.RemoveUnit(settlers)
     player.SelectedStack = nil
     game.RefreshUI()
@@ -6656,6 +6658,10 @@ func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.
                 i += 1
 
                 // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
+            }
+
+            if i >= len(roadPath) {
+                i = len(roadPath) - 1
             }
 
             stack.CurrentPath = roadPath[:i+1]

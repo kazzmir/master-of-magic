@@ -273,6 +273,8 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
     cityX, cityY := findCityLocation(game, startingPlane, area)
     area[image.Pt(cityX, cityY)] = false
 
+    game.GetMap(startingPlane).SetRoad(cityX, cityY, startingPlane == data.PlaneMyrror)
+
     introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, game.Model.BuildingInfo, game.GetMap(startingPlane), game.Model, player)
     introCity.Population = 4000
     introCity.Plane = startingPlane
