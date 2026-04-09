@@ -2760,7 +2760,7 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
 
     city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
     city.Population = 12190
-    city.Plane = data.PlaneArcanus
+    city.Plane = game.Model.Plane
     city.ProducingBuilding = buildinglib.BuildingGranary
     city.ProducingUnit = units.UnitNone
     city.Buildings.Insert(buildinglib.BuildingFarmersMarket)
@@ -2772,6 +2772,8 @@ func createScenario29(cache *lbx.LbxCache) *gamelib.Game {
 
     player.Gold = 83
     player.Mana = 26
+
+    game.Model.CurrentMap().SetRoad(x, y, true)
 
     player.LiftFog(x, y, 4, city.Plane)
 
