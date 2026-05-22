@@ -529,6 +529,8 @@ func MakeNewWizardFonts(cache *lbx.LbxCache) NewWizardFonts {
     }
 }
 
+type UIFunc func() (NewWizardScreenState, *uilib.UI)
+
 type NewWizardScreen struct {
     LbxCache *lbx.LbxCache
 
@@ -557,12 +559,27 @@ type NewWizardScreen struct {
     counter uint64
 }
 
-func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeCustomNameUI(previousUI UIFunc, selectRace bool) *uilib.UI {
     portraitX := 24
     portraitY := 10
 
     nameX := 75
     nameY := 120
+
+    nextUI := func() {
+
+        before := func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateCustomName, screen.MakeCustomNameUI(previousUI, selectRace)
+        }
+
+        if selectRace {
+            screen.State = NewWizardScreenStateCustomBooks
+            screen.UI = screen.MakeCustomWizardBooksUI(before)
+        } else {
+            screen.State = NewWizardScreenStateSelectRace
+            screen.UI = screen.MakeSelectRaceUI(before)
+        }
+    }
 
     ui := &uilib.UI{
         Elements: make(map[uilib.UILayer][]*uilib.UIElement),
@@ -596,8 +613,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    screen.State = NewWizardScreenStateCustomPicture
-                    screen.UI = screen.MakeCustomPictureUI()
+                    screen.State, screen.UI = previousUI()
                 }
             }
         },
@@ -633,8 +649,7 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    screen.State = NewWizardScreenStateCustomPicture
-                    screen.UI = screen.MakeCustomPictureUI()
+                    screen.State, screen.UI = previousUI()
                 }
 
                 switch key {
@@ -646,9 +661,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
                         screen.CustomWizard.Name = screen.CustomWizard.Name[0:length]
                     case ebiten.KeyEnter:
                         if len(screen.CustomWizard.Name) > 0 {
-                            screen.State = NewWizardScreenStateCustomBooks
                             ui.UnfocusElement()
-                            screen.UI = screen.MakeCustomWizardBooksUI()
+                            nextUI()
                         }
                         /*
                     case ebiten.KeySpace:
@@ -665,9 +679,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
         // Emulating the original game behavior
         NotLeftClicked: func(element *uilib.UIElement) {
             if len(screen.CustomWizard.Name) > 0 {
-                screen.State = NewWizardScreenStateCustomBooks
                 ui.UnfocusElement()
-                screen.UI = screen.MakeCustomWizardBooksUI()
+                nextUI()
             }
         },
     }
@@ -678,11 +691,13 @@ func (screen *NewWizardScreen) MakeCustomNameUI() *uilib.UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeCustomPictureUI(previousUI UIFunc) *uilib.UI {
 
     clickFunc := func(wizard int){
         screen.State = NewWizardScreenStateCustomName
-        screen.UI = screen.MakeCustomNameUI()
+        screen.UI = screen.MakeCustomNameUI(func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateCustomPicture, screen.MakeCustomPictureUI(previousUI)
+        }, true)
     }
 
     insideFunc := func(wizard int){
@@ -721,8 +736,7 @@ func (screen *NewWizardScreen) MakeCustomPictureUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    screen.State = NewWizardScreenStateSelectWizard
-                    screen.UI = screen.MakeSelectWizardUI()
+                    screen.State, screen.UI = previousUI()
                 }
             }
         },
@@ -799,8 +813,10 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
 
         screen.CustomWizard.StartingSpells.AddAllSpells(GetStartingSpells(&screen.CustomWizard, screen.Spells))
 
-        screen.State = NewWizardScreenStateSelectRace
-        screen.UI = screen.MakeSelectRaceUI()
+        screen.State = NewWizardScreenStateCustomName
+        screen.UI = screen.MakeCustomNameUI(func () (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateSelectWizard, screen.MakeSelectWizardUI()
+        }, false)
     }
 
     insideFunc := func(wizard int){
@@ -822,7 +838,9 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
             IsOffsetWhenPressed: true,
             LeftClickRelease: func(this *uilib.UIElement){
                 screen.State = NewWizardScreenStateCustomPicture
-                screen.UI = screen.MakeCustomPictureUI()
+                screen.UI = screen.MakeCustomPictureUI(func() (NewWizardScreenState, *uilib.UI) {
+                    return NewWizardScreenStateSelectWizard, screen.MakeSelectWizardUI()
+                })
             },
             Inside: func(this *uilib.UIElement, x int, y int){
                 screen.CurrentWizard = -1
@@ -975,13 +993,29 @@ func (screen *NewWizardScreen) Load(cache *lbx.LbxCache) error {
     if screen.State == NewWizardScreenStateSelectWizard {
         screen.UI = screen.MakeSelectWizardUI()
     } else if screen.State == NewWizardScreenStateCustomBooks {
-        screen.UI = screen.MakeCustomWizardBooksUI()
+        var start UIFunc
+        start = func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateCustomBooks, screen.MakeCustomWizardBooksUI(start)
+        }
+        screen.UI = screen.MakeCustomWizardBooksUI(start)
     } else if screen.State == NewWizardScreenStateSelectSpells {
-        screen.UI = screen.MakeSelectSpellsUI()
+        var start UIFunc
+        start = func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateSelectSpells, screen.MakeSelectSpellsUI(start)
+        }
+        screen.UI = screen.MakeSelectSpellsUI(start)
     } else if screen.State == NewWizardScreenStateSelectRace {
-        screen.UI = screen.MakeSelectRaceUI()
+        var start UIFunc
+        start = func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateSelectRace, screen.MakeSelectRaceUI(start)
+        }
+        screen.UI = screen.MakeSelectRaceUI(start)
     } else if screen.State == NewWizardScreenStateSelectBanner {
-        screen.UI = screen.MakeSelectBannerUI()
+        var start UIFunc
+        start = func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateSelectBanner, screen.MakeSelectBannerUI(start)
+        }
+        screen.UI = screen.MakeSelectBannerUI(start)
     }
 
     return nil
@@ -1014,7 +1048,7 @@ func JoinAbilities(abilities []data.Retort) string {
     return out
 }
 
-func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeCustomWizardBooksUI(previousUI UIFunc) *uilib.UI {
 
     screen.CustomWizard.Retorts = []data.Retort{}
     screen.CustomWizard.Books = []data.WizardBook{}
@@ -1350,7 +1384,9 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         LeftClick: func(this *uilib.UIElement){
             if picksLeft() == 0 {
                 screen.State = NewWizardScreenStateSelectSpells
-                screen.UI = screen.MakeSelectSpellsUI()
+                screen.UI = screen.MakeSelectSpellsUI(func () (NewWizardScreenState, *uilib.UI) {
+                    return NewWizardScreenStateCustomBooks, screen.MakeCustomWizardBooksUI(previousUI)
+                })
             } else {
                 screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You need to make all your picks before you can continue", func(){}))
             }
@@ -1404,8 +1440,7 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    screen.State = NewWizardScreenStateCustomName
-                    screen.UI = screen.MakeCustomNameUI()
+                    screen.State, screen.UI = previousUI()
                 }
             }
         },
@@ -1511,7 +1546,7 @@ func GetStartingSpells(wizard *WizardCustom, allSpells spellbook.Spells) spellbo
     return spellsOut
 }
 
-func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeSelectSpellsUI(previousUI UIFunc) *uilib.UI {
 
     // for each book of magic the user has create a spell ui that allows the user to select
     // some set of spells, so if the user has 4 nature and 4 chaos, then the user would see
@@ -1797,7 +1832,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
         }
 
         screen.State = NewWizardScreenStateSelectRace
-        screen.UI = screen.MakeSelectRaceUI()
+        screen.UI = screen.MakeSelectRaceUI(func() (NewWizardScreenState, *uilib.UI) {
+            return NewWizardScreenStateSelectSpells, screen.MakeSelectSpellsUI(previousUI)
+        })
     }
 
     doPreviousMagicUI = func(current data.MagicType){
@@ -1814,8 +1851,7 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
 
         // no previous magic types, just go back to custom books
 
-        screen.State = NewWizardScreenStateCustomBooks
-        screen.UI = screen.MakeCustomWizardBooksUI()
+        screen.State, screen.UI = previousUI()
     }
 
     for _, magic := range magicOrder {
@@ -1825,7 +1861,9 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI() *uilib.UI {
     }
 
     // player doesn't have any magic, just go directly to race ui
-    return screen.MakeSelectRaceUI()
+    return screen.MakeSelectRaceUI(func () (NewWizardScreenState, *uilib.UI) {
+        return NewWizardScreenStateSelectSpells, screen.MakeSelectSpellsUI(previousUI)
+    })
 }
 
 func premultiplyAlpha(c color.RGBA, alpha float32) color.RGBA {
@@ -1858,7 +1896,7 @@ func MakeRaceFonts(cache *lbx.LbxCache) RaceFonts {
     }
 }
 
-func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeSelectRaceUI(previousUI UIFunc) *uilib.UI {
 
     imageCache := util.MakeImageCache(screen.LbxCache)
 
@@ -1886,7 +1924,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             },
             LeftClick: func(this *uilib.UIElement){
                 screen.CustomWizard.Race = race
-                screen.UI = screen.MakeSelectBannerUI()
+                screen.UI = screen.MakeSelectBannerUI(func () (NewWizardScreenState, *uilib.UI) {
+                    return NewWizardScreenStateSelectRace, screen.MakeSelectRaceUI(previousUI)
+                })
                 screen.State = NewWizardScreenStateSelectBanner
             },
             RightClick: func(this *uilib.UIElement){
@@ -1929,7 +1969,9 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
             LeftClick: func(this *uilib.UIElement){
                 if screen.CustomWizard.RetortEnabled(data.RetortMyrran) {
                     screen.CustomWizard.Race = race
-                    screen.UI = screen.MakeSelectBannerUI()
+                    screen.UI = screen.MakeSelectBannerUI(func () (NewWizardScreenState, *uilib.UI) {
+                        return NewWizardScreenStateSelectRace, screen.MakeSelectRaceUI(previousUI)
+                    })
                     screen.State = NewWizardScreenStateSelectBanner
                 } else {
                     screen.UI.AddElement(uilib.MakeErrorElement(screen.UI, screen.LbxCache, &imageCache, "You can not select a Myrran race unless you have the Myrran special.", func(){}))
@@ -2002,13 +2044,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    if screen.CurrentWizard == -1 {
-                        screen.State = NewWizardScreenStateSelectSpells
-                        screen.UI = screen.MakeSelectSpellsUI()
-                    } else {
-                        screen.State = NewWizardScreenStateSelectWizard
-                        screen.UI = screen.MakeSelectWizardUI()
-                    }
+                    screen.State, screen.UI = previousUI()
                 }
             }
         },
@@ -2020,7 +2056,7 @@ func (screen *NewWizardScreen) MakeSelectRaceUI() *uilib.UI {
     return ui
 }
 
-func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
+func (screen *NewWizardScreen) MakeSelectBannerUI(previousUI UIFunc) *uilib.UI {
     var elements []*uilib.UIElement
     group := uilib.MakeGroup()
     imageCache := util.MakeImageCache(screen.LbxCache)
@@ -2084,8 +2120,7 @@ func (screen *NewWizardScreen) MakeSelectBannerUI() *uilib.UI {
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
-                    screen.State = NewWizardScreenStateSelectRace
-                    screen.UI = screen.MakeSelectRaceUI()
+                    screen.State, screen.UI = previousUI()
                 }
             }
         },
