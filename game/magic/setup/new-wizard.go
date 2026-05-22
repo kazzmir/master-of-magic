@@ -614,12 +614,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI(previousUI UIFunc, selectRace bo
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
                     screen.State, screen.UI = previousUI()
-                    /*
-                    screen.State = NewWizardScreenStateCustomPicture
-                    screen.UI = screen.MakeCustomPictureUI(func () (NewWizardScreenState, *uilib.UI) {
-                        return NewWizardScreenStateCustomPicture, screen.MakeCustomPictureUI(selectRace)
-                    })
-                    */
                 }
             }
         },
@@ -656,10 +650,6 @@ func (screen *NewWizardScreen) MakeCustomNameUI(previousUI UIFunc, selectRace bo
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
                     screen.State, screen.UI = previousUI()
-                    /*
-                    screen.State = NewWizardScreenStateCustomPicture
-                    screen.UI = screen.MakeCustomPictureUI()
-                    */
                 }
 
                 switch key {
@@ -827,11 +817,6 @@ func (screen *NewWizardScreen) MakeSelectWizardUI() *uilib.UI {
         screen.UI = screen.MakeCustomNameUI(func () (NewWizardScreenState, *uilib.UI) {
             return NewWizardScreenStateSelectWizard, screen.MakeSelectWizardUI()
         }, false)
-
-        /*
-        screen.State = NewWizardScreenStateSelectRace
-        screen.UI = screen.MakeSelectRaceUI()
-        */
     }
 
     insideFunc := func(wizard int){
@@ -1456,10 +1441,6 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI(previousUI UIFunc) *uilib
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
                     screen.State, screen.UI = previousUI()
-                    /*
-                    screen.State = NewWizardScreenStateCustomName
-                    screen.UI = screen.MakeCustomNameUI(true)
-                    */
                 }
             }
         },
@@ -1871,11 +1852,6 @@ func (screen *NewWizardScreen) MakeSelectSpellsUI(previousUI UIFunc) *uilib.UI {
         // no previous magic types, just go back to custom books
 
         screen.State, screen.UI = previousUI()
-        /*
-        screen.State = NewWizardScreenStateCustomBooks
-        screen.UI = screen.MakeCustomWizardBooksUI(func() (NewWizardScreenState, *uilib.UI) {
-        })
-        */
     }
 
     for _, magic := range magicOrder {
@@ -2145,10 +2121,6 @@ func (screen *NewWizardScreen) MakeSelectBannerUI(previousUI UIFunc) *uilib.UI {
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
                     screen.State, screen.UI = previousUI()
-                    /*
-                    screen.State = NewWizardScreenStateSelectRace
-                    screen.UI = screen.MakeSelectRaceUI()
-                    */
                 }
             }
         },
