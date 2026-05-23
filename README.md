@@ -4,6 +4,8 @@
 
 # Master of Magic clone
 
+![Website](https://kazzmir.github.io/master-of-magic/)
+
 * Source language: golang, https://go.dev/
 * Graphics library: ebiten, https://ebitengine.org/
 * Master of Magic wiki: https://masterofmagic.fandom.com/
