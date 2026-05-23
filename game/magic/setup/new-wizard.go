@@ -608,6 +608,14 @@ func (screen *NewWizardScreen) MakeCustomNameUI(previousUI UIFunc, selectRace bo
 
             screen.Fonts.NameFontBright.PrintOptions(window, 195, 39, font.FontOptions{Scale: scale.ScaleAmount}, name)
 
+            if len(screen.CustomWizard.Books) > 0 {
+                options.GeoM.Reset()
+                options.GeoM.Translate(34, 135)
+                draw.DrawBooks(window, options, &screen.ImageCache, screen.CustomWizard.Books, screen.BooksOrderRandom())
+            }
+
+            screen.Fonts.AbilityFontSelected.PrintOptions(window, 12, 180, font.FontOptions{Scale: scale.ScaleAmount}, JoinAbilities(screen.CustomWizard.Retorts))
+
             return
         },
         HandleKeys: func(keys []ebiten.Key){
@@ -692,6 +700,8 @@ func (screen *NewWizardScreen) MakeCustomNameUI(previousUI UIFunc, selectRace bo
 }
 
 func (screen *NewWizardScreen) MakeCustomPictureUI(previousUI UIFunc) *uilib.UI {
+    screen.CustomWizard.Books = nil
+    screen.CustomWizard.Retorts = nil
 
     clickFunc := func(wizard int){
         screen.State = NewWizardScreenStateCustomName
@@ -1049,10 +1059,6 @@ func JoinAbilities(abilities []data.Retort) string {
 }
 
 func (screen *NewWizardScreen) MakeCustomWizardBooksUI(previousUI UIFunc) *uilib.UI {
-
-    screen.CustomWizard.Retorts = []data.Retort{}
-    screen.CustomWizard.Books = []data.WizardBook{}
-
     imageCache := util.MakeImageCache(screen.LbxCache)
 
     picksLeft := func() int {
@@ -1440,6 +1446,8 @@ func (screen *NewWizardScreen) MakeCustomWizardBooksUI(previousUI UIFunc) *uilib
         HandleKeys: func(keys []ebiten.Key){
             for _, key := range keys {
                 if inputmanager.IsQuitKey(key) {
+                    screen.CustomWizard.Retorts = nil
+                    screen.CustomWizard.Books = nil
                     screen.State, screen.UI = previousUI()
                 }
             }
