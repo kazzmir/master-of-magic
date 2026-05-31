@@ -110,7 +110,8 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
     layers[0] = make([]Neuron, inputNeurons)
     for i := range inputNeurons {
         layers[0][i] = Neuron{
-            Bias: rand.Float64(),
+            // Bias: rand.Float64(),
+            Bias: rand.NormFloat64() * 0.01,
             Weights: randomWeights(stateVectorSize),
             Funcs: NeuronFuncs{
                 Activation: ReLU,
@@ -126,7 +127,8 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
         for i := range hiddenLayers[layer] {
             // each neuron in layer X has N weights, where N is the number of neurons in layer X-1
             layers[layerIndex][i] = Neuron{
-                Bias: rand.Float64(),
+                // Bias: rand.Float64() * 2 - 1,
+                Bias: rand.NormFloat64() * 0.01,
                 Weights: randomWeights(len(layers[layerIndex-1])),
                 Funcs: NeuronFuncs{
                     Activation: ReLU,
@@ -140,7 +142,7 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
     layers[len(layers)-1] = make([]Neuron, outputNeurons)
     for i := range outputNeurons {
         layers[len(layers)-1][i] = Neuron{
-            Bias: rand.Float64(),
+            Bias: rand.Float64() * 2 - 1,
             Weights: randomWeights(len(layers[len(layers)-2])),
             Funcs: NeuronFuncs{
                 Activation: Sigmoid,
@@ -154,6 +156,36 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
     }
 
     return &network
+}
+
+func (network *Network) CountActive() (int, int) {
+    active := 0
+    total := 0
+    for layerIndex := range network.Layers {
+        for i := range network.Layers[layerIndex] {
+            total += 1
+            if network.Layers[layerIndex][i].activation > 0 {
+                active += 1
+            }
+        }
+    }
+
+    return active, total
+}
+
+func (network *Network) CountHiddenActive() (int, int) {
+    active := 0
+    total := 0
+    for i := 1; i < len(network.Layers) - 1; i++ {
+        for j := range network.Layers[i] {
+            total += 1
+            if network.Layers[i][j].activation > 0 {
+                active += 1
+            }
+        }
+    }
+
+    return active, total
 }
 
 func (network *Network) FeedForward(inputs []float64) []float64 {
@@ -181,6 +213,7 @@ func (network *Network) FeedForward(inputs []float64) []float64 {
         if cap(network.inputs) < len(network.outputs) {
             network.inputs = make([]float64, len(network.outputs))
         }
+        network.inputs = network.inputs[:len(network.outputs)]
         copy(network.inputs, network.outputs)
     }
 
@@ -255,4 +288,18 @@ func (network *Network) BackPropagate(costs []float64, inputs []float64, learnin
         log.Printf("Output %v: z=%v output=%v", i, neuron.z, neuron.activation)
     }
     */
+}
+
+func MSE(output, expected float64) float64 {
+    v := output - expected
+    return v * v
+}
+
+func (network *Network) ComputeLoss(inputs []float64, expected []float64) float64 {
+    outputs := network.FeedForward(inputs)
+    totalError := 0.0
+    for i := range outputs {
+        totalError += MSE(outputs[i], expected[i])
+    }
+    return totalError
 }
