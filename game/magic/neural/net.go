@@ -3,6 +3,7 @@ package neural
 import (
     "math"
     "math/rand/v2"
+    // "log"
 )
 
 // create a neural network with a feed forward pass and back propagation
@@ -11,60 +12,78 @@ import (
 // the reward values are used to train the network using back propagation, where
 // the reward values are a vector, some of the values are used for multiple network outputs
 
-type ActivationFunc func(weights []float64, inputs []float64, bias float64) float64
+type ActivationFunc func(z float64) float64
 
-func Sigmoid(weights []float64, inputs []float64, bias float64) float64 {
-    out := bias
+func Sigmoid(v float64) float64 {
+    return 1 / (1 + math.Exp(-v))
+}
 
-    for i := range len(weights) {
-        out += weights[i] * inputs[i]
-    }
+func SigmoidDerivative(v float64) float64 {
+    s := Sigmoid(v)
+    return s * (1 - s)
+}
 
-    return 1 / (1 + math.Exp(-out))
+func SigmoidDerivativeFromOutput(output float64) float64 {
+    return output * (1 - output)
 }
 
 func MakeLeakyReLU(leak float64) ActivationFunc {
-    return func(weights []float64, inputs []float64, bias float64) float64 {
-        out := bias
-    
-        for i := range len(weights) {
-            out += weights[i] * inputs[i]
+    return func(z float64) float64 {
+        if z > 0 {
+            return z
         }
 
-        if out > 0 {
-            return 1
-        }
-
-        return leak * out
+        return leak * z
     }
 }
 
-func ReLU(weights []float64, inputs []float64, bias float64) float64 {
-    out := bias
-    
-    for i := range len(weights) {
-        out += weights[i] * inputs[i]
-    }
+func MakeLeakyReLUDerivative(leak float64) ActivationFunc {
+    return func(z float64) float64 {
+        if z > 0 {
+            return 1
+        }
 
-    if out > 0 {
+        return leak
+    }
+}
+
+func ReLU(z float64) float64 {
+    return max(0, z)
+}
+
+func ReLUDerivative(z float64) float64 {
+    if z > 0 {
         return 1
     }
-
+    
     return 0
 }
 
 type NeuronFuncs struct {
     Activation ActivationFunc
+    Derivative ActivationFunc
 }
 
 type Neuron struct {
     Bias float64
     Weights []float64
     Funcs NeuronFuncs
+
+    // last computed value during forward pass
+    z float64
+    activation float64
 }
 
 func (neuron *Neuron) Activate(inputs []float64) float64 {
-    return neuron.Funcs.Activation(neuron.Weights, inputs, neuron.Bias)
+    z := neuron.Bias
+    for i := range len(neuron.Weights) {
+        z += neuron.Weights[i] * inputs[i]
+    }
+
+    neuron.z = z
+    neuron.activation = neuron.Funcs.Activation(neuron.z)
+
+    return neuron.activation
 }
 
 type Network struct {
@@ -72,12 +91,13 @@ type Network struct {
 
     outputs []float64
     inputs []float64
+    costs []float64
 }
 
 func randomWeights(size int) []float64 {
     weights := make([]float64, size)
     for i := range size {
-        weights[i] = rand.Float64()
+        weights[i] = rand.Float64() * 2 - 1
     }
     return weights
 }
@@ -94,6 +114,7 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
             Weights: randomWeights(stateVectorSize),
             Funcs: NeuronFuncs{
                 Activation: ReLU,
+                Derivative: ReLUDerivative,
             },
         }
     }
@@ -109,6 +130,7 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
                 Weights: randomWeights(len(layers[layerIndex-1])),
                 Funcs: NeuronFuncs{
                     Activation: ReLU,
+                    Derivative: ReLUDerivative,
                 },
             }
         }
@@ -122,6 +144,7 @@ func MakeNetwork(stateVectorSize int, inputNeurons int, hiddenLayers []int, outp
             Weights: randomWeights(len(layers[len(layers)-2])),
             Funcs: NeuronFuncs{
                 Activation: Sigmoid,
+                Derivative: SigmoidDerivativeFromOutput,
             },
         }
     }
@@ -168,8 +191,68 @@ func (network *Network) RandomizeWeights() {
 }
 
 func (network *Network) Rewards(vector []float64) {
-    network.BackPropagate(vector)
+    network.BackPropagate(vector, nil, 0.01)
 }
 
-func (network *Network) BackPropagate(vector []float64) {
+func (network *Network) BackPropagate(costs []float64, inputs []float64, learningRate float64) {
+    if cap(network.costs) < len(costs) {
+        network.costs = make([]float64, len(costs))
+    } else {
+        network.costs = network.costs[:len(costs)]
+    }
+
+    copy(network.costs, costs)
+
+    var nextLayerCosts []float64
+
+    for layerIndex := len(network.Layers) - 1; layerIndex >= 0; layerIndex-- {
+        layer := network.Layers[layerIndex]
+
+        if cap(nextLayerCosts) < len(layer[0].Weights) {
+            nextLayerCosts = make([]float64, len(layer[0].Weights))
+        } else {
+            nextLayerCosts = nextLayerCosts[:len(layer[0].Weights)]
+        }
+
+        for i := range nextLayerCosts {
+            nextLayerCosts[i] = 0
+        }
+
+        // log.Printf("Back propagate layer %v with costs %v", layerIndex, network.costs)
+
+        for i := range layer {
+            neuron := &layer[i]
+            dy_dz := neuron.Funcs.Derivative(neuron.activation)
+            delta_y := network.costs[i] * dy_dz
+
+            for weight := range neuron.Weights {
+                var dz_dw0 float64
+                if layerIndex > 0 {
+                    dz_dw0 = network.Layers[layerIndex - 1][weight].activation
+                } else {
+                    dz_dw0 = inputs[weight]
+                }
+
+                nextLayerCosts[weight] += neuron.Weights[weight] * delta_y
+
+                neuron.Weights[weight] -= learningRate * dz_dw0 * delta_y
+            }
+            neuron.Bias -= learningRate * delta_y
+        }
+
+        if cap(network.costs) < len(nextLayerCosts) {
+            network.costs = make([]float64, len(nextLayerCosts))
+        } else {
+            network.costs = network.costs[:len(nextLayerCosts)]
+        }
+
+        copy(network.costs, nextLayerCosts)
+    }
+
+    /*
+    for i := range network.Layers[len(network.Layers)-1] {
+        neuron := &network.Layers[len(network.Layers)-1][i]
+        log.Printf("Output %v: z=%v output=%v", i, neuron.z, neuron.activation)
+    }
+    */
 }
