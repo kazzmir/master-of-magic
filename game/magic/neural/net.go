@@ -92,6 +92,7 @@ type Network struct {
     outputs []float64
     inputs []float64
     costs []float64
+    nextLayerCosts []float64
 }
 
 func randomWeights(size int) []float64 {
@@ -236,19 +237,17 @@ func (network *Network) BackPropagate(costs []float64, inputs []float64, learnin
 
     copy(network.costs, costs)
 
-    var nextLayerCosts []float64
-
     for layerIndex := len(network.Layers) - 1; layerIndex >= 0; layerIndex-- {
         layer := network.Layers[layerIndex]
 
-        if cap(nextLayerCosts) < len(layer[0].Weights) {
-            nextLayerCosts = make([]float64, len(layer[0].Weights))
+        if cap(network.nextLayerCosts) < len(layer[0].Weights) {
+            network.nextLayerCosts = make([]float64, len(layer[0].Weights))
         } else {
-            nextLayerCosts = nextLayerCosts[:len(layer[0].Weights)]
+            network.nextLayerCosts = network.nextLayerCosts[:len(layer[0].Weights)]
         }
 
-        for i := range nextLayerCosts {
-            nextLayerCosts[i] = 0
+        for i := range network.nextLayerCosts {
+            network.nextLayerCosts[i] = 0
         }
 
         // log.Printf("Back propagate layer %v with costs %v", layerIndex, network.costs)
@@ -266,20 +265,20 @@ func (network *Network) BackPropagate(costs []float64, inputs []float64, learnin
                     dz_dw0 = inputs[weight]
                 }
 
-                nextLayerCosts[weight] += neuron.Weights[weight] * delta_y
+                network.nextLayerCosts[weight] += neuron.Weights[weight] * delta_y
 
                 neuron.Weights[weight] -= learningRate * dz_dw0 * delta_y
             }
             neuron.Bias -= learningRate * delta_y
         }
 
-        if cap(network.costs) < len(nextLayerCosts) {
-            network.costs = make([]float64, len(nextLayerCosts))
+        if cap(network.costs) < len(network.nextLayerCosts) {
+            network.costs = make([]float64, len(network.nextLayerCosts))
         } else {
-            network.costs = network.costs[:len(nextLayerCosts)]
+            network.costs = network.costs[:len(network.nextLayerCosts)]
         }
 
-        copy(network.costs, nextLayerCosts)
+        copy(network.costs, network.nextLayerCosts)
     }
 
     /*

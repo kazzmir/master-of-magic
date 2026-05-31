@@ -85,6 +85,83 @@ func learn2() {
 
 }
 
+func learn(net *neural.Network, inputs [][]float64, expected [][]float64) int {
+    previousLoss := 0.0
+    minimumLoss := 1e-6
+    maxEpochs := 50000
+    for epoch := range maxEpochs {
+        for i := range rand.Perm(len(inputs)) {
+            train(net, inputs[i], expected[i])
+        }
+
+        // log.Printf("Epoch %v", epoch)
+        /*
+        active1, total1 := net.CountHiddenActive()
+
+
+        active2, total2 := net.CountHiddenActive()
+
+
+        log.Printf("Active1: %v, total1: %v", active1, total1)
+        log.Printf("Active2: %v, total2: %v", active2, total2)
+        */
+
+        totalLoss := 0.0
+        for i := range inputs {
+            // outputs := net.FeedForward(inputs[i])
+            // log.Printf("Outputs for input %v: %v", i, outputs)
+            totalLoss += net.ComputeLoss(inputs[i], expected[i])
+        }
+
+        if totalLoss < minimumLoss {
+            return epoch
+        }
+
+        if epoch > 0 && math.Abs(totalLoss-previousLoss) < 1e-11 {
+            return epoch
+        }
+
+        previousLoss = totalLoss
+    }
+
+    return maxEpochs
+}
+
+func learnN() {
+    net := neural.MakeNetwork(5, 4, []int{30, 15}, 2)
+
+    inputs := [][]float64{
+        {0.3, 0.8, 0.1, 0.2, 0.18},
+        {0.1, 0.3, 0.18, 0.57, 0.93},
+        {0.8, 0.4, 0.35, 0.76, 0.12},
+        {0.42, 0.66, 0.92, 0.28, 0.34},
+    }
+
+    outputs := [][]float64{
+        {0.9, 0.3},
+        {0.14, 0.67},
+        {0.39, 0.61},
+        {0.08, 0.72},
+    }
+
+    epochs := learn(net, inputs, outputs)
+
+    log.Printf("Learned in %v epochs", epochs)
+
+    good := true
+    for i := range inputs {
+        output := net.FeedForward(inputs[i])
+        loss := net.ComputeLoss(inputs[i], outputs[i])
+        log.Printf("Inputs: %v, expected: %v, got: %v loss: %v", inputs[i], outputs[i], output, loss)
+        good = good && loss < 1e-5
+    }
+    if good {
+        log.Printf("Learned successfully")
+    } else {
+        log.Printf("Did not learn successfully")
+    }
+}
+
 func learn1() {
     net := neural.MakeNetwork(5, 4, []int{3, 3}, 2)
 
@@ -125,5 +202,5 @@ func learn1() {
 }
 
 func main() {
-    learn2()
+    learnN()
 }
