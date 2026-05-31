@@ -4,6 +4,8 @@ import (
     "log"
     "math"
     "math/rand/v2"
+    "sync"
+    // "context"
 
     "github.com/kazzmir/master-of-magic/game/magic/neural"
 )
@@ -128,7 +130,6 @@ func learn(net *neural.Network, inputs [][]float64, expected [][]float64) int {
 }
 
 func learnN() {
-    net := neural.MakeNetwork(5, 4, []int{30, 15}, 2)
 
     inputs := [][]float64{
         {0.3, 0.8, 0.1, 0.2, 0.18},
@@ -144,22 +145,90 @@ func learnN() {
         {0.08, 0.72},
     }
 
-    epochs := learn(net, inputs, outputs)
+    goodCount := 0
+    badCount := 0
 
-    log.Printf("Learned in %v epochs", epochs)
+    results := make(chan bool, 10)
 
-    good := true
-    for i := range inputs {
-        output := net.FeedForward(inputs[i])
-        loss := net.ComputeLoss(inputs[i], outputs[i])
-        log.Printf("Inputs: %v, expected: %v, got: %v loss: %v", inputs[i], outputs[i], output, loss)
-        good = good && loss < 1e-5
+    trainer := func(runs int) {
+        for range runs {
+            net := neural.MakeNetwork(5, 4, []int{30, 20}, 2)
+            learn(net, inputs, outputs)
+
+            // log.Printf("Learned in %v epochs", epochs)
+
+            good := true
+            for i := range inputs {
+                // output := net.FeedForward(inputs[i])
+                loss := net.ComputeLoss(inputs[i], outputs[i])
+                // log.Printf("Inputs: %v, expected: %v, got: %v loss: %v", inputs[i], outputs[i], output, loss)
+                good = good && loss < 1e-5
+            }
+            if good {
+                // log.Printf("Learned successfully")
+                results <- true
+            } else {
+                // log.Printf("Did not learn successfully")
+                results <- false
+            }
+        }
+
+        // log.Printf("Trainer done with %v runs", N)
     }
-    if good {
-        log.Printf("Learned successfully")
-    } else {
-        log.Printf("Did not learn successfully")
+
+    /*
+    for range 500 {
+        net := neural.MakeNetwork(5, 4, []int{30, 20}, 2)
+        learn(net, inputs, outputs)
+
+        // log.Printf("Learned in %v epochs", epochs)
+
+        good := true
+        for i := range inputs {
+            // output := net.FeedForward(inputs[i])
+            loss := net.ComputeLoss(inputs[i], outputs[i])
+            // log.Printf("Inputs: %v, expected: %v, got: %v loss: %v", inputs[i], outputs[i], output, loss)
+            good = good && loss < 1e-5
+        }
+        if good {
+            // log.Printf("Learned successfully")
+            goodCount += 1
+        } else {
+            // log.Printf("Did not learn successfully")
+            badCount += 1
+        }
+
+        log.Printf("Good count: %v, bad count: %v percent good = %.2f", goodCount, badCount, float64(goodCount)/float64(goodCount+badCount))
     }
+    */
+
+    var wg sync.WaitGroup
+    for range 5 {
+        wg.Go(func(){ trainer(100) })
+    }
+
+    // quit, cancel := context.WithCancel(context.Background())
+
+    done := make(chan struct{})
+
+    go func(){
+        defer close(done)
+        for result := range results {
+            if result {
+                goodCount += 1
+            } else {
+                badCount += 1
+            }
+            log.Printf("Good count: %v, bad count: %v percent good = %.2f", goodCount, badCount, float64(goodCount)/float64(goodCount+badCount))
+        }
+    }()
+
+    wg.Wait()
+    close(results)
+
+    <-done
+
+    log.Printf("Good count: %v, bad count: %v percent good = %.2f", goodCount, badCount, float64(goodCount)/float64(goodCount+badCount))
 }
 
 func learn1() {
@@ -202,5 +271,6 @@ func learn1() {
 }
 
 func main() {
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
     learnN()
 }
