@@ -15,7 +15,7 @@ func MSE(output, expected float64) float64 {
     return v * v
 }
 
-func train(net *neural.Network, input, expected []float64) {
+func train(net *neural.Network, input, expected []float64, learningRate float64) {
     outputs := net.FeedForward(input)
     // log.Printf("Outputs: %v", outputs)
 
@@ -31,7 +31,7 @@ func train(net *neural.Network, input, expected []float64) {
     // log.Printf("Costs: %v", costs)
     // log.Printf("Total error: %v", totalError)
 
-    net.BackPropagate(costs, input, 0.1)
+    net.BackPropagate(costs, input, learningRate)
 }
 
 func learn2() {
@@ -47,11 +47,11 @@ func learn2() {
     minimumLoss := 1e-6
     for epoch := range 10000 {
         if rand.N(2) == 0 {
-            train(net, input2, expected2)
-            train(net, input1, expected1)
+            train(net, input2, expected2, 0.01)
+            train(net, input1, expected1, 0.01)
         } else {
-            train(net, input1, expected1)
-            train(net, input2, expected2)
+            train(net, input1, expected1, 0.01)
+            train(net, input2, expected2, 0.01)
         }
 
         log.Printf("Epoch %v", epoch)
@@ -87,13 +87,18 @@ func learn2() {
 
 }
 
-func learn(net *neural.Network, inputs [][]float64, expected [][]float64) int {
+func learn(net *neural.Network, inputs [][]float64, expected [][]float64, debug bool) int {
     previousLoss := 0.0
     minimumLoss := 1e-6
     maxEpochs := 50000
+
+    learningRate := 0.01
+
+    currentLoss := float64(-1)
+
     for epoch := range maxEpochs {
         for i := range rand.Perm(len(inputs)) {
-            train(net, inputs[i], expected[i])
+            train(net, inputs[i], expected[i], learningRate)
         }
 
         // log.Printf("Epoch %v", epoch)
@@ -115,7 +120,18 @@ func learn(net *neural.Network, inputs [][]float64, expected [][]float64) int {
             totalLoss += net.ComputeLoss(inputs[i], expected[i])
         }
 
-        if totalLoss < minimumLoss {
+        if currentLoss < 0 || totalLoss < currentLoss / 5 {
+            currentLoss = totalLoss
+            learningRate /= 2
+        }
+
+        averageLoss := totalLoss / float64(len(inputs))
+
+        if debug {
+            log.Printf("Epoch %v, learning rate: %v, total loss: %v average loss: %v loss@0: %v", epoch, learningRate, totalLoss, averageLoss, net.ComputeLoss(inputs[0], expected[0]))
+        }
+
+        if averageLoss < minimumLoss {
             return epoch
         }
 
@@ -129,8 +145,18 @@ func learn(net *neural.Network, inputs [][]float64, expected [][]float64) int {
     return maxEpochs
 }
 
+func makeRandomFloatArray(size int) []float64 {
+    arr := make([]float64, size)
+    for i := range arr {
+        // arr[i] = rand.Float64() * 2 -1 
+        arr[i] = rand.Float64()
+    }
+    return arr
+}
+
 func learnN() {
 
+    /*
     inputs := [][]float64{
         {0.3, 0.8, 0.1, 0.2, 0.18},
         {0.1, 0.3, 0.18, 0.57, 0.93},
@@ -144,6 +170,17 @@ func learnN() {
         {0.39, 0.61},
         {0.08, 0.72},
     }
+    */
+
+    samples := 500
+
+    inputs := make([][]float64, samples)
+    outputs := make([][]float64, samples)
+    
+    for i := range inputs {
+        inputs[i] = makeRandomFloatArray(5)
+        outputs[i] = makeRandomFloatArray(2)
+    }
 
     goodCount := 0
     badCount := 0
@@ -152,8 +189,8 @@ func learnN() {
 
     trainer := func(runs int) {
         for range runs {
-            net := neural.MakeNetwork(5, 4, []int{30, 20}, 2)
-            learn(net, inputs, outputs)
+            net := neural.MakeNetwork(len(inputs[0]), 100, []int{40, 20}, len(outputs[0]))
+            learn(net, inputs, outputs, false)
 
             // log.Printf("Learned in %v epochs", epochs)
 
@@ -270,7 +307,36 @@ func learn1() {
     }
 }
 
+func learnDebug() {
+    samples := 500
+
+    inputs := make([][]float64, samples)
+    outputs := make([][]float64, samples)
+
+    for i := range inputs {
+        inputs[i] = makeRandomFloatArray(5)
+        outputs[i] = makeRandomFloatArray(2)
+    }
+
+    net := neural.MakeNetwork(len(inputs[0]), 150, []int{80, 40}, len(outputs[0]))
+    epochs := learn(net, inputs, outputs, true)
+
+    log.Printf("Learned in %v epochs", epochs)
+
+    good := true
+    for i := range inputs {
+        // output := net.FeedForward(inputs[i])
+        loss := net.ComputeLoss(inputs[i], outputs[i])
+        // log.Printf("Loss for input %v: %v", i, loss)
+        // log.Printf("Inputs: %v, expected: %v, got: %v loss: %v", inputs[i], outputs[i], output, loss)
+        good = good && loss < 1e-5
+    }
+
+    log.Printf("Learned successfully: %v", good)
+}
+
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
-    learnN()
+    // learnN()
+    learnDebug()
 }
