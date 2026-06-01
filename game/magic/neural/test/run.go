@@ -5,6 +5,7 @@ import (
     "math"
     "math/rand/v2"
     "sync"
+    "slices"
     // "context"
 
     "github.com/kazzmir/master-of-magic/game/magic/neural"
@@ -87,15 +88,24 @@ func learn2() {
 
 }
 
+func average(arr []float64) float64 {
+    total := 0.0
+    for i := range arr {
+        total += arr[i]
+    }
+    return total / float64(len(arr))
+}
+
 func learn(net *neural.Network, inputs [][]float64, expected [][]float64, debug bool) int {
     previousLoss := 0.0
     minimumLoss := 1e-6
     maxEpochs := 50000
 
-    learningRate := 0.01
+    learningRate := 0.2
 
     currentLoss := float64(-1)
 
+    losses := make([]float64, len(inputs))
     for epoch := range maxEpochs {
         for i := range rand.Perm(len(inputs)) {
             train(net, inputs[i], expected[i], learningRate)
@@ -114,21 +124,33 @@ func learn(net *neural.Network, inputs [][]float64, expected [][]float64, debug 
         */
 
         totalLoss := 0.0
+        minLoss := math.Inf(1)
+        maxLoss := 0.0
         for i := range inputs {
             // outputs := net.FeedForward(inputs[i])
             // log.Printf("Outputs for input %v: %v", i, outputs)
-            totalLoss += net.ComputeLoss(inputs[i], expected[i])
+            loss := net.ComputeLoss(inputs[i], expected[i])
+            totalLoss += loss
+
+            minLoss = math.Min(minLoss, loss)
+            maxLoss = math.Max(maxLoss, loss)
+            losses[i] = loss
         }
 
-        if currentLoss < 0 || totalLoss < currentLoss / 5 {
-            currentLoss = totalLoss
-            learningRate /= 2
-        }
+        slices.Sort(losses)
+        p50 := average(losses[0:len(losses)/2])
+        p90 := average(losses[0:len(losses)*9/10])
+        p95 := average(losses[0:len(losses)*95/100])
 
         averageLoss := totalLoss / float64(len(inputs))
 
+        if currentLoss < 0 || averageLoss < currentLoss / 2 {
+            currentLoss = averageLoss
+            learningRate /= 2
+        }
+
         if debug {
-            log.Printf("Epoch %v, learning rate: %v, total loss: %v average loss: %v loss@0: %v", epoch, learningRate, totalLoss, averageLoss, net.ComputeLoss(inputs[0], expected[0]))
+            log.Printf("Epoch %v, learning: %v, total: %.3f average: %v min: %.6f max: %.6f loss@0: %v p50: %.6f p90: %.6f p95: %.6f", epoch, learningRate, totalLoss, averageLoss, minLoss, maxLoss, net.ComputeLoss(inputs[0], expected[0]), p50, p90, p95)
         }
 
         if averageLoss < minimumLoss {
@@ -308,7 +330,7 @@ func learn1() {
 }
 
 func learnDebug() {
-    samples := 500
+    samples := 1000
 
     inputs := make([][]float64, samples)
     outputs := make([][]float64, samples)
@@ -318,7 +340,7 @@ func learnDebug() {
         outputs[i] = makeRandomFloatArray(2)
     }
 
-    net := neural.MakeNetwork(len(inputs[0]), 150, []int{80, 40}, len(outputs[0]))
+    net := neural.MakeNetwork(len(inputs[0]), 60, []int{40, 30, 20}, len(outputs[0]))
     epochs := learn(net, inputs, outputs, true)
 
     log.Printf("Learned in %v epochs", epochs)
