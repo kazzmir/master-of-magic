@@ -1,6 +1,9 @@
 package ai
 
 import (
+    // "math"
+    "iter"
+
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
@@ -23,6 +26,76 @@ var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
 
 func MakeEnemyNetAI() *EnemyNetAI {
     return &EnemyNetAI{}
+}
+
+func countArcanusCities(player *playerlib.Player) int {
+    count := 0
+    for _, city := range player.Cities {
+        if city.Plane == data.PlaneArcanus {
+            count += 1
+        }
+    }
+
+    return count
+}
+
+func countMyrrorCities(player *playerlib.Player) int {
+    count := 0
+    for _, city := range player.Cities {
+        if city.Plane == data.PlaneMyrror {
+            count += 1
+        }
+    }
+
+    return count
+}
+
+func countUnits(units iter.Seq[units.StackUnit], plane data.Plane) int {
+    count := 0
+    for unit := range units {
+        if unit.GetPlane() == plane {
+            count += 1
+        }
+    }
+
+    return count
+}
+
+func countArcanusUnits(units iter.Seq[units.StackUnit]) int {
+    return countUnits(units, data.PlaneArcanus)
+}
+
+func countMyrrorUnits(units iter.Seq[units.StackUnit]) int {
+    return countUnits(units, data.PlaneMyrror)
+}
+
+func featureExtraction(player *playerlib.Player, services playerlib.AIServices) []float64 {
+    var features []float64
+
+    // each feature should be a normalized value in the range [0, 1] representing some aspect of the game state relevant to decision making
+
+    features = append(features, min(1, float64(services.GetTurnNumber()) / 1000))
+    features = append(features, min(1, float64(player.Gold) / 20000))
+    features = append(features, min(1, float64(player.Mana) / 20000))
+    features = append(features, min(1, float64(countArcanusCities(player)) / 30))
+    features = append(features, min(1, float64(countMyrrorCities(player)) / 30))
+    features = append(features, min(1, float64(len(player.AliveHeroes())) / 6))
+    features = append(features, min(1, float64(countArcanusUnits(player.Units()) / 100)))
+    features = append(features, min(1, float64(countMyrrorUnits(player.Units()) / 100)))
+
+    if player.ResearchingSpell.Valid() {
+        features = append(features, min(1, float64(player.ResearchProgress) / float64(player.ResearchingSpell.ResearchCost)))
+    } else {
+        features = append(features, 0)
+    }
+    if player.CastingSpell.Valid() {
+        spellCost := player.ComputeEffectiveSpellCost(player.CastingSpell, true)
+        features = append(features, min(1, float64(player.CastingSpellProgress) / float64(spellCost)))
+    } else {
+        features = append(features, 0)
+    }
+
+    return features
 }
 
 func (ai *EnemyNetAI) Update(player *playerlib.Player, services playerlib.AIServices) []playerlib.AIDecision {
