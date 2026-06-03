@@ -3893,8 +3893,8 @@ func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.Un
     handlers.Game.showMovement(handlers.Yield, x, y, stack, center)
 }
 
-func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) {
-    handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
+func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
+    return handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
@@ -4010,6 +4010,26 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
+                case *playerlib.AIBuildRoadDecision:
+                    build := decision.(*playerlib.AIBuildRoadDecision)
+                    roadStack := build.Stack
+                    path := game.FindRoadPath(roadStack.X(), roadStack.Y(), build.X, build.Y, player, roadStack, player.GetFog(roadStack.Plane()))
+                    if len(path) > 0 {
+                        for _, unit := range roadStack.Units() {
+                            if unit.HasAbility(data.AbilityConstruction) {
+                                unit.SetBuildRoadPath(path)
+                            }
+                        }
+                        game.MaybeBuildRoads(roadStack, player)
+                    }
+                case *playerlib.AIMeldNodeDecision:
+                    meld := decision.(*playerlib.AIMeldNodeDecision)
+                    game.tryMeldNode(meld.Stack, player)
+                case *playerlib.AIPlaneShiftDecision:
+                    shift := decision.(*playerlib.AIPlaneShiftDecision)
+                    if err := game.PlaneShift(shift.Stack, player); err == nil {
+                        shift.Stack.CurrentPath = nil
+                    }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
                     log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
@@ -4027,6 +4047,12 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if player.CastingSpell.Invalid() {
                         player.CastingSpell = cast.Spell
                     }
+                case *playerlib.AICastUnitSpellDecision:
+                    cast := decision.(*playerlib.AICastUnitSpellDecision)
+                    if player.CastingSpell.Invalid() {
+                        player.CastingSpell = cast.Spell
+                        player.CastingSpellTarget = cast.Target
+                    }
             }
         }
 
@@ -4037,6 +4063,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
                 stack.CurrentPath = game.Model.doAiMoveUnit(moveHandlers, player, stack)
             }
+        }
+
+        // continue any in-progress road building and attempt to meld any node
+        // a stack is now standing on (engineers/melders may have just arrived).
+        for _, stack := range slices.Clone(player.Stacks) {
+            for _, unit := range stack.Units() {
+                if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
+                    game.MaybeBuildRoads(stack, player)
+                    break
+                }
+            }
+        }
+        for _, stack := range slices.Clone(player.Stacks) {
+            game.tryMeldNode(stack, player)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
@@ -5554,6 +5594,30 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
 func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode){
     node.Meld(player, unit.GetRawUnit())
     player.RemoveUnit(unit)
+}
+
+// tryMeldNode melds the magic node the given stack is standing on, if the stack
+// contains a unit able to meld (a magic spirit) and the node is unowned by this
+// player and not warped. Returns true if a meld happened.
+func (game *Game) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
+    useMap := game.GetMap(stack.Plane())
+    if useMap == nil {
+        return false
+    }
+    if useMap.GetEncounter(stack.X(), stack.Y()) != nil {
+        return false
+    }
+    node := useMap.GetMagicNode(stack.X(), stack.Y())
+    if node == nil || node.Warped || node.MeldingWizard == player {
+        return false
+    }
+    for _, unit := range stack.Units() {
+        if unit.HasAbility(data.AbilityMeld) {
+            game.DoMeld(unit, player, node)
+            return true
+        }
+    }
+    return false
 }
 
 func (game *Game) DoBuildAction(player *playerlib.Player){
