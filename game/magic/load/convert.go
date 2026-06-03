@@ -630,7 +630,9 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
     var aiBehavior playerlib.AIBehavior
     if !human {
-        aiBehavior = ai.MakeEnemyAI()
+        // use the active wizard AI (same as a freshly-started game) rather than
+        // the legacy EnemyAI, so imported original saves play with the real AI
+        aiBehavior = ai.MakeEnemy2AI()
     }
 
     enchantmentMap := map[int]data.Enchantment{

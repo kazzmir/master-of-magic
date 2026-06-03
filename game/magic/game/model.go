@@ -221,8 +221,11 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         tileTo := useMap.GetTile(newX, newY)
         tileFrom := useMap.GetTile(oldX, oldY)
 
-        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
-        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
+        // if this stack contains a water-bound unit (a ship) that cannot walk on
+        // land then the move onto land is impossible. Check ALL units, not just
+        // the active ones: an inactive ship sharing the stack must not be dragged
+        // ashore when the active land units move.
+        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(false) {
             return nil, false
         }
 
@@ -495,9 +498,11 @@ func (model *GameModel) ComputeTerrainCost(stack playerlib.PathStack, sourceX in
         return false
     }
 
-    // sailing units cannot move onto land
+    // sailing units cannot move onto land. Check ALL units (not just active
+    // ones) so an inactive ship in the stack is never dragged ashore when the
+    // active land units walk onto land.
     if tileTo.Tile.IsLand() {
-        if !stack.CanMoveOnLand(true) {
+        if !stack.CanMoveOnLand(false) {
             return fraction.Zero(), false
         }
     }
@@ -1744,7 +1749,7 @@ func (model *GameModel) FindStacksOnContinent(x int, y int, plane data.Plane, pl
 
 type MovementHandler interface {
     ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool)
-    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int)
+    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState
     DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
     DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
 }
@@ -1812,7 +1817,15 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
 
         if encounter != nil {
             // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
-            handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+            state := handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+
+            // if we fled the encounter, step back off its tile instead of
+            // lingering on top of the (still-guarded) lair / node / tower
+            if state == combat.CombatStateAttackerFlee {
+                stack.SetX(oldX)
+                stack.SetY(oldY)
+            }
+
             return nil
         }
 
