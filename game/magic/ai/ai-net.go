@@ -3,6 +3,7 @@ package ai
 import (
     // "math"
     "iter"
+    "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -19,8 +20,38 @@ import (
 //  layer 1: a neural network that takes in a state extraction vector of inputs and outputs a vector of strategy probabilities
 //  layer 2: an 'operational manager' that acceps the strategy probabilities and selects specific actions to do
 // the neural network uses reinforcement learning by using a set of reward signals as the loss/cost function to optimize the network weights
+
+// values that are updated since the last turn, used for reward calculation
+type PlayerStats struct {
+    // banished when the city containing the wizards tower is defeated
+    EnemiesBanished int
+    // defeated when all cities owned by the wizard are defeated
+    EnemiesDefeated int
+    UnitsLost int
+    // normal units
+    UnitsCreated int
+    // fantastic units via spells
+    UnitsSummoned int
+    CitiesRazed int
+    CitiesCaptured int
+    CitiesLost int
+    MagicNodesGained int
+    MagicNodesLost int
+    GoldDelta int
+    ManaDelta int
+    TerritoryExplored int
+    SpellsLearned int
+    HeroesGained int
+    HeroesLost int
+    ArmyStrengthDelta int
+    RoadsBuilt int
+    EnemiesDiscovered int
+    // value of 0 to 1
+    SpellOfMasteryProgress float64
+}
  
 type EnemyNetAI struct {
+    Stats PlayerStats
 }
 
 var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
@@ -221,9 +252,45 @@ func (ai *EnemyNetAI) Update(player *playerlib.Player, services playerlib.AIServ
 }
 
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
+    // compute rewards
+    // rewards are any event that can be quantified, like how many enemy units were killed, how much gold was gained, how many cities were captured, etc
+
+    var reward float64 = 0
+
+    reward += float64(ai.Stats.EnemiesBanished) * 1000
+
+    /*
+    // defeated when all cities owned by the wizard are defeated
+    EnemiesDefeated int
+    UnitsLost int
+    // normal units
+    UnitsCreated int
+    // fantastic units via spells
+    UnitsSummoned int
+    CitiesRazed int
+    CitiesCaptured int
+    CitiesLost int
+    MagicNodesGained int
+    MagicNodesLost int
+    GoldDelta int
+    ManaDelta int
+    TerritoryExplored int
+    SpellsLearned int
+    HeroesGained int
+    HeroesLost int
+    ArmyStrengthDelta int
+    RoadsBuilt int
+    EnemiesDiscovered int
+    // value of 0 to 1
+    SpellOfMasteryProgress float64
+    */
+
+    log.Printf("Reward: %f", reward)
 }
 
 func (ai *EnemyNetAI) NewTurn(player *playerlib.Player) {
+    // reset stats
+    ai.Stats = PlayerStats{}
 }
 
 func (ai *EnemyNetAI) ProducedUnit(city *citylib.City, player *playerlib.Player) {
