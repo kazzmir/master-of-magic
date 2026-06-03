@@ -2983,7 +2983,9 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
             army := combat.Model.GetArmyForTeam(vortex.Team)
 
             // FIXME: consider letting AI direct the magic vortex towards an enemy
-            if !army.Auto {
+            // only prompt for manual movement if this army is human-controlled; AI
+            // (including watch mode, where the player's army is AI) moves randomly.
+            if !army.IsAI() {
                 x, y := combat.GetMagicVortexMoveTile(yield, vortex)
                 combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
             }
