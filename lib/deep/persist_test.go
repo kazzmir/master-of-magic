@@ -1,20 +1,18 @@
 package deep
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_RestoreFromDump(t *testing.T) {
-	rand.Seed(0)
-
 	n := NewNeural(&Config{
 		Inputs:     1,
 		Layout:     []int{5, 3, 1},
 		Activation: ActivationSigmoid,
-		Weight:     NewUniform(0.5, 0),
+		Weight:     NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 
@@ -31,13 +29,11 @@ func Test_RestoreFromDump(t *testing.T) {
 }
 
 func Test_Marshal(t *testing.T) {
-	rand.Seed(0)
-
 	n := NewNeural(&Config{
 		Inputs:     1,
 		Layout:     []int{3, 3, 1},
 		Activation: ActivationSigmoid,
-		Weight:     NewUniform(0.5, 0),
+		Weight:     NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 

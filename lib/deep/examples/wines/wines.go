@@ -5,19 +5,14 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/patrikeh/go-deep"
-	"github.com/patrikeh/go-deep/training"
+	"github.com/kazzmir/master-of-magic/lib/deep/training"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 func main() {
-
-	rand.Seed(time.Now().UnixNano())
-
 	data, err := load("./wine.data")
 	if err != nil {
 		panic(err)
@@ -35,7 +30,7 @@ func main() {
 		Layout:     []int{8, 3},
 		Activation: deep.ActivationTanh,
 		Mode:       deep.ModeMultiClass,
-		Weight:     deep.NewNormal(1, 0),
+		Weight:     deep.NewNormal(1, 0, nil),
 		Bias:       true,
 	})
 

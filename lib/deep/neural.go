@@ -36,7 +36,7 @@ type Config struct {
 func NewNeural(c *Config) *Neural {
 
 	if c.Weight == nil {
-		c.Weight = NewUniform(0.5, 0)
+		c.Weight = NewUniform(0.5, 0, nil)
 	}
 	if c.Activation == ActivationNone {
 		c.Activation = ActivationSigmoid

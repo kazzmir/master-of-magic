@@ -1,7 +1,6 @@
 package training
 
 import (
-	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -28,8 +27,6 @@ func Test_SplitN(t *testing.T) {
 }
 
 func Test_Split(t *testing.T) {
-	rand.Seed(0)
-
 	e := make(Examples, 100)
 
 	a, b := e.Split(0.5)

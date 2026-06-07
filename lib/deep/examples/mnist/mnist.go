@@ -5,14 +5,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math/rand"
 	"os"
 	"strconv"
-	"time"
 
-	"github.com/patrikeh/go-deep/training"
-
-	deep "github.com/patrikeh/go-deep"
+	"github.com/kazzmir/master-of-magic/lib/deep/training"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 /*
@@ -22,8 +19,6 @@ import (
 	https://pjreddie.com/projects/mnist-in-csv/
 */
 func main() {
-	rand.Seed(time.Now().UnixNano())
-
 	train, err := load("./mnist_train.data")
 	if err != nil {
 		panic(err)
@@ -51,7 +46,7 @@ func main() {
 		Layout:     []int{50, 10},
 		Activation: deep.ActivationReLU,
 		Mode:       deep.ModeMultiClass,
-		Weight:     deep.NewNormal(0.6, 0.1), // slight positive bias helps ReLU
+		Weight:     deep.NewNormal(0.6, 0.1, nil), // slight positive bias helps ReLU
 		Bias:       true,
 	})
 

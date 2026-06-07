@@ -6,7 +6,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	deep "github.com/patrikeh/go-deep"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 // StatsPrinter prints training progress

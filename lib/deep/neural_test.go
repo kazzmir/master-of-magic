@@ -12,7 +12,7 @@ func Test_Init(t *testing.T) {
 		Layout:     []int{4, 4, 2},
 		Activation: ActivationTanh,
 		Mode:       ModeBinary,
-		Weight:     NewUniform(0.5, 0),
+		Weight:     NewUniform(0.5, 0, nil),
 		Bias:       true,
 	})
 
@@ -28,7 +28,7 @@ func Test_Forward(t *testing.T) {
 		Layout:     []int{3, 3, 3},
 		Activation: ActivationReLU,
 		Mode:       ModeMultiClass,
-		Weight:     NewNormal(1.0, 0),
+		Weight:     NewNormal(1.0, 0, nil),
 		Bias:       true,
 	})
 	weights := [][][]float64{

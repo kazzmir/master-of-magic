@@ -3,16 +3,14 @@ package training
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"testing"
 
-	deep "github.com/patrikeh/go-deep"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test_BoundedRegression(t *testing.T) {
-	rand.Seed(0)
-
 	funcs := []func(float64) float64{
 		math.Sin,
 		func(x float64) float64 { return math.Pow(x, 2) },
@@ -30,7 +28,7 @@ func Test_BoundedRegression(t *testing.T) {
 			Layout:     []int{4, 4, 1},
 			Activation: deep.ActivationTanh,
 			Mode:       deep.ModeRegression,
-			Weight:     deep.NewUniform(0.5, 0),
+			Weight:     deep.NewUniform(0.5, 0, nil),
 			Bias:       true,
 		})
 
@@ -45,7 +43,6 @@ func Test_BoundedRegression(t *testing.T) {
 }
 
 func Test_RegressionLinearOuts(t *testing.T) {
-	rand.Seed(0)
 	squares := Examples{}
 	for i := 0.0; i < 100.0; i++ {
 		squares = append(squares, Example{Input: []float64{i}, Response: []float64{math.Sqrt(i)}})
@@ -56,7 +53,7 @@ func Test_RegressionLinearOuts(t *testing.T) {
 		Layout:     []int{3, 3, 1},
 		Activation: deep.ActivationReLU,
 		Mode:       deep.ModeRegression,
-		Weight:     deep.NewNormal(0.5, 0.5),
+		Weight:     deep.NewNormal(0.5, 0.5, nil),
 		Bias:       true,
 	})
 
@@ -64,14 +61,12 @@ func Test_RegressionLinearOuts(t *testing.T) {
 	trainer.Train(n, squares, nil, 25000)
 
 	for i := 0; i < 100; i++ {
-		x := float64(rand.Intn(99) + 1)
+		x := float64(rand.N(99) + 1)
 		assert.InEpsilon(t, math.Sqrt(x)+1, n.Predict([]float64{x})[0]+1, 0.1)
 	}
 }
 
 func Test_Training(t *testing.T) {
-	rand.Seed(0)
-
 	data := Examples{
 		Example{[]float64{0}, []float64{0}},
 		Example{[]float64{0}, []float64{0}},
@@ -84,7 +79,7 @@ func Test_Training(t *testing.T) {
 		Inputs:     1,
 		Layout:     []int{5, 1},
 		Activation: deep.ActivationSigmoid,
-		Weight:     deep.NewUniform(0.5, 0),
+		Weight:     deep.NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 
@@ -111,13 +106,11 @@ var data = []Example{
 }
 
 func Test_Prediction(t *testing.T) {
-	rand.Seed(0)
-
 	n := deep.NewNeural(&deep.Config{
 		Inputs:     2,
 		Layout:     []int{2, 2, 1},
 		Activation: deep.ActivationSigmoid,
-		Weight:     deep.NewUniform(0.5, 0),
+		Weight:     deep.NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 	trainer := NewTrainer(NewSGD(0.5, 0.1, 0, false), 0)
@@ -135,7 +128,7 @@ func Test_CrossVal(t *testing.T) {
 		Layout:     []int{1, 1},
 		Activation: deep.ActivationTanh,
 		Loss:       deep.LossMeanSquared,
-		Weight:     deep.NewUniform(0.5, 0),
+		Weight:     deep.NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 
@@ -168,7 +161,7 @@ func Test_MultiClass(t *testing.T) {
 		Activation: deep.ActivationReLU,
 		Mode:       deep.ModeMultiClass,
 		Loss:       deep.LossMeanSquared,
-		Weight:     deep.NewUniform(0.1, 0),
+		Weight:     deep.NewUniform(0.1, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 
@@ -189,13 +182,12 @@ func Test_MultiClass(t *testing.T) {
 }
 
 func Test_or(t *testing.T) {
-	rand.Seed(0)
 	n := deep.NewNeural(&deep.Config{
 		Inputs:     2,
 		Layout:     []int{1, 1},
 		Activation: deep.ActivationTanh,
 		Mode:       deep.ModeBinary,
-		Weight:     deep.NewUniform(0.5, 0),
+		Weight:     deep.NewUniform(0.5, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 	permutations := Examples{
@@ -215,13 +207,12 @@ func Test_or(t *testing.T) {
 }
 
 func Test_xor(t *testing.T) {
-	rand.Seed(0)
 	n := deep.NewNeural(&deep.Config{
 		Inputs:     2,
 		Layout:     []int{3, 1}, // Sufficient for modeling (AND+OR) - with 5-6 neuron always converges
 		Activation: deep.ActivationSigmoid,
 		Mode:       deep.ModeBinary,
-		Weight:     deep.NewUniform(.25, 0),
+		Weight:     deep.NewUniform(.25, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 	permutations := Examples{
@@ -232,7 +223,7 @@ func Test_xor(t *testing.T) {
 	}
 
 	trainer := NewTrainer(NewSGD(1.0, 0.1, 1e-6, false), 50)
-	trainer.Train(n, permutations, permutations, 500)
+	trainer.Train(n, permutations, permutations, 1000)
 
 	for _, perm := range permutations {
 		assert.InEpsilon(t, n.Predict(perm.Input)[0]+1, perm.Response[0]+1, 0.2)

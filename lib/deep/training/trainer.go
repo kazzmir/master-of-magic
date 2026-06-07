@@ -3,7 +3,7 @@ package training
 import (
 	"time"
 
-	deep "github.com/patrikeh/go-deep"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 // Trainer is a neural network trainer

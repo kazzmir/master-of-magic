@@ -1,21 +1,20 @@
 package training
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"runtime"
 	"testing"
 
-	deep "github.com/patrikeh/go-deep"
+	"github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 func Benchmark_xor(b *testing.B) {
-	rand.Seed(0)
 	n := deep.NewNeural(&deep.Config{
 		Inputs:     2,
 		Layout:     []int{32, 32, 1},
 		Activation: deep.ActivationSigmoid,
 		Mode:       deep.ModeBinary,
-		Weight:     deep.NewUniform(.25, 0),
+		Weight:     deep.NewUniform(.25, 0, rand.New(rand.NewPCG(0, 0))),
 		Bias:       true,
 	})
 	exs := Examples{
