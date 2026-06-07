@@ -22,8 +22,8 @@ func (e Examples) Shuffle() {
 // Split assigns each element to two new slices
 // according to probability p
 func (e Examples) Split(p float64) (first, second Examples) {
-	for i := 0; i < len(e); i++ {
-		if p > rand.Float64() {
+	for i := range e {
+		if p >= rand.Float64() {
 			first = append(first, e[i])
 		} else {
 			second = append(second, e[i])

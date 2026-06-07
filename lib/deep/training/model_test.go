@@ -1,3 +1,4 @@
+//go:build ml
 package training
 
 import (
@@ -27,10 +28,10 @@ func Test_SplitN(t *testing.T) {
 }
 
 func Test_Split(t *testing.T) {
-	e := make(Examples, 100)
+	e := make(Examples, 1000)
 
 	a, b := e.Split(0.5)
 
-	assert.InEpsilon(t, len(a), 50, 0.1)
-	assert.InEpsilon(t, len(b), 50, 0.1)
+	assert.InEpsilon(t, len(a), 500, 0.1)
+	assert.InEpsilon(t, len(b), 500, 0.1)
 }

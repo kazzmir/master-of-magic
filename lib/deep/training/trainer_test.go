@@ -1,3 +1,4 @@
+//go:build ml
 package training
 
 import (
