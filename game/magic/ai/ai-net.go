@@ -14,6 +14,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/lib/deep"
 )
 
 // this AI uses two layers:
@@ -49,15 +50,35 @@ type PlayerStats struct {
     // value of 0 to 1
     SpellOfMasteryProgress float64
 }
+
+type StrategyProbabilities struct {
+    Aggressive float64
+}
+
+func (probabilities StrategyProbabilities) Count() int {
+    return 1
+}
  
 type EnemyNetAI struct {
     Stats PlayerStats
+    NeuralNet *deep.Neural
 }
 
 var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
 
 func MakeEnemyNetAI() *EnemyNetAI {
-    return &EnemyNetAI{}
+    net := deep.NewNeural(&deep.Config{
+        Inputs: len(makeFeatureVector(nil, nil)),
+        Layout: []int{64, StrategyProbabilities{}.Count()},
+        Activation: deep.ActivationSigmoid,
+        Mode: deep.ModeMultiLabel,
+        Weight: deep.NewUniform(0.5, 0, nil),
+        Bias: true,
+    })
+
+    return &EnemyNetAI{
+        NeuralNet: net,
+    }
 }
 
 func countArcanusCities(player *playerlib.Player) int {
@@ -156,61 +177,107 @@ func countMagicNodes(player *playerlib.Player, services playerlib.AIServices, pl
     return len(map_.GetMeldedNodes(player))
 }
 
-func featureExtraction(player *playerlib.Player, services playerlib.AIServices) []float64 {
-    // each feature should be a normalized value in the range [0, 1] representing some aspect of the game state relevant to decision making
+type FeatureFunction func() float64
 
-    features := []float64{
-        float64(services.GetTurnNumber()) / 2000,
-        float64(player.Gold) / 50000,
-        float64(player.Mana) / 20000,
-        float64(countArcanusCities(player)) / 30,
-        float64(countMyrrorCities(player)) / 30,
-        float64(len(player.AliveHeroes())) / 6,
-        float64(countSettlers(player.Units()) / 100),
-        float64(countArcanusUnits(player.Units()) / 100),
-        float64(countMyrrorUnits(player.Units()) / 100),
-        float64(totalPopulation(player)) / 1000,
-        float64(player.TotalUnitUpkeepGold()) / 1000,
-        float64(player.TotalUnitUpkeepMana()) / 1000,
-        float64(player.TotalUnitUpkeepFood()) / 1000,
-        float64(countExploredTiles(player, services, data.PlaneArcanus)) / 5000,
-        float64(countExploredTiles(player, services, data.PlaneMyrror)) / 5000,
-        float64(countVisibleEnemyUnits(player, services, data.PlaneArcanus)) / 100,
-        float64(countVisibleEnemyUnits(player, services, data.PlaneMyrror)) / 100,
-        float64(countMagicNodes(player, services, data.PlaneArcanus)) / 20,
-        float64(countMagicNodes(player, services, data.PlaneMyrror)) / 20,
-        (func() float64 {
+func makeFeatureVector(player *playerlib.Player, services playerlib.AIServices) []FeatureFunction {
+    return []FeatureFunction{
+        func () float64 {
+            return float64(services.GetTurnNumber()) / 2000
+        },
+        func () float64 {
+            return float64(player.Gold) / 50000
+        },
+        func () float64 {
+            return float64(player.Mana) / 20000
+        },
+        func () float64 {
+            return float64(countArcanusCities(player)) / 30
+        },
+        func () float64 {
+            return float64(countMyrrorCities(player)) / 30
+        },
+        func () float64 {
+            return float64(len(player.AliveHeroes())) / 6
+        },
+        func () float64 {
+            return float64(countSettlers(player.Units()) / 100)
+        },
+        func () float64 {
+            return float64(countArcanusUnits(player.Units()) / 100)
+        },
+        func () float64 {
+            return float64(countMyrrorUnits(player.Units()) / 100)
+        },
+        func () float64 {
+            return float64(totalPopulation(player)) / 1000
+        },
+        func () float64 {
+            return float64(player.TotalUnitUpkeepGold()) / 1000
+        },
+        func () float64 {
+            return float64(player.TotalUnitUpkeepMana()) / 1000
+        },
+        func () float64 {
+            return float64(player.TotalUnitUpkeepFood()) / 1000
+        },
+        func () float64 {
+            return float64(countExploredTiles(player, services, data.PlaneArcanus)) / 5000
+        },
+        func () float64 {
+            return float64(countExploredTiles(player, services, data.PlaneMyrror)) / 5000
+        },
+        func () float64 {
+            return float64(countVisibleEnemyUnits(player, services, data.PlaneArcanus)) / 100
+        },
+        func () float64 {
+            return float64(countVisibleEnemyUnits(player, services, data.PlaneMyrror)) / 100
+        },
+        func () float64 {
+            return float64(countMagicNodes(player, services, data.PlaneArcanus)) / 20
+        },
+        func () float64 {
+            return float64(countMagicNodes(player, services, data.PlaneMyrror)) / 20
+        },
+        func() float64 {
             if player.ResearchingSpell.Valid() {
                 return float64(player.ResearchProgress) / float64(player.ResearchingSpell.ResearchCost)
             } else {
                 return 0
             }
-        })(),
-        (func() float64 {
+        },
+        func() float64 {
             if player.CastingSpell.Valid() {
                 spellCost := player.ComputeEffectiveSpellCost(player.CastingSpell, true)
                 return float64(player.CastingSpellProgress) / float64(spellCost)
             } else {
                 return 0
             }
-        })(),
-        float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityCommon).Spells)) / 100.0,
-        float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityUncommon).Spells)) / 100.0,
-        float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityRare).Spells)) / 100.0,
-        float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityVeryRare).Spells)) / 100.0,
-        (func() float64 {
+        },
+        func () float64 {
+            return float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityCommon).Spells)) / 100.0
+        },
+        func () float64 {
+            return float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityUncommon).Spells)) / 100.0
+        },
+        func () float64 {
+            return float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityRare).Spells)) / 100.0
+        },
+        func () float64 {
+            return float64(len(player.KnownSpells.GetSpellsByRarity(spellbook.SpellRarityVeryRare).Spells)) / 100.0
+        },
+        func() float64 {
             if player.ResearchCandidateSpells.Contains(spellbook.SpellOfMastery) {
                 return 1
             }
             return 0
-        })(),
-        (func() float64 {
+        },
+        func() float64 {
             if player.CastingSpell.Valid() && player.CastingSpell.Name == spellbook.SpellOfMastery.Name {
                 return 1
             }
             return 0
-        })(),
-        (func() float64 {
+        },
+        func() float64 {
             knownPlayers := player.GetKnownPlayers()
             count := 0
             for _, known := range knownPlayers {
@@ -221,23 +288,41 @@ func featureExtraction(player *playerlib.Player, services playerlib.AIServices) 
 
             // max 3 opponents
             return float64(count) / 3.0
-        })(),
-        (func() float64 {
+        },
+        func() float64 {
             if player.Banished {
                 return 1
             }
             return 0
-        })(),
-        float64(player.Fame) / 1000,
-        player.TaxRate.ToFloat() / 5,
-        player.PowerDistribution.Mana,
-        player.PowerDistribution.Skill,
-        player.PowerDistribution.Research,
-        float64(player.CastingSkillPower) / 100000,
+        },
+        func () float64 {
+            return float64(player.Fame) / 1000
+        },
+        func () float64 {
+            return player.TaxRate.ToFloat() / 5
+        },
+        func () float64 {
+            return player.PowerDistribution.Mana
+        },
+        func () float64 {
+            return player.PowerDistribution.Skill
+        },
+        func () float64 {
+            return player.PowerDistribution.Research
+        },
+        func () float64 {
+            return float64(player.CastingSkillPower) / 100000
+        },
     }
+}
 
-    for i := range features {
-        features[i] = min(1, max(-1, features[i]))
+func featureExtraction(player *playerlib.Player, services playerlib.AIServices) []float64 {
+    // each feature should be a normalized value in the range [0, 1] representing some aspect of the game state relevant to decision making
+    functions := makeFeatureVector(player, services)
+    features := make([]float64, len(functions))
+
+    for i, f := range functions {
+        features[i] = min(1, max(-1, f()))
     }
 
     return features
