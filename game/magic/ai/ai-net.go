@@ -3,7 +3,9 @@ package ai
 import (
     // "math"
     "iter"
+    "cmp"
     "log"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -15,6 +17,7 @@ import (
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/lib/deep"
+    deep_train "github.com/kazzmir/master-of-magic/lib/deep/training"
 )
 
 // this AI uses two layers:
@@ -52,16 +55,30 @@ type PlayerStats struct {
 }
 
 type StrategyProbabilities struct {
-    Aggressive float64
+    AttackEnemies float64
+    AcquireMagicNode float64
+    BuildCities float64
+    DefendCities float64
+    IncreasePopulation float64
+    IncreaseMagic float64
 }
 
 func (probabilities StrategyProbabilities) Count() int {
-    return 1
+    return 6
+}
+
+type Step struct {
+    Turn uint64
+    Strategies []Probability
+    Reward float64
+    Return float64
 }
  
 type EnemyNetAI struct {
     Stats PlayerStats
     NeuralNet *deep.Neural
+
+    Steps []Step
 }
 
 var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
@@ -70,6 +87,8 @@ func MakeEnemyNetAI() *EnemyNetAI {
     net := deep.NewNeural(&deep.Config{
         Inputs: len(makeFeatureVector(nil, nil)),
         Layout: []int{64, StrategyProbabilities{}.Count()},
+        // final output layer is sigmoid, which is essentially a probability between 0 and 1 for each strategy,
+        // and we can select strategies based on those probabilities
         Activation: deep.ActivationSigmoid,
         Mode: deep.ModeMultiLabel,
         Weight: deep.NewUniform(0.5, 0, nil),
@@ -328,12 +347,91 @@ func featureExtraction(player *playerlib.Player, services playerlib.AIServices) 
     return features
 }
 
+type Probability struct {
+    Value float64
+    Index int
+}
+
+func pickTopN(probabilities []float64, n int) []Probability {
+    all := make([]Probability, 0, len(probabilities))
+
+    for i, p := range probabilities {
+        all = append(all, Probability{
+            Value: p,
+            Index: i,
+        })
+    }
+
+    all = slices.SortedFunc(slices.Values(all), func(a, b Probability) int {
+        return cmp.Compare(a.Value, b.Value)
+    })
+
+    if len(all) > n {
+        return all[len(all)-n:]
+    }
+
+    return all
+}
+
 func (ai *EnemyNetAI) Update(player *playerlib.Player, services playerlib.AIServices) []playerlib.AIDecision {
     // create feature vector from game state, feed it to neural network, get strategy probabilities
     // use strategy probabilities to select specific actions to take this turn
     // get reward signals, feed back into neural network for training
 
+    features := featureExtraction(player, services)
+    strategies := ai.NeuralNet.Predict(features)
+
+    top2 := pickTopN(strategies, 2)
+
+    ai.Steps = append(ai.Steps, Step{
+        Turn: services.GetTurnNumber(),
+        Strategies: top2,
+    })
+
     return nil
+}
+
+func (ai *EnemyNetAI) ApplyTraining() {
+    gamma := 0.991
+
+    g := 0.0
+
+    // go backwards in time to assign reward values to each step
+    // this allows big positive rewards in the future to propagate backward to earlier steps that led to that reward
+    for i := len(ai.Steps) - 1; i >= 0; i-- {
+        g = ai.Steps[i].Reward + gamma * g
+        ai.Steps[i].Return = g
+    }
+
+    baseline := 0.0
+    beta := 0.97
+
+    losses := make([]float64, StrategyProbabilities{}.Count())
+
+    solver := deep_train.NewAdam(0.002, 0.9, 0.999, 1e-8)
+    trainer := NewRewardTrainer(solver)
+    solver.Init(ai.NeuralNet.NumWeights())
+
+    for _, step := range ai.Steps {
+        baseline = beta * baseline + (1-beta) * float64(step.Return)
+        advantage := float64(step.Return) - baseline
+
+        // compute losses for each strategy, which either encourages or discourages the strategy based on whether the advantage is positive or negative,
+        // and whether the strategy was selected or not
+        for i := range losses {
+            base := 0
+            for _, strategy := range step.Strategies {
+                if strategy.Index == i {
+                    base = 1
+                }
+            }
+
+            losses[i] = -advantage * (float64(base) - step.Strategies[i].Value)
+        }
+
+        // back propagate the losses to update the neural network weights, using the turn number as the index for the training step
+        trainer.Train(ai.NeuralNet, losses, int(step.Turn))
+    }
 }
 
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
@@ -343,6 +441,8 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
     var reward float64 = 0
 
     reward += float64(ai.Stats.EnemiesBanished) * 1000
+
+    ai.Steps[len(ai.Steps)-1].Reward = reward
 
     /*
     // defeated when all cities owned by the wizard are defeated
