@@ -54,18 +54,17 @@ type PlayerStats struct {
     SpellOfMasteryProgress float64
 }
 
-type StrategyProbabilities struct {
-    AttackEnemies float64
-    AcquireMagicNode float64
-    BuildCities float64
-    DefendCities float64
-    IncreasePopulation float64
-    IncreaseMagic float64
-}
+type Strategy int
+const (
+    StrategyAttackEnemies Strategy = iota
+    StrategyAcquireMagicNode
+    StrategyBuildCities
+    StrategyDefendCities
+    StrategyIncreasePopulation
+    StrategyIncreaseMagic
 
-func (probabilities StrategyProbabilities) Count() int {
-    return 6
-}
+    StrategyCount
+)
 
 type Step struct {
     Turn uint64
@@ -86,7 +85,7 @@ var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
 func MakeEnemyNetAI() *EnemyNetAI {
     net := deep.NewNeural(&deep.Config{
         Inputs: len(makeFeatureVector(nil, nil)),
-        Layout: []int{64, StrategyProbabilities{}.Count()},
+        Layout: []int{64, int(StrategyCount)},
         // final output layer is sigmoid, which is essentially a probability between 0 and 1 for each strategy,
         // and we can select strategies based on those probabilities
         Activation: deep.ActivationSigmoid,
@@ -388,6 +387,23 @@ func (ai *EnemyNetAI) Update(player *playerlib.Player, services playerlib.AIServ
         Strategies: top2,
     })
 
+    return ai.OperationalManager(player, services, top2)
+}
+
+// the operational manager takes in the strategy probabilities and selects specific actions to do, which are returned as AIDecisions from the Update function
+func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services playerlib.AIServices, strategies []Probability) []playerlib.AIDecision {
+
+    for _, strategy := range strategies {
+        switch Strategy(strategy.Index) {
+            case StrategyAttackEnemies:
+            case StrategyAcquireMagicNode:
+            case StrategyBuildCities:
+            case StrategyDefendCities:
+            case StrategyIncreasePopulation:
+            case StrategyIncreaseMagic:
+        }
+    }
+
     return nil
 }
 
@@ -406,7 +422,7 @@ func (ai *EnemyNetAI) ApplyTraining() {
     baseline := 0.0
     beta := 0.97
 
-    losses := make([]float64, StrategyProbabilities{}.Count())
+    losses := make([]float64, int(StrategyCount))
 
     solver := deep_train.NewAdam(0.002, 0.9, 0.999, 1e-8)
     trainer := NewRewardTrainer(solver)
