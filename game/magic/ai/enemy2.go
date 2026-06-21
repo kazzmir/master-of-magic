@@ -156,14 +156,20 @@ type AIData struct {
     GoldPerTurn func() int
 }
 
-func rawUnitAttackPower(unit units.Unit) int {
-    meleePower := float32(unit.GetMeleeAttackPower())
-    rangedPower := float32(unit.GetRangedAttackPower())
-    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
-        rangedPower *= 1.5
+func rawUnitAttackPower(all... units.Unit) int {
+    total  := 0
+
+    for _, unit := range all {
+        meleePower := float32(unit.GetMeleeAttackPower())
+        rangedPower := float32(unit.GetRangedAttackPower())
+        if unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
+            rangedPower *= 1.5
+        }
+
+        total += int(max(meleePower, rangedPower)) * unit.GetCount()
     }
 
-    return int(max(meleePower, rangedPower)) * unit.GetCount()
+    return total
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {

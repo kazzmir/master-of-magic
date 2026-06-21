@@ -1353,6 +1353,19 @@ func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
 }
 
+func (mapObject *Map) GetAllMagicNodeLocations() []image.Point {
+    var points []image.Point
+
+    for point, extras := range mapObject.ExtraMap {
+        _, exists := extras[ExtraKindMagicNode]
+        if exists {
+            points = append(points, point)
+        }
+    }
+
+    return points
+}
+
 // return the node that contains x/y in its influence zone
 // this is a bit slow in that it checks the entire map
 func (mapObject* Map) GetMagicInfluence(x int, y int) *ExtraMagicNode {

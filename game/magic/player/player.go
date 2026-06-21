@@ -85,6 +85,10 @@ type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
+type AIMeldDecision struct {
+    Stack *UnitStack
+}
+
 // implemented by the Game object
 type AIServices interface {
     CityEnchantmentsProvider

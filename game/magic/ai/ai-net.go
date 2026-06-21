@@ -756,6 +756,93 @@ func (ai *EnemyNetAI) DoBuildCities(self *playerlib.Player, aiServices playerlib
 func (ai *EnemyNetAI) DoAcquireMagicNodes(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
     var decisions []playerlib.AIDecision
 
+    // send units towards magic nodes
+    // if a magic node is conquered/empty then summon a magic spirit or guardian spirit
+    // and meld with the node
+
+    arcanusNodes := functional.Memoize0(aiServices.GetMap(data.PlaneArcanus).GetAllMagicNodeLocations)
+    myrrorNodes := functional.Memoize0(aiServices.GetMap(data.PlaneMyrror).GetAllMagicNodeLocations)
+
+    for _, stack := range self.Stacks {
+        stackPower := stackAttackPower(stack)
+        stackMap := aiServices.GetMap(stack.Plane())
+
+        if stackMap.GetMagicNode(stack.X(), stack.Y()) != nil && stack.ActiveUnitsHasAbility(data.AbilityMeld) {
+            decisions = append(decisions, &playerlib.AIMeldDecision{
+                Stack: stack,
+            })
+            continue
+        }
+
+        // ignore stacks that have no power
+        if stackPower == 0 {
+            continue
+        }
+
+        if len(stack.CurrentPath) > 0 {
+            continue
+        }
+
+        var points []image.Point
+        switch stack.Plane() {
+            case data.PlaneArcanus:
+                points = arcanusNodes()
+            case data.PlaneMyrror:
+                points = myrrorNodes()
+        }
+
+        type NodePath struct {
+            Point image.Point
+            Path pathfinding.Path
+        }
+
+        var paths []NodePath
+
+        for _, point := range points {
+            node := stackMap.GetMagicNode(point.X, point.Y)
+            // ignore nodes that we already own
+            if node.MeldingWizard == self {
+                continue
+            }
+
+            if self.IsExplored(point.X, point.Y, stack.Plane()) {
+                path, ok := aiServices.FindPath(stack.X(), stack.Y(), point.X, point.Y, self, stack, self.GetFog(stack.Plane()))
+                if ok {
+                    paths = append(paths, NodePath{Point: point, Path: path})
+                }
+            }
+        }
+
+        if len(paths) > 0 {
+
+            slices.SortFunc(paths, func(a, b NodePath) int {
+                return cmp.Compare(len(a.Path), len(b.Path))
+            })
+
+            if stack.ActiveUnitsHasAbility(data.AbilityMeld) {
+                for _, nodePath := range paths {
+                    encounter := stackMap.GetEncounter(nodePath.Point.X, nodePath.Point.Y)
+
+                    // the node is free, so we can meld it with a spirit
+                    if encounter == nil {
+                        if stack.ActiveUnitsHasAbility(data.AbilityMeld) {
+                            // move towards node
+                            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                                Stack: stack,
+                                Path: nodePath.Path,
+                            })
+                        }
+                    } else if stackPower > rawUnitAttackPower(encounter.Units...) - rand.N(int(strength * 10)) {
+                        decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                            Stack: stack,
+                            Path: nodePath.Path,
+                        })
+                    }
+                }
+            }
+        }
+    }
+
     return decisions
 }
 
@@ -788,9 +875,15 @@ func (ai *EnemyNetAI) DoIncreasePopulation(self *playerlib.Player, aiServices pl
             continue
         }
 
-        buildable := city.GetBuildableBuildings()
+        // if city is already producing something population related then don't change it
+        // FIXME: if the city is producing housing then it might be worthwhile to switch
+        // to one of the population buildings
+        if producingPopulation(city) {
+            continue
+        }
 
-        if !producingPopulation(city) || (buildPercent(city) < strength) {
+        if buildPercent(city) < strength {
+            buildable := city.GetBuildableBuildings()
             for _, index := range rand.Perm(len(buildings)) {
                 check := buildings[index]
                 if check == buildinglib.BuildingHousing || buildable.Contains(check) {
