@@ -5,6 +5,7 @@ import (
     "iter"
     "cmp"
     "log"
+    "image"
     "slices"
     "math/rand/v2"
 
@@ -70,7 +71,9 @@ const (
     StrategyBuildCities
     StrategyDefendCities
     StrategyIncreasePopulation
-    StrategyIncreaseMagic
+    StrategyIncreasePower
+
+    // FIXME: add Explore
 
     StrategyCount
 )
@@ -620,6 +623,296 @@ func (ai *EnemyNetAI) DoBuildArmy(self *playerlib.Player, aiServices playerlib.A
     return decisions
 }
 
+func (ai *EnemyNetAI) DoBuildCities(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    // to achieve this goal the AI should move settlers towards settlable locations
+    // if a settler is at a settlable location, build an outpost
+    // if there are no settlers and there is enough food, produce more settlers
+
+    for _, stack := range self.Stacks {
+        if stack.HasMoves() && stack.ActiveUnitsHasAbility(data.AbilityCreateOutpost) {
+            // found a stack with a settler that is not currently moving
+
+            findNewPath := len(stack.CurrentPath) == 0
+
+            // if headed to some location, check that we can still settle there
+            if len(stack.CurrentPath) > 0 {
+                lastPoint := stack.CurrentPath[len(stack.CurrentPath) - 1]
+                if !aiServices.IsSettlableLocation(lastPoint.X, lastPoint.Y, stack.Plane()) {
+                    findNewPath = true
+                }
+            }
+
+            if findNewPath {
+                // search through all explored locations on the current continent for settlable locations
+                fog := self.GetFog(stack.Plane())
+                locations := aiServices.FindSettlableLocations(stack.X(), stack.Y(), stack.Plane(), fog)
+                citiesOnContinent := aiServices.FindCitiesOnContinent(stack.X(), stack.Y(), stack.Plane(), self)
+
+                // determine if there are any cities on this continent adjacent to a shore,
+                // which means we can build a navy on this continent
+                hasShoreCity := false
+                useMap := aiServices.GetMap(stack.Plane())
+                for _, city := range citiesOnContinent {
+                    if useMap.OnShore(city.X, city.Y) {
+                        hasShoreCity = true
+                        break
+                    }
+                }
+
+                type PathResult struct {
+                    Path pathfinding.Path
+                    Ok bool
+                }
+
+                pathTo := functional.Memoize(func(location image.Point) PathResult {
+                    path, ok := aiServices.FindPath(stack.X(), stack.Y(), location.X, location.Y, self, stack, fog)
+                    return PathResult{Path: path, Ok: ok}
+                })
+
+                maximumPopulation := functional.Memoize(func(location image.Point) int {
+                    return aiServices.ComputeMaximumPopulation(location.X, location.Y, stack.Plane())
+                })
+
+                // filter out all locations we cannot reach
+                locations = slices.DeleteFunc(locations, func(location image.Point) bool {
+                    return pathTo(location).Ok == false
+                })
+
+                score := func(location image.Point) int {
+                    total := maximumPopulation(location)
+
+                    // prioritize shore locations if we don't have a city on this continent adjacent to a shore
+                    if !hasShoreCity && useMap.OnShore(location.X, location.Y) {
+                        total += 10
+                    }
+
+                    return total
+                }
+
+                slices.SortFunc(locations, func(a, b image.Point) int {
+                    return cmp.Compare(score(b), score(a))
+                })
+
+                // log.Printf("AI possible settlable locations: %v", locations)
+
+                if len(locations) > 0 {
+                    // search through locations and either return a decision to build an output
+                    // because the stack is already at that location, or return a decision to move to that location
+                    getDecision := func() (playerlib.AIDecision, bool) {
+                        // if standing on a settlable location, then return immediately
+                        for _, location := range locations {
+                            path := pathTo(location)
+
+                            if len(path.Path) == 0 {
+                                if aiServices.IsSettlableLocation(stack.X(), stack.Y(), stack.Plane()) {
+                                    return &playerlib.AIBuildOutpostDecision{
+                                        Stack: stack,
+                                    }, true
+                                }
+                            }
+                        }
+
+                        // otherwise move towards the best settlable location
+                        for _, location := range locations {
+                            path := pathTo(location)
+                            // log.Printf("AI moving settler stack at %v,%v to settlable location %v,%v via %v", stack.X(), stack.Y(), location.X, location.Y, path)
+                            return &playerlib.AIMoveStackDecision{
+                                Stack: stack,
+                                Path: path.Path,
+                            }, true
+                        }
+
+                        return nil, false
+                    }
+
+                    decision, ok := getDecision()
+                    if ok {
+                        decisions = append(decisions, decision)
+                    }
+                }
+            }
+        }
+    }
+
+    for _, city := range self.Cities {
+        if !isMakingSomething(city) && chance(int(strength * 100)) {
+            locations := aiServices.FindSettlableLocations(city.X, city.Y, city.Plane, self.GetFog(city.Plane))
+            if len(locations) > 0 && self.FoodPerTurn() > 0 && chance(len(locations) * 5) {
+                decisions = append(decisions, &playerlib.AIProduceDecision{
+                    City: city,
+                    Building: buildinglib.BuildingNone,
+                    Unit: units.GetSettlerUnit(city.Race),
+                })
+
+            }
+        }
+    }
+
+    return decisions
+}
+
+func (ai *EnemyNetAI) DoAcquireMagicNodes(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    return decisions
+}
+
+func (ai *EnemyNetAI) DoIncreasePopulation(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    populationBuildings := set.MakeSet[buildinglib.Building]()
+    populationBuildings.Insert(buildinglib.BuildingHousing)
+
+    infos := aiServices.GetBuildingInfos()
+    for _, building := range []buildinglib.Building{buildinglib.BuildingGranary, buildinglib.BuildingFarmersMarket,
+        buildinglib.BuildingBuildersHall, buildinglib.BuildingSawmill} {
+            populationBuildings.InsertMany(infos.TransitiveDependencies(building)...)
+    }
+
+    producingPopulation := func(city *citylib.City) bool {
+        if city.ProducingBuilding == buildinglib.BuildingHousing {
+            return true
+        }
+
+        return populationBuildings.Contains(city.ProducingBuilding)
+    }
+
+    buildings := populationBuildings.Values()
+
+    for _, city := range self.Cities {
+
+        // whatever the city is currently doing, don't change it
+        if city.Population >= city.MaximumCitySize() {
+            continue
+        }
+
+        buildable := city.GetBuildableBuildings()
+
+        if !producingPopulation(city) || (buildPercent(city) < strength) {
+            for _, index := range rand.Perm(len(buildings)) {
+                check := buildings[index]
+                if check == buildinglib.BuildingHousing || buildable.Contains(check) {
+                    decisions = append(decisions, &playerlib.AIProduceDecision{
+                        City: city,
+                        Building: check,
+                        Unit: units.UnitNone,
+                    })
+                    break
+                }
+            }
+        }
+    }
+
+    return decisions
+}
+
+func (ai *EnemyNetAI) DoIncreasePower(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    type DependencyFunc func(d data.Race, building buildinglib.Building) bool
+    type BuildingCheckFunc func(building buildinglib.Building) bool
+
+    checkDependency := func(kind BuildingCheckFunc) DependencyFunc { 
+
+        return func(race data.Race, building buildinglib.Building) bool {
+            infos := aiServices.GetBuildingInfos()
+
+            dependencies := set.NewSet[buildinglib.Building]()
+            for _, building := range buildinglib.RacialBuildings(race).Values() {
+                if kind(building) {
+                    dependencies.InsertMany(infos.Dependencies(building)...)
+                }
+            }
+
+            return dependencies.Contains(building)
+        }
+    }
+
+    isReligiousDependency := functional.Memoize2(checkDependency(buildinglib.Building.IsReligious))
+    isEconomicDependency := functional.Memoize2(checkDependency(buildinglib.Building.IsEconomic))
+    isFoodDependency := functional.Memoize2(checkDependency(buildinglib.Building.ProducesFood))
+
+    // feels awkward to build buildings in cities here
+    for _, city := range self.Cities {
+        if !isMakingSomething(city) {
+            // create housing
+            switch {
+                case city.Citizens() < 3:
+                    decisions = append(decisions, &playerlib.AIProduceDecision{
+                        City: city,
+                        Building: buildinglib.BuildingHousing,
+                        Unit: units.UnitNone,
+                    })
+                case self.GoldPerTurn() < 0 || self.Gold < 10 - self.GoldPerTurn():
+                    decisions = append(decisions, &playerlib.AIProduceDecision{
+                        City: city,
+                        Building: buildinglib.BuildingTradeGoods,
+                        Unit: units.UnitNone,
+                    })
+                case chance(int(strength * 100)):
+
+                    // FIXME: if unrest is high then build a shrine/temple/etc
+                    // if money production is low then build a marketplace/bank/etc
+                    // if food production/population growth is low then build a granary/farmers market/etc
+                    // otherwise build a random building
+
+                    possibleBuildings := city.ComputePossibleBuildings(true)
+                    values := possibleBuildings.Values()
+
+                    goldSurplus := city.GoldSurplus()
+
+                    needsFood := city.Citizens() < city.MaximumCitySize() / 2 || city.PopulationGrowthRate() < 30
+
+                    weights := make([]int, 0, possibleBuildings.Size())
+                    for _, building := range values {
+                        weight := 1
+
+                        if city.Rebels > 0 {
+                            if building.IsReligious() {
+                                weight += 2
+                            } else if isReligiousDependency(city.Race, building) {
+                                weight += 1
+                            }
+                        }
+
+                        if goldSurplus < 0 {
+                            if building.IsEconomic() {
+                                weight += 2
+                            } else if isEconomicDependency(city.Race, building) {
+                                weight += 1
+                            }
+                        }
+
+                        if needsFood {
+                            if building.ProducesFood() {
+                                weight += 2
+                            } else if isFoodDependency(city.Race, building) {
+                                weight += 1
+                            }
+                        }
+
+                        // FIXME: also consider dependencies of buildings that produce religion/gold/food
+
+                        weights = append(weights, weight)
+                    }
+
+                    if possibleBuildings.Size() > 0 {
+                        // choose a random building to create
+                        decisions = append(decisions, &playerlib.AIProduceDecision{
+                            City: city,
+                            Building: algorithm.ChoseRandomWeightedElement(values, weights),
+                            Unit: units.UnitNone,
+                        })
+                    }
+            }
+        }
+    }
+
+    return decisions
+}
+
 // the operational manager takes in the strategy probabilities and selects specific actions to do, which are returned as AIDecisions from the Update function
 func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services playerlib.AIServices, strategies []Probability) []playerlib.AIDecision {
 
@@ -638,15 +931,19 @@ func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services play
                 decisions = append(decisions, ai.DoBuildArmy(player, services, strategy.Value)...)
             case StrategyAcquireMagicNode:
                 // find magic nodes (either unconquered or enemy controlled) and move towards them with units that can capture them
+                decisions = append(decisions, ai.DoAcquireMagicNodes(player, services, strategy.Value)...)
             case StrategyBuildCities:
                 // find good locations to build new cities, and move settlers to those locations to found new cities
                 // also set cities to build settlers
+                decisions = append(decisions, ai.DoBuildCities(player, services, strategy.Value)...)
             case StrategyDefendCities:
                 // move units to defend cities that are under attack or likely to be attacked, and set city garrisons
             case StrategyIncreasePopulation:
                 // set cities to build housing or buildings that increase population
-            case StrategyIncreaseMagic:
+                decisions = append(decisions, ai.DoIncreasePopulation(player, services, strategy.Value)...)
+            case StrategyIncreasePower:
                 // set cities to build magic buildings
+                decisions = append(decisions, ai.DoIncreasePower(player, services, strategy.Value)...)
         }
     }
 
