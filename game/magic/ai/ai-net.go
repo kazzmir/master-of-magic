@@ -57,6 +57,7 @@ type PlayerStats struct {
 type Strategy int
 const (
     StrategyAttackEnemies Strategy = iota
+    StrategyBuildArmy
     StrategyAcquireMagicNode
     StrategyBuildCities
     StrategyDefendCities
@@ -396,11 +397,21 @@ func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services play
     for _, strategy := range strategies {
         switch Strategy(strategy.Index) {
             case StrategyAttackEnemies:
+                // if there are known enemy units/cities then choose a set of units to attack with and move towards a target
+                // if strategy value is very high then attack targets even if our unit is weak
+            case StrategyBuildArmy:
+                // set cities to build military units, and move existing units to form armies
             case StrategyAcquireMagicNode:
+                // find magic nodes (either unconquered or enemy controlled) and move towards them with units that can capture them
             case StrategyBuildCities:
+                // find good locations to build new cities, and move settlers to those locations to found new cities
+                // also set cities to build settlers
             case StrategyDefendCities:
+                // move units to defend cities that are under attack or likely to be attacked, and set city garrisons
             case StrategyIncreasePopulation:
+                // set cities to build housing or buildings that increase population
             case StrategyIncreaseMagic:
+                // set cities to build magic buildings
         }
     }
 
@@ -456,35 +467,29 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
     var reward float64 = 0
 
+    // all these values picked on vibes. maybe a neural net can learn them?
     reward += float64(ai.Stats.EnemiesBanished) * 1000
+    reward += float64(ai.Stats.EnemiesDefeated) * 40
+    reward -= float64(ai.Stats.UnitsLost)
+    reward += float64(ai.Stats.UnitsCreated) * 0.8
+    reward += float64(ai.Stats.UnitsSummoned) * 1.5
+    reward += float64(ai.Stats.CitiesRazed) * 10
+    reward += float64(ai.Stats.CitiesCaptured) * 20
+    reward -= float64(ai.Stats.CitiesLost) * 20
+    reward += float64(ai.Stats.MagicNodesGained) * 15
+    reward -= float64(ai.Stats.MagicNodesLost) * 15
+    reward += float64(ai.Stats.GoldDelta) * 0.3
+    reward += float64(ai.Stats.ManaDelta) * 0.3
+    reward += float64(ai.Stats.TerritoryExplored) * 0.1
+    reward += float64(ai.Stats.SpellsLearned) * 5
+    reward += float64(ai.Stats.HeroesGained) * 20
+    reward -= float64(ai.Stats.HeroesLost) * 20
+    reward += float64(ai.Stats.ArmyStrengthDelta) * 0.5
+    reward += float64(ai.Stats.RoadsBuilt) * 0.2
+    reward += float64(ai.Stats.EnemiesDiscovered) * 1.3
+    reward += ai.Stats.SpellOfMasteryProgress * 10
 
     ai.Steps[len(ai.Steps)-1].Reward = reward
-
-    /*
-    // defeated when all cities owned by the wizard are defeated
-    EnemiesDefeated int
-    UnitsLost int
-    // normal units
-    UnitsCreated int
-    // fantastic units via spells
-    UnitsSummoned int
-    CitiesRazed int
-    CitiesCaptured int
-    CitiesLost int
-    MagicNodesGained int
-    MagicNodesLost int
-    GoldDelta int
-    ManaDelta int
-    TerritoryExplored int
-    SpellsLearned int
-    HeroesGained int
-    HeroesLost int
-    ArmyStrengthDelta int
-    RoadsBuilt int
-    EnemiesDiscovered int
-    // value of 0 to 1
-    SpellOfMasteryProgress float64
-    */
 
     log.Printf("Reward: %f", reward)
 }
