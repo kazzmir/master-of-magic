@@ -6470,8 +6470,10 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     negative := options
                     negative.ColorScale = negativeScale
 
-                    negativeOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &negative, Scale: scale.ScaleAmount}
-                    normalOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount}
+                    negativeOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &negative, Scale: scale.ScaleAmount,
+						DropShadow: true, ShadowColor: color.RGBA{128, 0, 0, 255}, ShadowDistance: 0.55}
+                    normalOptions := font.FontOptions{Justify: font.FontJustifyCenter, Options: &options, Scale: scale.ScaleAmount, 
+						DropShadow: true, ShadowColor: color.RGBA{80, 30, 0, 255}, ShadowDistance: 0.55}
 
                     if goldPerTurn < 0 {
                         game.Fonts.InfoFontRed.PrintOptions(screen, 278, 103, negativeOptions, fmt.Sprintf("%v Gold", goldPerTurn))
