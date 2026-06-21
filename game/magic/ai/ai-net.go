@@ -843,6 +843,69 @@ func (ai *EnemyNetAI) DoAcquireMagicNodes(self *playerlib.Player, aiServices pla
         }
     }
 
+    // return a count of all the nodes that are not melded by the current player, and are not protected
+    // by guardians
+    countUnmeldedNodes := func(plane data.Plane) int {
+        var points []image.Point
+        switch plane {
+            case data.PlaneArcanus:
+                points = arcanusNodes()
+            case data.PlaneMyrror:
+                points = myrrorNodes()
+        }
+
+        useMap := aiServices.GetMap(plane)
+
+        total := 0
+        for _, point := range points {
+            if self.IsExplored(point.X, point.Y, plane) && useMap.GetEncounter(point.X, point.Y) == nil {
+                node := useMap.GetMagicNode(point.X, point.Y)
+                if node != nil && node.MeldingWizard != self {
+                    total += 1
+                }
+            }
+        }
+
+        return total
+    }
+
+    countMelders := func(plane data.Plane) int {
+        total := 0
+        for _, stack := range self.Stacks {
+            if stack.Plane() == plane && stack.ActiveUnitsHasAbility(data.AbilityMeld) {
+                total += 1
+            }
+        }
+
+        return total
+    }
+
+    // maybe summon a spirit
+    if !self.CastingSpell.Valid() && (self.Mana > 100 || self.ManaPerTurn(aiServices.ComputePower(self), aiServices) > 0) {
+        fortress := self.FindFortressCity()
+        if fortress != nil {
+            unmeldedNodes := countUnmeldedNodes(fortress.Plane)
+            melders := countMelders(fortress.Plane)
+
+            if unmeldedNodes > melders && chance(int(strength * 100)) {
+                magicSpiritSpell := self.KnownSpells.FindByName("Magic Spirit")
+                guardianSpiritSpell := self.KnownSpells.FindByName("Guardian Spirit")
+
+                // wizards should always know magic spirit
+                use := magicSpiritSpell
+                if guardianSpiritSpell.Valid() {
+                    use = guardianSpiritSpell
+                }
+
+                if use.Valid() {
+                    decisions = append(decisions, &playerlib.AICastSpellDecision{
+                        Spell: use,
+                    })
+                }
+            }
+        }
+    }
+
     return decisions
 }
 
