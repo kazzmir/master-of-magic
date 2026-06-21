@@ -3977,17 +3977,22 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
-                    var stack units.StackUnit
-                    for _, unit := range build.Stack.Units() {
-                        if unit.HasAbility(data.AbilityCreateOutpost) {
-                            stack = unit
-                            break
-                        }
-                    }
-
+                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
+                case *playerlib.AIMeldDecision:
+                    stack := decision.(*playerlib.AIMeldDecision).Stack
+
+                    melder := stack.GetActiveUnitWithAbility(data.AbilityMeld)
+
+                    if player.OwnsStack(stack) && melder != nil {
+                        node := game.Model.GetMap(stack.Plane()).GetMagicNode(stack.X(), stack.Y())
+                        if node != nil {
+                            game.DoMeld(melder, player, node)
+                        }
+                    }
+
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
                     log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
