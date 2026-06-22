@@ -92,6 +92,9 @@ type EnemyNetAI struct {
     Steps []Step
 
     Attacking map[*playerlib.UnitStack]bool
+
+    currentGold int
+    currentMana int
 }
 
 var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
@@ -1240,6 +1243,9 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
     var reward float64 = 0
 
+    ai.Stats.GoldDelta = player.Gold - ai.currentGold
+    ai.Stats.ManaDelta = player.Mana - ai.currentMana
+
     // all these values picked on vibes. maybe a neural net can learn them?
     reward -= float64(ai.Stats.WasBanished) * 10000
     reward -= float64(ai.Stats.WasDefeated) * 5000
@@ -1262,7 +1268,7 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
     reward += float64(ai.Stats.ArmyStrengthDelta) * 0.5
     reward += float64(ai.Stats.RoadsBuilt) * 0.2
     reward += float64(ai.Stats.EnemiesDiscovered) * 1.3
-    reward += ai.Stats.SpellOfMasteryProgress * 10
+    reward += ai.Stats.SpellOfMasteryProgress * 50
 
     ai.Steps[len(ai.Steps)-1].Reward = reward
 
@@ -1292,10 +1298,15 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
     player.RebalanceFood()
 }
 
-func (ai *EnemyNetAI) NewTurn(player *playerlib.Player) {
+func (ai *EnemyNetAI) PreTurn(player *playerlib.Player) {
     // reset stats
     ai.Stats = PlayerStats{}
 
+    ai.currentGold = player.Gold
+    ai.currentMana = player.Mana
+}
+
+func (ai *EnemyNetAI) NewTurn(player *playerlib.Player) {
     ai.Attacking = make(map[*playerlib.UnitStack]bool)
 }
 

@@ -30,6 +30,9 @@ func MakeRaiderAI() *RaiderAI {
     }
 }
 
+func (raider *RaiderAI) PreTurn(player *playerlib.Player) {
+}
+
 func (raider *RaiderAI) NewTurn(player *playerlib.Player) {
     // raider.MovedStacks = make(map[*playerlib.UnitStack]bool)
 }

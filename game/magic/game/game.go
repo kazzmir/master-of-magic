@@ -7526,6 +7526,12 @@ func (game *Game) DoNextTurn(){
     if len(game.Model.Players) > 0 {
         player := game.Model.Players[game.Model.CurrentPlayer]
 
+        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
+
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.PreTurn(aiPlayer)
+        }
+
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
         } else {
@@ -7537,7 +7543,6 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }

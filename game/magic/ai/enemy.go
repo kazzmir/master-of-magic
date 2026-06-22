@@ -313,6 +313,9 @@ func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISer
     }
 }
 
+func (ai *EnemyAI) PreTurn(player *playerlib.Player) {
+}
+
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {
     // make sure cities have enough farmers
     for _, city := range player.Cities {

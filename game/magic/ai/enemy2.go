@@ -911,6 +911,9 @@ func (ai *Enemy2AI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISe
     self.RebalanceFood()
 }
 
+func (ai *Enemy2AI) PreTurn(player *playerlib.Player) {
+}
+
 func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
     // maybe make this dynamic based on gold and current unrest levels
     player.TaxRate = fraction.FromInt(1)
