@@ -93,8 +93,11 @@ type EnemyNetAI struct {
 
     Attacking map[*playerlib.UnitStack]bool
 
+    // current state of the player, used for reward calculation
     currentGold int
     currentMana int
+    banished bool
+    defeated bool
 }
 
 var _ playerlib.AIBehavior = (*EnemyNetAI)(nil)
@@ -1246,6 +1249,14 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
     ai.Stats.GoldDelta = player.Gold - ai.currentGold
     ai.Stats.ManaDelta = player.Mana - ai.currentMana
 
+    if !ai.banished && player.Banished {
+        ai.Stats.WasBanished = 1
+    }
+
+    if !ai.defeated && player.Defeated {
+        ai.Stats.WasDefeated = 1
+    }
+
     // all these values picked on vibes. maybe a neural net can learn them?
     reward -= float64(ai.Stats.WasBanished) * 10000
     reward -= float64(ai.Stats.WasDefeated) * 5000
@@ -1304,6 +1315,9 @@ func (ai *EnemyNetAI) PreTurn(player *playerlib.Player) {
 
     ai.currentGold = player.Gold
     ai.currentMana = player.Mana
+
+    ai.banished = player.Banished
+    ai.defeated = player.Defeated
 }
 
 func (ai *EnemyNetAI) NewTurn(player *playerlib.Player) {
