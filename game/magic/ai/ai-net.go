@@ -1069,6 +1069,90 @@ func (ai *EnemyNetAI) DoIncreasePower(self *playerlib.Player, aiServices playerl
     return decisions
 }
 
+func (ai *EnemyNetAI) DoDefendCities(self *playerlib.Player, aiServices playerlib.AIServices, strength float64) []playerlib.AIDecision {
+    var decisions []playerlib.AIDecision
+
+    // units that are roaming around should move towards a reasonably close city
+    // cities should build army units to defend themselves
+
+    cityStackInfo := aiServices.ComputeCityStackInfo()
+
+    for _, stack := range self.Stacks {
+        // stack already at a city, nothing to do
+        if self.FindCity(stack.X(), stack.Y(), stack.Plane()) != nil {
+            continue
+        }
+
+        if len(stack.CurrentPath) > 0 {
+            continue
+        }
+
+        cityPaths := make(map[*citylib.City]pathfinding.Path)
+
+        var cityChoices []*citylib.City
+        for _, city := range self.Cities {
+            if city.Plane == stack.Plane() {
+
+                stacks := cityStackInfo.ArcanusStacks
+                if city.Plane == data.PlaneMyrror {
+                    stacks = cityStackInfo.MyrrorStacks
+                }
+
+                cityStack, hasStack := stacks[image.Pt(city.X, city.Y)]
+                // city would be too large to hold this stack, so skip the city
+                if hasStack && cityStack.Size() + stack.Size() > data.MaxUnitsInStack {
+                    continue
+                }
+
+                path, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(city.Plane))
+                if ok {
+                    cityChoices = append(cityChoices, city)
+                    cityPaths[city] = path
+                }
+            }
+        }
+
+        slices.SortFunc(cityChoices, func(a, b *citylib.City) int {
+            scoreA := len(cityPaths[a]) + unitAttackPower(a.GetGarrison()...)
+            scoreB := len(cityPaths[b]) + unitAttackPower(b.GetGarrison()...)
+
+            return cmp.Compare(scoreA, scoreB)
+        })
+
+        if len(cityChoices) > 0 {
+            choice := cityChoices[0]
+            decisions = append(decisions, &playerlib.AIMoveStackDecision{
+                Stack: stack,
+                Path: cityPaths[choice],
+            })
+        }
+    }
+
+    for _, city := range self.Cities {
+        garrison := city.GetGarrison()
+        if unitAttackPower(garrison...) < int(strength * 40) {
+            if city.ProducingUnit.Equals(units.UnitNone) {
+                possibleUnits := city.ComputePossibleUnits()
+                possibleUnits = slices.DeleteFunc(possibleUnits, func(unit units.Unit) bool {
+                    return rawUnitAttackPower(unit) == 0
+                })
+
+                if len(possibleUnits) > 0 {
+                    decisions = append(decisions, &playerlib.AIProduceDecision{
+                        City: city,
+                        Building: buildinglib.BuildingNone,
+                        Unit: algorithm.ChoseRandomWeightedElement(possibleUnits, functional.Map(possibleUnits, func(unit units.Unit) int {
+                            return rawUnitAttackPower(unit)
+                        })),
+                    })
+                }
+            }
+        }
+    }
+
+    return decisions
+}
+
 // the operational manager takes in the strategy probabilities and selects specific actions to do, which are returned as AIDecisions from the Update function
 func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services playerlib.AIServices, strategies []Probability) []playerlib.AIDecision {
 
@@ -1094,6 +1178,7 @@ func (ai *EnemyNetAI) OperationalManager(player *playerlib.Player, services play
                 decisions = append(decisions, ai.DoBuildCities(player, services, strategy.Value)...)
             case StrategyDefendCities:
                 // move units to defend cities that are under attack or likely to be attacked, and set city garrisons
+                decisions = append(decisions, ai.DoDefendCities(player, services, strategy.Value)...)
             case StrategyIncreasePopulation:
                 // set cities to build housing or buildings that increase population
                 decisions = append(decisions, ai.DoIncreasePopulation(player, services, strategy.Value)...)
