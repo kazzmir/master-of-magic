@@ -23,6 +23,7 @@ import (
 )
 
 type EnemyAI struct {
+    playerlib.DefaultAIEvents
 }
 
 func MakeEnemyAI() *EnemyAI {

@@ -3336,6 +3336,8 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
     if containedFortress {
         defender.Banished = true
 
+        attacker.DidBanish(defender)
+
         if attacker.IsHuman() || defender.IsHuman() {
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }

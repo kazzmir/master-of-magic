@@ -47,6 +47,7 @@ type Engine struct {
 }
 
 type DummyAI struct {
+    playerlib.DefaultAIEvents
 }
 
 func (ai *DummyAI) Update(self *playerlib.Player, services playerlib.AIServices) []playerlib.AIDecision {

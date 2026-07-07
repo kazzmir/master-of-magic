@@ -19,6 +19,8 @@ import (
 )
 
 type RaiderAI struct {
+    playerlib.DefaultAIEvents
+
     MonsterAccumulator int
     // MovedStacks map[*playerlib.UnitStack]bool
 }

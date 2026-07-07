@@ -36,6 +36,8 @@ import (
 )
 
 type Enemy2AI struct {
+    playerlib.DefaultAIEvents
+
     // units that are currently moving towards an enemy
     Attacking map[*playerlib.UnitStack]bool
 }

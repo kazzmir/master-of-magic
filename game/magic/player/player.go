@@ -114,7 +114,13 @@ type AIServices interface {
     GetBuildingInfos() buildinglib.BuildingInfos
 }
 
+type AIEvents interface {
+    DidBanish(self *Player, player *Player)
+}
+
 type AIBehavior interface {
+    AIEvents
+
     // return a list of decisions to make for the current turn
     Update(*Player, AIServices) []AIDecision
 
@@ -535,6 +541,12 @@ func (player *Player) AllianceWithPlayer(other *Player) {
 func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool) {
     relation, ok := player.PlayerRelations[other]
     return relation, ok
+}
+
+func (player *Player) DidBanish(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidBanish(player, other)
+    }
 }
 
 func (player *Player) IsAI() bool {
