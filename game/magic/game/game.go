@@ -3333,6 +3333,14 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
+    // player is defeated if they have no cities left
+    defeated := len(defender.Cities) == 0
+
+    if defeated {
+        defender.Defeated = true
+        attacker.DidDefeat(defender)
+    }
+
     if containedFortress {
         defender.Banished = true
 
@@ -3342,7 +3350,9 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
 
-        // FIXME: automatically start casting spell of return if possible
+        if !defeated {
+            // FIXME: automatically start casting spell of return if possible
+        }
     }
 
     return raze, gold

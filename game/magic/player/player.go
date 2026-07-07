@@ -116,6 +116,7 @@ type AIServices interface {
 
 type AIEvents interface {
     DidBanish(self *Player, player *Player)
+    DidDefeat(self *Player, player *Player)
 }
 
 type AIBehavior interface {
@@ -541,6 +542,12 @@ func (player *Player) AllianceWithPlayer(other *Player) {
 func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool) {
     relation, ok := player.PlayerRelations[other]
     return relation, ok
+}
+
+func (player *Player) DidDefeat(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidDefeat(player, other)
+    }
 }
 
 func (player *Player) DidBanish(other *Player) {
