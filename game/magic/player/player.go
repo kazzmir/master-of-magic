@@ -988,6 +988,14 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
     }
 }
 
+func (player *Player) CastSpellOfReturn() {
+    spellOfReturn := player.KnownSpells.FindByName("Spell of Return")
+    if spellOfReturn.Valid() {
+        player.CastingSpellProgress = 0
+        player.CastingSpell = spellOfReturn
+    }
+}
+
 // This forces the player to stop casting a spell. Resets progress to 0 and resets the spell being cast.
 func (player *Player) InterruptCastingSpell() {
     player.CastingSpell = spellbook.Spell{}

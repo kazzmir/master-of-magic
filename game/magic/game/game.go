@@ -3351,7 +3351,7 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         }
 
         if !defeated {
-            // FIXME: automatically start casting spell of return if possible
+            defender.CastSpellOfReturn()
         }
     }
 
