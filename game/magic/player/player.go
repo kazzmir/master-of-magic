@@ -117,6 +117,7 @@ type AIServices interface {
 type AIEvents interface {
     DidBanish(self *Player, player *Player)
     DidDefeat(self *Player, player *Player)
+    DidSummonUnit(self *Player, unit *units.OverworldUnit)
 }
 
 type AIBehavior interface {
@@ -553,6 +554,12 @@ func (player *Player) DidDefeat(other *Player) {
 func (player *Player) DidBanish(other *Player) {
     if player.AIBehavior != nil {
         player.AIBehavior.DidBanish(player, other)
+    }
+}
+
+func (player *Player) DidSummonUnit(unit *units.OverworldUnit) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidSummonUnit(player, unit)
     }
 }
 

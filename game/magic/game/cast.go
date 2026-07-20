@@ -1786,6 +1786,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     summonCity := player.FindSummoningCity()
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+        player.DidSummonUnit(overworldUnit)
         newUnit := player.AddUnit(overworldUnit)
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
 
