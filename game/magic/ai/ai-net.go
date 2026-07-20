@@ -1252,6 +1252,18 @@ func (ai *EnemyNetAI) DidSummonUnit(self *playerlib.Player, unit *units.Overworl
     ai.Stats.UnitsSummoned += 1
 }
 
+func (ai *EnemyNetAI) DidConquerCity(city *citylib.City, raze bool) {
+    if raze {
+        ai.Stats.CitiesRazed += 1
+    } else {
+        ai.Stats.CitiesCaptured += 1
+    }
+}
+
+func (ai *EnemyNetAI) DidLoseCity(city *citylib.City) {
+    ai.Stats.CitiesLost += 1
+}
+
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
     // compute rewards
     // rewards are any event that can be quantified, like how many enemy units were killed, how much gold was gained, how many cities were captured, etc

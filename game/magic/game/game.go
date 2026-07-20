@@ -3333,6 +3333,9 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
+    attacker.DidConquerCity(city, raze)
+    defender.DidLoseCity(city)
+
     // player is defeated if they have no cities left
     defeated := len(defender.Cities) == 0
 

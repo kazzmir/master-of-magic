@@ -118,6 +118,8 @@ type AIEvents interface {
     DidBanish(self *Player, player *Player)
     DidDefeat(self *Player, player *Player)
     DidSummonUnit(self *Player, unit *units.OverworldUnit)
+    DidConquerCity(city *citylib.City, raze bool)
+    DidLoseCity(city *citylib.City)
 }
 
 type AIBehavior interface {
@@ -560,6 +562,18 @@ func (player *Player) DidBanish(other *Player) {
 func (player *Player) DidSummonUnit(unit *units.OverworldUnit) {
     if player.AIBehavior != nil {
         player.AIBehavior.DidSummonUnit(player, unit)
+    }
+}
+
+func (player *Player) DidConquerCity(city *citylib.City, raze bool) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidConquerCity(city, raze)
+    }
+}
+
+func (player *Player) DidLoseCity(city *citylib.City) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseCity(city)
     }
 }
 
