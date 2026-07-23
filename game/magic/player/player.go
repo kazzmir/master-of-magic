@@ -1190,6 +1190,26 @@ func (player *Player) UpdateTaxRate(rate fraction.Fraction){
     player.UpdateUnrest()
 }
 
+func (player *Player) NextTaxRate(rate fraction.Fraction) (fraction.Fraction, bool) {
+    rates := []fraction.Fraction{
+        fraction.Zero(),
+        fraction.Make(1, 2),
+        fraction.Make(1, 1),
+        fraction.Make(3, 2),
+        fraction.Make(2, 1),
+        fraction.Make(5, 2),
+        fraction.Make(3, 1),
+    }
+
+    for i := range rates {
+        if i < len(rates) - 1 && rate.Equals(rates[i]) {
+            return rates[i + 1], true
+        }
+    }
+
+    return fraction.Zero(), false
+}
+
 func (player *Player) UpdateUnrest(){
     for _, city := range player.Cities {
         city.UpdateUnrest()
