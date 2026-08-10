@@ -120,6 +120,7 @@ type AIEvents interface {
     DidSummonUnit(self *Player, unit *units.OverworldUnit)
     DidConquerCity(city *citylib.City, raze bool)
     DidLoseCity(city *citylib.City)
+    DidLoseUnit(unit units.StackUnit)
 }
 
 type AIBehavior interface {
@@ -1526,6 +1527,16 @@ func (player *Player) UpdateUnitLocation(unit units.StackUnit, x int, y int, pla
     }
 
     newStack.AddUnit(unit)
+}
+
+// similar to RemoveUnit but the reason is due to the unit being lost as a direct
+// consequence of a battle
+func (player *Player) LoseUnit(unit units.StackUnit) {
+    player.RemoveUnit(unit)
+
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseUnit(unit)
+    }
 }
 
 func (player *Player) RemoveUnit(unit units.StackUnit) {

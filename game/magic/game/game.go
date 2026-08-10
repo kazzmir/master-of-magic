@@ -4907,7 +4907,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         // first remove sailing units
         for _, unit := range stack.Units() {
             if unit.IsSailing() && unit.GetHealth() <= 0 {
-                player.RemoveUnit(unit)
+                player.LoseUnit(unit)
             }
         }
 
