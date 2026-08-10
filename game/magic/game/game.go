@@ -3980,7 +3980,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if create.Patrol {
                         overworldUnit.SetBusy(units.BusyStatusPatrol)
                     }
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIUpdateCityDecision:
                     update := decision.(*playerlib.AIUpdateCityDecision)
@@ -7099,7 +7099,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     }
 
                     overworldUnit.AddExperience(newUnit.Experience)
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(city.X, city.Y, city.Plane)
 
                     if player.AIBehavior != nil {

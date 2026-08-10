@@ -121,6 +121,7 @@ type AIEvents interface {
     DidConquerCity(city *citylib.City, raze bool)
     DidLoseCity(city *citylib.City)
     DidLoseUnit(unit units.StackUnit)
+    DidCreateUnit(unit units.StackUnit)
 }
 
 type AIBehavior interface {
@@ -1591,6 +1592,15 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
     unit.SetGlobalEnchantmentProvider(player.MakeUnitEnchantmentProvider())
     unit.SetExperienceInfo(player.MakeExperienceInfo())
     return unit
+}
+
+// similar to AddUnit but specifically due to producing a unit in a city
+func (player *Player) CreateUnit(unit units.StackUnit) units.StackUnit {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidCreateUnit(unit)
+    }
+
+    return player.AddUnit(unit)
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {

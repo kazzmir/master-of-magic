@@ -25,4 +25,7 @@ func (ai *DefaultAIEvents) DidLoseCity(city *citylib.City) {
 func (ai *DefaultAIEvents) DidLoseUnit(unit units.StackUnit) {
 }
 
+func (ai *DefaultAIEvents) DidCreateUnit(unit units.StackUnit) {
+}
+
 var _ AIEvents = (*DefaultAIEvents)(nil)

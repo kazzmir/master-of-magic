@@ -1252,6 +1252,10 @@ func (ai *EnemyNetAI) DidLoseUnit(unit units.StackUnit) {
     ai.Stats.UnitsLost += 1
 }
 
+func (ai *EnemyNetAI) DidCreateUnit(unit units.StackUnit) {
+    ai.Stats.UnitsCreated += 1
+}
+
 func (ai *EnemyNetAI) DidSummonUnit(self *playerlib.Player, unit *units.OverworldUnit) {
     ai.Stats.UnitsSummoned += 1
 }
