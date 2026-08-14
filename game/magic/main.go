@@ -32,6 +32,7 @@ import (
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -63,7 +64,7 @@ type MagicGame struct {
     MainCoroutine *coroutine.Coroutine
     Drawer DrawFunc
 
-    Music *musiclib.Music
+    Settings *settingslib.Settings
 }
 
 func randomChoose[T any](choices... T) T {
@@ -130,7 +131,7 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
 }
 
 func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) (*gamelib.Game, mainview.MainScreenState) {
-    menu := mainview.MakeMainScreen(game.Cache, gameLoader, game.Music)
+    menu := mainview.MakeMainScreen(game.Cache, gameLoader, game.Settings)
 
     game.Drawer = func(screen *ebiten.Image) {
         menu.Draw(screen)
@@ -418,7 +419,7 @@ func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error 
         return fmt.Errorf("Could not load")
     }
 
-    newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)
+    newGame := gamelib.MakeGameFromSerialized(loader.Cache, settingslib.MakeSettings(loader.Cache), &serializedGame)
     select {
         case loader.NewGame <- newGame:
         default:
@@ -526,7 +527,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 }
 
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
-    game := gamelib.MakeGame(magic.Cache, magic.Music, settings)
+    game := gamelib.MakeGame(magic.Cache, magic.Settings, settings)
 
     game.RefreshUI()
 
@@ -687,9 +688,9 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         return err
     }
 
-    game.Music = musiclib.MakeMusic(game.Cache)
-    game.Music.Enabled = enableMusic
-    defer game.Music.Stop()
+    game.Settings = settingslib.MakeSettings(game.Cache)
+    game.Settings.Music.Enabled = enableMusic
+    defer game.Settings.Music.Stop()
 
     shutdown := func (screen *ebiten.Image){
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
@@ -711,19 +712,19 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     if loadSave == "" {
-        game.Music.PlaySong(musiclib.SongIntro)
+        game.Settings.Music.PlaySong(musiclib.SongIntro)
         runIntro(yield, game)
 
         yield()
 
-        game.Music.PlaySong(musiclib.SongTitle)
+        game.Settings.Music.PlaySong(musiclib.SongTitle)
     }
 
     if loadSave != "" {
         err := gameLoader.LoadNew(loadSave)
         // couldn't load game, just play title music
         if err != nil {
-            game.Music.PlaySong(musiclib.SongTitle)
+            game.Settings.Music.PlaySong(musiclib.SongTitle)
         }
     }
 
@@ -736,7 +737,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                 return ebiten.Termination
             case mainview.MainScreenStateLoadGame:
                 if newGame != nil {
-                    game.Music.Stop()
+                    game.Settings.Music.Stop()
                     // FIXME: should this go here?
                     newGame.Model.CurrentPlayer = 0
                     centerOnCity(newGame)
@@ -753,10 +754,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                         return err
                     }
 
-                    game.Music.PlaySong(musiclib.SongTitle)
+                    game.Settings.Music.PlaySong(musiclib.SongTitle)
                 }
             case mainview.MainScreenStateQuickGame:
-                game.Music.Stop()
+                game.Settings.Music.Stop()
                 yield()
                 err := startQuickGame(yield, game, gameLoader)
                 if err != nil {
@@ -764,7 +765,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     yield()
                     return err
                 }
-                game.Music.PlaySong(musiclib.SongTitle)
+                game.Settings.Music.PlaySong(musiclib.SongTitle)
             case mainview.MainScreenStateNewGame:
                 var settings setup.NewGameSettings
                 var wizard setup.WizardCustom
@@ -785,7 +786,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     break
                 }
 
-                game.Music.Stop()
+                game.Settings.Music.Stop()
 
                 realGame := initializeGame(game, settings, wizard)
                 err := runGameInstance(realGame, yield, game, gameLoader)
@@ -796,7 +797,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
                     return err
                 }
 
-                game.Music.PlaySong(musiclib.SongTitle)
+                game.Settings.Music.PlaySong(musiclib.SongTitle)
         }
     }
 }

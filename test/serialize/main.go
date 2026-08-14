@@ -19,7 +19,7 @@ import (
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/hero"
-    "github.com/kazzmir/master-of-magic/game/magic/music"
+    "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -52,9 +52,9 @@ func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
     cache := lbx.AutoCache()
-    useMusic := music.MakeMusic(cache)
-    useMusic.Enabled = false
-    game := gamelib.MakeGame(cache, useMusic, setup.NewGameSettings{LandSize: 0})
+    useSettings := settings.MakeSettings(cache)
+    useSettings.Music.Enabled = false
+    game := gamelib.MakeGame(cache, useSettings, setup.NewGameSettings{LandSize: 0})
 
     wizard := setup.WizardCustom{
         Name: "bob",
@@ -180,7 +180,7 @@ func main() {
 
     log.Println("Stage 2: PASSED")
 
-    newGame := gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+    newGame := gamelib.MakeGameFromSerialized(cache, useSettings, &loadedData)
     _ = newGame
 
     log.Println("Stage 3: PASSED")
@@ -200,7 +200,7 @@ func main() {
 
             start := time.Now()
             for range N {
-                gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
+                gamelib.MakeGameFromSerialized(cache, useSettings, &loadedData)
             }
             duration := time.Since(start)
             log.Printf("Time taken for %d deserializations: %v, %v/s", N, duration, float64(N) / duration.Seconds())
@@ -225,8 +225,8 @@ func main() {
                 if i % 100 == 0 {
                     log.Printf("Iteration %d", i)
                 }
-                gamelib.MakeGameFromSerialized(cache, useMusic, &loadedData)
-                useMusic.ClearSongQueue()
+                gamelib.MakeGameFromSerialized(cache, useSettings, &loadedData)
+                useSettings.Music.ClearSongQueue()
             }
         }()
 

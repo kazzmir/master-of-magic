@@ -1211,6 +1211,17 @@ func (player *Player) OwnsStack(stack *UnitStack) bool {
     })
 }
 
+// true if none of the player's stacks have any moves left, meaning there is nothing left for the player to do this turn
+func (player *Player) AllStacksOutOfMoves() bool {
+    for _, stack := range player.Stacks {
+        if !stack.OutOfMoves() {
+            return false
+        }
+    }
+
+    return true
+}
+
 func (player *Player) OwnsCity(city *citylib.City) bool {
     for _, ownedCity := range player.Cities {
         if ownedCity == city {

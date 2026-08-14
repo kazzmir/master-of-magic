@@ -13,7 +13,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
-    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
@@ -43,7 +42,7 @@ type MainScreen struct {
     Counter uint64
     Cache *lbx.LbxCache
     State MainScreenState
-    Music *musiclib.Music
+    Settings *settingslib.Settings
     ImageCache util.ImageCache
     UI *uilib.UI
     GameLoader gamemenu.GameLoader
@@ -51,11 +50,11 @@ type MainScreen struct {
     Drawer func(screen *ebiten.Image)
 }
 
-func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader, music *musiclib.Music) *MainScreen {
+func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader, settings *settingslib.Settings) *MainScreen {
     main := &MainScreen{
         Counter: 0,
         Cache: cache,
-        Music: music,
+        Settings: settings,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
         GameLoader: gameLoader,
@@ -329,7 +328,7 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, done := settingslib.MakeSettingsUI(settings.main.Cache, &settings.main.ImageCache, settings.main.Music)
+    group, done := settingslib.MakeSettingsUI(settings.yield, settings.ui, settings.main.Cache, &settings.main.ImageCache, settings.main.Settings)
 
     settings.ui.AddGroup(group)
     defer settings.ui.RemoveGroup(group)

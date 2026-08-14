@@ -8,17 +8,53 @@ import (
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
-    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *musiclib.Music) (*uilib.UIElementGroup, context.Context) {
+const settingsLayer = uilib.UILayer(5)
+
+// adds a checkbox + label pair to the group at the given position, reading/writing
+// through get/set. shared by the small handful of boolean settings on this screen.
+func addCheckbox(group *uilib.UIElementGroup, fonts *fontslib.SettingsFonts, getAlpha util.AlphaFadeFunc, x int, y int, label string, get func() bool, set func(bool)) {
+    checkboxRect := image.Rect(x, y, x + 12, y + 12)
+
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Rect: checkboxRect,
+        LeftClick: func(element *uilib.UIElement){
+            set(!get())
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            rect := element.Rect
+
+            vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * getAlpha())}, false)
+            util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(200 * getAlpha())})
+
+            if get() {
+                inner := image.Rect(rect.Min.X + 3, rect.Min.Y + 3, rect.Max.X - 3, rect.Max.Y - 3)
+                vector.FillRect(screen, float32(scale.Scale(inner.Min.X)), float32(scale.Scale(inner.Min.Y)), float32(scale.Scale(inner.Dx())), float32(scale.Scale(inner.Dy())), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(220 * getAlpha())}, false)
+            }
+        },
+    })
+
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(checkboxRect.Min.Y - 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, label)
+        },
+    })
+}
+
+func MakeSettingsUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, settings *Settings) (*uilib.UIElementGroup, context.Context) {
     fonts := fontslib.MakeSettingsFonts(cache)
 
     group := uilib.MakeGroup()
@@ -39,8 +75,6 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
 
     ok, _ := imageCache.GetImage("load.lbx", 4, 0)
 
-    settingsLayer := uilib.UILayer(5)
-
     group.AddElement(&uilib.UIElement{
         Layer: settingsLayer,
         Rect: util.ImageRect(266, 176, ok),
@@ -58,12 +92,31 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         },
     })
 
+    keysButtonRect := image.Rect(214, 176, 214 + 40, 176 + 13)
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Rect: keysButtonRect,
+        LeftClick: func(element *uilib.UIElement){
+            keysGroup, keysQuit := MakeKeysUI(yield, parentUI, cache, imageCache, settings.Keybindings)
+            runNestedUI(yield, parentUI, keysGroup, keysQuit)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            rect := element.Rect
+            vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 96, G: 60, B: 20, A: uint8(255 * getAlpha())}, false)
+            util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 200, B: 100, A: uint8(255 * getAlpha())})
+
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            fonts.OptionFont.PrintOptions(screen, float64(rect.Min.X + 6), float64(rect.Min.Y + 3), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "Keys")
+        },
+    })
+
     group.AddElement(&uilib.UIElement{
         Layer: settingsLayer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, fmt.Sprintf("Volume: %02d%%", int(music.GetVolume() * 100)))
+            fonts.OptionFont.PrintOptions(screen, 30, 40, font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, fmt.Sprintf("Volume: %02d%%", int(settings.Music.GetVolume() * 100)))
         },
     })
 
@@ -75,7 +128,7 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         Rect: image.Rect(30, 50, 30 + 80, 50 + slider.Bounds().Dy()),
         Inside: func(this *uilib.UIElement, x int, y int){
             if volumeClicked {
-                music.SetVolume(min(1, float64(x) / float64(this.Rect.Dx() - 1)))
+                settings.Music.SetVolume(min(1, float64(x) / float64(this.Rect.Dx() - 1)))
             }
         },
         LeftClick: func(element *uilib.UIElement){
@@ -95,7 +148,7 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
 
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            options.GeoM.Translate(float64(element.Rect.Min.X) + float64(element.Rect.Dx()) * music.GetVolume(), float64(element.Rect.Min.Y))
+            options.GeoM.Translate(float64(element.Rect.Min.X) + float64(element.Rect.Dx()) * settings.Music.GetVolume(), float64(element.Rect.Min.Y))
             options.GeoM.Translate(float64(-slider.Bounds().Dx()/2), 0)
             scale.DrawScaled(screen, slider, &options)
 
@@ -103,91 +156,15 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         },
     })
 
+    addCheckbox(group, fonts, getAlpha, 30, 84, "End Of Turn Wait",
+        func() bool { return settings.EndOfTurnWait },
+        func(value bool) { settings.EndOfTurnWait = value },
+    )
+
+    addCheckbox(group, fonts, getAlpha, 30, 106, "Strategic Combat Only",
+        func() bool { return settings.StrategicCombatOnly },
+        func(value bool) { settings.StrategicCombatOnly = value },
+    )
+
     return group, quit
-
-    /*
-    var elements []*uilib.UIElement
-
-    var makeElements func()
-
-    makeElements = func() {
-        *background, _ = imageCache.GetImage("load.lbx", 11, 0)
-        ok, _ := imageCache.GetImage("load.lbx", 4, 0)
-        ui.RemoveElements(elements)
-        elements = nil
-
-        elements = append(elements, &uilib.UIElement{
-            Rect: util.ImageRect(266, 176, ok),
-            LeftClick: func(element *uilib.UIElement){
-                onOk()
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                scale.DrawScaled(screen, ok, &options)
-            },
-        })
-
-        resolutionBackground, _ := imageCache.GetImage("load.lbx", 5, 0)
-
-        elements = append(elements, &uilib.UIElement{
-            Rect: util.ImageRect(20, 40, resolutionBackground),
-            LeftClick: func(element *uilib.UIElement){
-                selected := func(name string, scale int, algorithm scale.ScaleAlgorithm) string {
-                    / *
-                    if data.ScreenScale == scale && data.ScreenScaleAlgorithm == algorithm {
-                        return name + "*"
-                    }
-                    * /
-                    return name
-                }
-
-                update := func(scale int, algorithm scale.ScaleAlgorithm){
-                    / *
-                    data.ScreenScale = scale
-                    data.ScreenScaleAlgorithm = algorithm
-                    data.ScreenWidth = data.ScreenWidthOriginal * scale
-                    data.ScreenHeight = data.ScreenHeightOriginal * scale
-                    game.UpdateImages()
-                    *imageCache = util.MakeImageCache(game.Cache)
-                    makeElements()
-                    * /
-                }
-
-                makeChoices := func (name string, scales []int, algorithm scale.ScaleAlgorithm) []uilib.Selection {
-                    var out []uilib.Selection
-                    for _, value := range scales {
-                        out = append(out, uilib.Selection{
-                            Name: selected(fmt.Sprintf("%v %vx", name, value), value, algorithm),
-                            Action: func(){
-                                update(value, algorithm)
-                            },
-                        })
-                    }
-                    return out
-                }
-
-                normalChoices := makeChoices("Normal", []int{1, 2, 3, 4}, scale.ScaleAlgorithmNormal)
-                scaleChoices := makeChoices("Scale", []int{2, 3, 4}, scale.ScaleAlgorithmScale)
-                xbrChoices := makeChoices("XBR", []int{2, 3, 4}, scale.ScaleAlgorithmXbr)
-
-                choices := append(append(normalChoices, scaleChoices...), xbrChoices...)
-
-                ui.AddElements(uilib.MakeSelectionUI(ui, game.Cache, imageCache, 40, 10, "Resolution", choices, true))
-            },
-            Draw: func (element *uilib.UIElement, screen *ebiten.Image){
-                var options ebiten.DrawImageOptions
-                options.GeoM.Translate(float64(element.Rect.Min.X), float64(element.Rect.Min.Y))
-                scale.DrawScaled(screen, resolutionBackground, &options)
-
-                x, y := options.GeoM.Apply(float64(3), float64(3))
-                fonts.OptionFont.Print(screen, x, y, scale.ScaleAmount, options.ColorScale, "Screen")
-            },
-        })
-
-        ui.AddElements(elements)
-    }
-
-    makeElements()
-    */
 }
