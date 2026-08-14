@@ -103,7 +103,7 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         },
     })
 
-    checkboxRect := image.Rect(30, 84, 30 + 12, 84 + 12)
+    checkboxRect := image.Rect(29, 84, 29 + 12, 84 + 12)
 
     group.AddElement(&uilib.UIElement{
         Layer: settingsLayer,
@@ -129,7 +129,8 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(checkboxRect.Min.Y - 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "End Of Turn Wait")
+            textY := checkboxRect.Min.Y + (checkboxRect.Dy() - fonts.OptionFont.Height()) / 2
+            fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(textY), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "End Of Turn Wait")
         },
     })
 
