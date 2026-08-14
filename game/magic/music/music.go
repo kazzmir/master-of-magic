@@ -187,6 +187,11 @@ type Music struct {
 
     // queue of songs being played. a new song can be pushed on top, or popped off
     songQueue []Songs
+
+    // Music is the one object shared between the main menu and an in-progress game,
+    // so it doubles as the holder for cross-screen user preferences like this one
+    // (mirrors the original game's 'Strategic Combat Only' option).
+    strategicCombatOnly bool
 }
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
@@ -207,6 +212,14 @@ func randomChoose[T any](choices... T) T {
 
 func (music *Music) GetVolume() float64 {
     return music.volume
+}
+
+func (music *Music) GetStrategicCombatOnly() bool {
+    return music.strategicCombatOnly
+}
+
+func (music *Music) SetStrategicCombatOnly(value bool) {
+    music.strategicCombatOnly = value
 }
 
 func (music *Music) SetVolume(volume float64) {

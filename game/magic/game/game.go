@@ -620,6 +620,10 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
     game.Model = makeModel(lbxCache, game.Events)
 
+    if len(game.Model.Players) > 0 {
+        game.Model.GetHumanPlayer().StrategicCombat = game.Music.GetStrategicCombatOnly()
+    }
+
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){
         game.DrawGame(screen)
@@ -1662,7 +1666,17 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, quit := settingslib.MakeSettingsUI(settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Music)
+    game := settings.Game
+    group, quit := settingslib.MakeSettingsUI(game.Cache, &game.ImageCache, game.Music,
+        game.Music.GetStrategicCombatOnly,
+        func(value bool){
+            game.Music.SetStrategicCombatOnly(value)
+            // apply immediately to the current game, not just future games
+            if len(game.Model.Players) > 0 {
+                game.Model.GetHumanPlayer().StrategicCombat = value
+            }
+        },
+    )
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
@@ -4605,6 +4619,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     // do graphic combat only if a human is involved
     useHuman := attacker.IsHuman() || defender.IsHuman()
+    // skip the battle screen entirely and auto-resolve if the human has enabled 'Strategic Combat Only'
+    // (the non-human side always has StrategicCombat set, so this only depends on the human's own preference)
+    useStrategicCombat := useHuman && !game.WatchMode && attacker.StrategicCombat && defender.StrategicCombat
 
     createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
         army := combat.Army{
@@ -4639,8 +4656,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var recalledAttackers []units.StackUnit
     var recalledDefenders []units.StackUnit
 
-    // strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
-
     events := make(chan combat.CombatEvent, 1000)
 
     combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events)
@@ -4663,7 +4678,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     popCombatScreen := false
 
-    if useHuman || game.WatchMode {
+    if useStrategicCombat {
+        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
+    } else if useHuman || game.WatchMode {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
         controllingPlayer := optional.Of[combat.ArmyPlayer](game.Model.GetHumanPlayer())
@@ -4695,8 +4712,10 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         state = combat.Run(combatModel)
     }
 
-    defeatedDefenders = combatModel.DefeatedDefenders
-    defeatedAttackers = combatModel.DefeatedAttackers
+    if !useStrategicCombat {
+        defeatedDefenders = combatModel.DefeatedDefenders
+        defeatedAttackers = combatModel.DefeatedAttackers
+    }
 
     // FIXME: resolve the attacker/defender stack at the end of combat?
     for _, unit := range combatModel.AttackingArmy.RecalledUnits {
