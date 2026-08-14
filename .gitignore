@@ -1,18 +1,23 @@
 # macOS system files
 .DS_Store
 
+# Personal Claude Code settings (not team-shared)
+.claude/settings.local.json
+
 # Visual Studio Code editor settings
 .vscode/
 
 # Data files
 data/data/*.zip
 data/data/*.LBX
+/data/mom/
 
 # Executables
 /lbxdump
 /lbxviewer
 /magic
 /mapeditor
+*.wasm
 
 # Memory and CPU profiles
 profile.cpu.*

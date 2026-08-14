@@ -187,6 +187,11 @@ type Music struct {
 
     // queue of songs being played. a new song can be pushed on top, or popped off
     songQueue []Songs
+
+    // Music is the one object shared between the main menu and an in-progress game,
+    // so it doubles as the holder for cross-screen user preferences like this one
+    // (mirrors the original game's 'End Of Turn Wait' option).
+    endOfTurnWait bool
 }
 
 func MakeMusic(cache *lbx.LbxCache) *Music {
@@ -198,6 +203,7 @@ func MakeMusic(cache *lbx.LbxCache) *Music {
         XmiCache: make(map[Song]*smf.SMF),
         Enabled: true,
         volume: 1.0,
+        endOfTurnWait: true,
     }
 }
 
@@ -207,6 +213,14 @@ func randomChoose[T any](choices... T) T {
 
 func (music *Music) GetVolume() float64 {
     return music.volume
+}
+
+func (music *Music) GetEndOfTurnWait() bool {
+    return music.endOfTurnWait
+}
+
+func (music *Music) SetEndOfTurnWait(value bool) {
+    music.endOfTurnWait = value
 }
 
 func (music *Music) SetVolume(volume float64) {

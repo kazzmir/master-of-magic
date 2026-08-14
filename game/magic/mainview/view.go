@@ -329,7 +329,7 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, done := settingslib.MakeSettingsUI(settings.main.Cache, &settings.main.ImageCache, settings.main.Music)
+    group, done := settingslib.MakeSettingsUI(settings.main.Cache, &settings.main.ImageCache, settings.main.Music, settings.main.Music.GetEndOfTurnWait, settings.main.Music.SetEndOfTurnWait)
 
     settings.ui.AddGroup(group)
     defer settings.ui.RemoveGroup(group)

@@ -1662,7 +1662,8 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, quit := settingslib.MakeSettingsUI(settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Music)
+    game := settings.Game
+    group, quit := settingslib.MakeSettingsUI(game.Cache, &game.ImageCache, game.Music, game.Music.GetEndOfTurnWait, game.Music.SetEndOfTurnWait)
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
@@ -3852,6 +3853,15 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
                         game.doPlayerUpdate(yield, player)
+
+                        // if the player has disabled 'end of turn wait', automatically end the turn
+                        // once there is nothing left to do: no stack selected and no stack with moves left
+                        if !game.Music.GetEndOfTurnWait() && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
+                            select {
+                                case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
+                        }
                     }
                 } else {
                     game.doAiUpdate(yield, player)

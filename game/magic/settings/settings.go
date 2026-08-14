@@ -18,7 +18,7 @@ import (
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *musiclib.Music) (*uilib.UIElementGroup, context.Context) {
+func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *musiclib.Music, getEndOfTurnWait func() bool, setEndOfTurnWait func(bool)) (*uilib.UIElementGroup, context.Context) {
     fonts := fontslib.MakeSettingsFonts(cache)
 
     group := uilib.MakeGroup()
@@ -100,6 +100,36 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
             scale.DrawScaled(screen, slider, &options)
 
             // util.DrawRect(screen, scale.ScaleRect(element.Rect), color.RGBA{R: 255, A: 255})
+        },
+    })
+
+    checkboxRect := image.Rect(30, 84, 30 + 12, 84 + 12)
+
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Rect: checkboxRect,
+        LeftClick: func(element *uilib.UIElement){
+            setEndOfTurnWait(!getEndOfTurnWait())
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            rect := element.Rect
+
+            vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * getAlpha())}, false)
+            util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(200 * getAlpha())})
+
+            if getEndOfTurnWait() {
+                inner := image.Rect(rect.Min.X + 3, rect.Min.Y + 3, rect.Max.X - 3, rect.Max.Y - 3)
+                vector.FillRect(screen, float32(scale.Scale(inner.Min.X)), float32(scale.Scale(inner.Min.Y)), float32(scale.Scale(inner.Dx())), float32(scale.Scale(inner.Dy())), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(220 * getAlpha())}, false)
+            }
+        },
+    })
+
+    group.AddElement(&uilib.UIElement{
+        Layer: settingsLayer,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(getAlpha())
+            fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(checkboxRect.Min.Y - 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "End Of Turn Wait")
         },
     })
 
