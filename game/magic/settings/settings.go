@@ -129,7 +129,9 @@ func MakeSettingsUI(cache *lbx.LbxCache, imageCache *util.ImageCache, music *mus
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
             options.ColorScale.ScaleAlpha(getAlpha())
-            textY := checkboxRect.Min.Y + (checkboxRect.Dy() - fonts.OptionFont.Height()) / 2
+            // +2: this string has no descenders, but the font's glyph cell reserves space for
+            // them, so centering on the full cell height alone reads as visually too high
+            textY := checkboxRect.Min.Y + (checkboxRect.Dy() - fonts.OptionFont.Height()) / 2 + 2
             fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(textY), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, "End Of Turn Wait")
         },
     })
