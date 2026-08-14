@@ -7853,7 +7853,7 @@ func (overworld *Overworld) DrawOverworld(screen *ebiten.Image, geom ebiten.GeoM
         location := image.Point{stack.X(), stack.Y()}
         _, hasCity := cityPositions[location]
 
-        if stack == overworld.SelectedStack && (overworld.ShowAnimation || overworld.Counter / 55 % 2 == 0) {
+        if stack == overworld.SelectedStack && (overworld.ShowAnimation || overworld.Counter / 15 % 2 == 0) {
             doDraw = true
         } else if stack == overworld.MovingStack {
             doDraw = true
