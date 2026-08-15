@@ -220,6 +220,22 @@ func (music *Music) SetVolume(volume float64) {
     }
 }
 
+func (music *Music) IsMusicEnabled() bool {
+    return music.Enabled
+}
+
+func (music *Music) SetMusicEnabled(enabled bool) {
+    music.Enabled = enabled
+
+    if !enabled {
+        music.Stop()
+    } else if len(music.songQueue) > 0 {
+        // resume whatever song context is currently active, rather than waiting
+        // for the next natural PlaySong/PushSong call somewhere else in the game
+        music.PlaySong(music.songQueue[len(music.songQueue) - 1].Choose())
+    }
+}
+
 func (music *Music) PushSongs(songs... Song) {
     music.songQueue = append(music.songQueue, Songs{Songs: songs})
     music.PlaySong(music.songQueue[len(music.songQueue)-1].Choose())
