@@ -5475,14 +5475,14 @@ func (game *Game) doSpellOfMasteryVictory(yield coroutine.YieldFunc, player *pla
         }
     }
 
-    game.Music.PushSong(music.SongSpellOfMastery)
+    game.Music.PushSong(musiclib.SongSpellOfMastery)
     vortexLogic, vortexDraw := mastery.LabVortexScreen(game.Cache, player.Wizard.Base, losers)
     game.PushDrawer(vortexDraw)
     vortexLogic(yield)
     game.PopDrawer()
     game.Music.PopSong()
 
-    game.Music.PushSong(music.SongYouWin)
+    game.Music.PushSong(musiclib.SongYouWin)
     endLogic, endDraw := mastery.SpellOfMasteryEndScreen(game.Cache, player.Wizard.Base)
     game.PushDrawer(endDraw)
     endLogic(yield)
