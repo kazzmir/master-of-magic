@@ -22,7 +22,7 @@ const settingsLayer = uilib.UILayer(5)
 
 // adds a checkbox + label pair to the group at the given position, reading/writing
 // through get/set. shared by the small handful of boolean settings on this screen.
-func addCheckbox(group *uilib.UIElementGroup, fonts *fontslib.SettingsFonts, getAlpha util.AlphaFadeFunc, x int, y int, label string, get func() bool, set func(bool)) {
+func addCheckbox(group *uilib.UIElementGroup, fonts *fontslib.SettingsFonts, getAlpha *util.AlphaFadeFunc, x int, y int, label string, get func() bool, set func(bool)) {
     checkboxRect := image.Rect(x, y, x + 12, y + 12)
 
     group.AddElement(&uilib.UIElement{
@@ -34,12 +34,12 @@ func addCheckbox(group *uilib.UIElementGroup, fonts *fontslib.SettingsFonts, get
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             rect := element.Rect
 
-            vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * getAlpha())}, false)
-            util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(200 * getAlpha())})
+            vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 32, G: 32, B: 32, A: uint8(200 * (*getAlpha)())}, false)
+            util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(200 * (*getAlpha)())})
 
             if get() {
                 inner := image.Rect(rect.Min.X + 3, rect.Min.Y + 3, rect.Max.X - 3, rect.Max.Y - 3)
-                vector.FillRect(screen, float32(scale.Scale(inner.Min.X)), float32(scale.Scale(inner.Min.Y)), float32(scale.Scale(inner.Dx())), float32(scale.Scale(inner.Dy())), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(220 * getAlpha())}, false)
+                vector.FillRect(screen, float32(scale.Scale(inner.Min.X)), float32(scale.Scale(inner.Min.Y)), float32(scale.Scale(inner.Dx())), float32(scale.Scale(inner.Dy())), color.NRGBA{R: 255, G: 255, B: 255, A: uint8(220 * (*getAlpha)())}, false)
             }
         },
     })
@@ -48,7 +48,7 @@ func addCheckbox(group *uilib.UIElementGroup, fonts *fontslib.SettingsFonts, get
         Layer: settingsLayer,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(getAlpha())
+            options.ColorScale.ScaleAlpha((*getAlpha)())
             fonts.OptionFont.PrintOptions(screen, float64(checkboxRect.Max.X + 6), float64(checkboxRect.Min.Y - 2), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, label)
         },
     })
@@ -161,12 +161,12 @@ func MakeSettingsUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.Lb
         },
     })
 
-    addCheckbox(group, fonts, getAlpha, 30, 84, "End Of Turn Wait",
+    addCheckbox(group, fonts, &getAlpha, 30, 84, "End Of Turn Wait",
         func() bool { return settings.EndOfTurnWait },
         func(value bool) { settings.EndOfTurnWait = value },
     )
 
-    addCheckbox(group, fonts, getAlpha, 30, 106, "Strategic Combat Only",
+    addCheckbox(group, fonts, &getAlpha, 30, 106, "Strategic Combat Only",
         func() bool { return settings.StrategicCombatOnly },
         func(value bool) { settings.StrategicCombatOnly = value },
     )
