@@ -32,6 +32,7 @@ import (
     introlib "github.com/kazzmir/master-of-magic/game/magic/intro"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
@@ -63,6 +64,7 @@ type MagicGame struct {
     MainCoroutine *coroutine.Coroutine
     Drawer DrawFunc
 
+    Settings *settingslib.Settings
     Music *musiclib.Music
 }
 
@@ -129,8 +131,8 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
     return state == setup.NewWizardScreenStateCanceled, newWizard.CustomWizard
 }
 
-func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) (*gamelib.Game, mainview.MainScreenState) {
-    menu := mainview.MakeMainScreen(game.Cache, gameLoader, game.Music)
+func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader, music *musiclib.Music) (*gamelib.Game, mainview.MainScreenState) {
+    menu := mainview.MakeMainScreen(game.Cache, gameLoader, music, game.Settings)
 
     game.Drawer = func(screen *ebiten.Image) {
         menu.Draw(screen)
@@ -374,6 +376,8 @@ type OriginalGameLoader struct {
     Cache *lbx.LbxCache
     NewGame chan *gamelib.Game
     FS system.WriteableFS
+    Music *musiclib.Music
+    Settings *settingslib.Settings
 }
 
 func (loader *OriginalGameLoader) LoadMetadata(path string) (serialize.SaveMetadata, bool) {
@@ -418,7 +422,7 @@ func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error 
         return fmt.Errorf("Could not load")
     }
 
-    newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), &serializedGame)
+    newGame := gamelib.MakeGameFromSerialized(loader.Cache, loader.Music, loader.Settings, &serializedGame)
     select {
         case loader.NewGame <- newGame:
         default:
@@ -434,7 +438,7 @@ func (loader *OriginalGameLoader) Load(reader io.Reader) error {
         return err
     }
 
-    newGame := saved.Convert(loader.Cache)
+    newGame := saved.Convert(loader.Cache, loader.Music, loader.Settings)
 
     if newGame != nil {
         select {
@@ -526,7 +530,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 }
 
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
-    game := gamelib.MakeGame(magic.Cache, magic.Music, settings)
+    game := gamelib.MakeGame(magic.Cache, magic.Music, magic.Settings, settings)
 
     game.RefreshUI()
 
@@ -651,6 +655,8 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
         FS: system.MakeFS(),
+        Music: game.Music,
+        Settings: game.Settings,
     }
 
     return runGameInstance(realGame, yield, game, gameLoader)
@@ -688,6 +694,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     game.Music = musiclib.MakeMusic(game.Cache)
+
+    game.Settings = settingslib.MakeSettings(game.Cache)
     game.Music.Enabled = enableMusic
     defer game.Music.Stop()
 
@@ -703,6 +711,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         Cache: game.Cache,
         NewGame: make(chan *gamelib.Game, 1),
         FS: system.MakeFS(),
+        Music: game.Music,
+        Settings: game.Settings,
     }
 
     // start a game immediately
@@ -728,7 +738,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     for {
-        newGame, state := runMainMenu(yield, game, gameLoader)
+        newGame, state := runMainMenu(yield, game, gameLoader, game.Music)
         switch state {
             case mainview.MainScreenStateQuit:
                 game.Drawer = shutdown

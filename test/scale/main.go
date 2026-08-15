@@ -14,13 +14,14 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
-    "github.com/kazzmir/master-of-magic/game/magic/music"
+    "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/game/magic/console"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     gamelib "github.com/kazzmir/master-of-magic/game/magic/game"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     // "github.com/kazzmir/master-of-magic/game/magic/terrain"
 
@@ -64,7 +65,7 @@ func createScenario1(cache *lbx.LbxCache) *gamelib.Game {
         },
     }
 
-    game := gamelib.MakeGame(cache, music.MakeMusic(cache), setup.NewGameSettings{})
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), setup.NewGameSettings{})
 
     game.Model.Plane = data.PlaneArcanus
 
