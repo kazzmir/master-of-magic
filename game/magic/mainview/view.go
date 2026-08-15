@@ -15,6 +15,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
+    "github.com/kazzmir/master-of-magic/game/magic/keybinds"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -100,6 +101,13 @@ func (main *MainScreen) MakeUI() *uilib.UI {
             }
 
             ui.StandardDraw(screen)
+        },
+        HandleKeys: func(keys []ebiten.Key){
+            for _, key := range keys {
+                if key == main.Settings.Keybindings.Get(keybinds.ActionQuitWithoutSaving) {
+                    main.State = MainScreenStateQuit
+                }
+            }
         },
     }
 
