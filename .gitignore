@@ -7,12 +7,14 @@
 # Data files
 data/data/*.zip
 data/data/*.LBX
+/data/mom/
 
 # Executables
 /lbxdump
 /lbxviewer
 /magic
 /mapeditor
+*.wasm
 
 # Memory and CPU profiles
 profile.cpu.*
