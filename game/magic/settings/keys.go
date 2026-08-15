@@ -60,7 +60,7 @@ func waitForKeyPress(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.L
     cancelled := false
     var pressed ebiten.Key
 
-    boxRect := image.Rect(60, 85, 260, 118)
+    boxRect := image.Rect(50, 85, 270, 118)
 
     element := &uilib.UIElement{
         Layer: keyPressLayer,
