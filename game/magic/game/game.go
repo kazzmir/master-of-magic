@@ -20,6 +20,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/keybinds"
     "github.com/kazzmir/master-of-magic/game/magic/mastery"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -46,7 +47,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
-    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
@@ -54,6 +54,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -188,7 +189,7 @@ type GameEventNewOutpost struct {
 type GameEventRunUI struct {
     Group *uilib.UIElementGroup
     Quit context.Context
-    Song music.Song
+    Song musiclib.Song
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -371,7 +372,8 @@ type Game struct {
 
     GameLoader gamemenu.GameLoader
 
-    Music *music.Music
+    Music *musiclib.Music
+    Settings *settingslib.Settings
 
     Fonts *GameFonts
 
@@ -525,7 +527,7 @@ func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     return pool
 }
 
-func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGameSettings) *Game {
+func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -553,12 +555,12 @@ func MakeGame(lbxCache *lbx.LbxCache, music_ *music.Music, settings setup.NewGam
         return nil
     }
 
-    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+    return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
         return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
     })
 }
 
-func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, serializedGame *SerializedGame) *Game {
+func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
 
     heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
@@ -586,12 +588,12 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music_ *music.Music, seriali
         return nil
     }
 
-    return MakeGameWithModel(lbxCache, music_, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+    return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
         return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
     })
 }
 
-func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
+func MakeGameWithModel(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
     help, err := helplib.ReadHelpFromCache(lbxCache)
     if err != nil {
         return nil
@@ -610,7 +612,8 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
     game := &Game{
         Cache: lbxCache,
         Help: help,
-        Music: music_,
+        Music: music,
+        Settings: gameSettings,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
         State: GameStateRunning,
@@ -629,7 +632,7 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music_ *music.Music, makeModel fu
         game.DrawGame(screen)
     })
 
-    game.Music.PushSongs(music.SongBackground1, music.SongBackground2, music.SongBackground3)
+    game.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
     return game
 }
@@ -1666,7 +1669,7 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, quit := settingslib.MakeSettingsUI(settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Music)
+    group, quit := settingslib.MakeSettingsUI(settings.Yield, settings.Game.HudUI, settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Settings, settings.Game.Music)
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
@@ -1728,7 +1731,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     event := GameEventRunUI{
         Group: gameMenu,
         Quit: quit,
-        Song: music.SongNone,
+        Song: musiclib.SongNone,
     }
 
     select {
@@ -2260,9 +2263,9 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 
     if event.Type.IsGood() {
-        game.Music.PushSong(music.SongGoodEvent)
+        game.Music.PushSong(musiclib.SongGoodEvent)
     } else {
-        game.Music.PushSong(music.SongBadEvent)
+        game.Music.PushSong(musiclib.SongBadEvent)
     }
 
     defer game.Music.PopSong()
@@ -2387,13 +2390,13 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventRunUI:
                         runUI := event.(*GameEventRunUI)
-                        if runUI.Song != music.SongNone {
+                        if runUI.Song != musiclib.SongNone {
                             game.Music.PushSong(runUI.Song)
                         }
 
                         game.doRunUI(yield, runUI.Group, runUI.Quit)
 
-                        if runUI.Song != music.SongNone {
+                        if runUI.Song != musiclib.SongNone {
                             game.Music.PopSong()
                         }
                     case *GameEventBuildRoad:
@@ -2520,7 +2523,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
-                        game.Music.PushSong(music.SongBuildingFinished)
+                        game.Music.PushSong(musiclib.SongBuildingFinished)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
                         game.Music.PopSong()
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
@@ -2533,7 +2536,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := summonUnit.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(music.SongCommonSummoningSpell)
+                            game.Music.PushSong(musiclib.SongCommonSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
                         }
@@ -2542,7 +2545,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := summonArtifact.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
                             game.Music.PopSong()
                         }
@@ -2551,7 +2554,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := summonHero.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman(), summonHero.Female))
                             game.Music.PopSong()
                         }
@@ -2559,7 +2562,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
-                        game.Music.PushSong(music.SongHeroGainedALevel)
+                        game.Music.PushSong(musiclib.SongHeroGainedALevel)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
                         game.Music.PopSong()
                     case *GameEventMoveCamera:
@@ -3392,6 +3395,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return
     }
 
+    player.MovedStacksThisTurn += 1
+
     mapUse := game.GetMap(stack.Plane())
 
     stepsTaken := 0
@@ -3859,6 +3864,15 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
                 if player.IsHuman() {
                     if game.HudUI.GetHighestLayerValue() == 0 {
                         game.doPlayerUpdate(yield, player)
+
+                        // if the player has disabled 'end of turn wait', automatically end the turn
+                        // once there is nothing left to do: no stack selected and no stack with moves left
+                        if !game.Settings.EndOfTurnWait && player.MovedStacksThisTurn > 0 && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
+                            select {
+                                case game.Events <- &GameEventNextTurn{}:
+                                default:
+                            }
+                        }
                     }
                 } else {
                     game.doAiUpdate(yield, player)
@@ -4297,7 +4311,7 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
         animation = util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
-    game.Music.PushSong(music.SongSiteDiscovery)
+    game.Music.PushSong(musiclib.SongSiteDiscovery)
     defer game.Music.PopSong()
 
     if len(encounter.Units) == 0 {
@@ -4613,6 +4627,18 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     // do graphic combat only if a human is involved
     useHuman := attacker.IsHuman() || defender.IsHuman()
 
+    // the human player's preference lives on Settings (togglable live in the settings
+    // screen); non-human sides use their own StrategicCombat field, which is always true
+    // for ai/monster players.
+    wantsStrategicCombat := func(player *playerlib.Player) bool {
+        if player.IsHuman() {
+            return game.Settings.StrategicCombatOnly
+        }
+        return player.StrategicCombat
+    }
+    // skip the battle screen entirely and auto-resolve if the human has enabled 'Strategic Combat Only'
+    useStrategicCombat := useHuman && !game.WatchMode && wantsStrategicCombat(attacker) && wantsStrategicCombat(defender)
+
     createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
         army := combat.Army{
             Player: player,
@@ -4646,8 +4672,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     var recalledAttackers []units.StackUnit
     var recalledDefenders []units.StackUnit
 
-    // strategicCombat := attacker.StrategicCombat && defender.StrategicCombat
-
     events := make(chan combat.CombatEvent, 1000)
 
     combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events)
@@ -4670,7 +4694,9 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     popCombatScreen := false
 
-    if useHuman || game.WatchMode {
+    if useStrategicCombat {
+        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
+    } else if useHuman || game.WatchMode {
         defer mouse.Mouse.SetImage(game.MouseData.Normal)
 
         controllingPlayer := optional.Of[combat.ArmyPlayer](game.Model.GetHumanPlayer())
@@ -4685,7 +4711,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         })
         popCombatScreen = true
 
-        game.Music.PushSong(randomChoose(music.SongCombat1, music.SongCombat2))
+        game.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
 
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
@@ -4702,8 +4728,10 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         state = combat.Run(combatModel)
     }
 
-    defeatedDefenders = combatModel.DefeatedDefenders
-    defeatedAttackers = combatModel.DefeatedAttackers
+    if !useStrategicCombat {
+        defeatedDefenders = combatModel.DefeatedDefenders
+        defeatedAttackers = combatModel.DefeatedAttackers
+    }
 
     // FIXME: resolve the attacker/defender stack at the end of combat?
     for _, unit := range combatModel.AttackingArmy.RecalledUnits {
@@ -5004,7 +5032,7 @@ func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, cast
     game.Events <- &GameEventRunUI{
         Group: group,
         Quit: quit,
-        Song: music.SongSupressMagicActivating,
+        Song: musiclib.SongSupressMagicActivating,
     }
 }
 
@@ -5410,7 +5438,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.CreateArtifact = created
             } else if spell.Name == "Spell of Mastery" {
                 // show an animation that the spell of mastery is being cast first
-                game.Music.PushSong(music.SongSpellOfMastery)
+                game.Music.PushSong(musiclib.SongSpellOfMastery)
                 logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
 
                 game.PushDrawer(draw)
@@ -5761,6 +5789,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
     var tabKeys []TrackKey
 
+    // shared with the 'next turn' button below so pressing the Next Turn key shows
+    // the same brief 'pressed' flash as clicking the button does.
+    var nextTurnClicked bool
+    var nextTurnFlashUntil uint64
+
     ui := &uilib.UI{
         Cache: game.Cache,
         Draw: func(ui *uilib.UI, screen *ebiten.Image){
@@ -5774,8 +5807,90 @@ func (game *Game) MakeHudUI() *uilib.UI {
             player := game.Model.Players[game.Model.CurrentPlayer]
             if player.IsHuman() {
                 if game.HudUI.GetHighestLayerValue() == 0 {
+                    keybindings := game.Settings.Keybindings
+
                     for _, key := range keys {
+                        // rebindable actions are checked first so that a deliberate
+                        // rebind (e.g. Next Turn -> Space) takes priority over these
+                        // fixed, non-rebindable keys.
                         switch key {
+                            case keybindings.Get(keybinds.ActionNextTurn):
+                                stack := game.Model.GetHumanPlayer().SelectedStack
+
+                                if stack == nil || stack.OutOfMoves() {
+                                    select {
+                                        case game.Events <- &GameEventNextTurn{}:
+                                            nextTurnFlashUntil = game.Counter + 6
+                                        default:
+                                    }
+                                }
+                            case keybindings.Get(keybinds.ActionSurveyor):
+                                select {
+                                    case game.Events<- &GameEventSurveyor{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionCartographer):
+                                select {
+                                    case game.Events<- &GameEventCartographer{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionApprentice):
+                                select {
+                                    case game.Events<- &GameEventApprenticeUI{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionHistorian):
+                                select {
+                                    case game.Events<- &GameEventHistorian{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionAstrologer):
+                                select {
+                                    case game.Events<- &GameEventAstrologer{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionChancellor):
+                                game.DoChancellor()
+                            case keybindings.Get(keybinds.ActionTaxCollector):
+                                cornerX := 60
+                                cornerY := 25
+                                game.ShowTaxCollectorUI(cornerX - 10, cornerY + 10)
+                            case keybindings.Get(keybinds.ActionGrandVizier):
+                                game.ShowGrandVizierUI()
+                            case keybindings.Get(keybinds.ActionMirror):
+                                game.ShowMirror()
+                            case keybindings.Get(keybinds.ActionGameScreen):
+                                select {
+                                    case game.Events <- &GameEventGameMenu{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionOpenSpellbook):
+                                select {
+                                    case game.Events <- &GameEventCastSpellBook{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionArmiesScreen):
+                                select {
+                                    case game.Events<- &GameEventArmyView{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionCitiesScreen):
+                                select {
+                                    case game.Events<- &GameEventCityListView{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionMagicScreen):
+                                select {
+                                    case game.Events<- &GameEventMagicView{}:
+                                    default:
+                                }
+                            case keybindings.Get(keybinds.ActionAdvisors):
+                                game.HudUI.AddElements(game.MakeInfoUI(60, 25))
+                            case keybindings.Get(keybinds.ActionSwitchPlanes):
+                                game.Model.SwitchPlane()
+                                game.doPlanarTraval()
+                                game.RefreshUI()
+
                             case ebiten.KeyTab:
                                 if !game.DebugMode {
                                     tabKeys = append(tabKeys, TrackKey{Key: key, When: time.Now()})
@@ -5808,50 +5923,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                         default:
                                     }
                                 }
-                            case ebiten.KeyN:
-                                stack := game.Model.GetHumanPlayer().SelectedStack
-
-                                if stack == nil || stack.OutOfMoves() {
-                                    select {
-                                        case game.Events <- &GameEventNextTurn{}:
-                                        default:
-                                    }
-                                }
-                            case ebiten.KeyF1:
-                                select {
-                                    case game.Events<- &GameEventSurveyor{}:
-                                    default:
-                                }
-                            case ebiten.KeyF2:
-                                select {
-                                    case game.Events<- &GameEventCartographer{}:
-                                    default:
-                                }
-                            case ebiten.KeyF3:
-                                select {
-                                    case game.Events<- &GameEventApprenticeUI{}:
-                                    default:
-                                }
-                            case ebiten.KeyF4:
-                                select {
-                                    case game.Events<- &GameEventHistorian{}:
-                                    default:
-                                }
-                            case ebiten.KeyF5:
-                                select {
-                                    case game.Events<- &GameEventAstrologer{}:
-                                    default:
-                                }
-                            case ebiten.KeyF6:
-                                game.DoChancellor()
-                            case ebiten.KeyF7:
-                                cornerX := 60
-                                cornerY := 25
-                                game.ShowTaxCollectorUI(cornerX - 10, cornerY + 10)
-                            case ebiten.KeyF8:
-                                game.ShowGrandVizierUI()
-                            case ebiten.KeyF9:
-                                game.ShowMirror()
                         }
                     }
                 }
@@ -6458,7 +6529,6 @@ func (game *Game) MakeHudUI() *uilib.UI {
         nextTurnImage, _ := game.ImageCache.GetImage("main.lbx", 35, 0)
         nextTurnImageClicked, _ := game.ImageCache.GetImage("main.lbx", 58, 0)
         nextTurnRect := image.Rect(240, 174, 240 + nextTurnImage.Bounds().Dx(), 174 + nextTurnImage.Bounds().Dy())
-        nextTurnClicked := false
         elements = append(elements, &uilib.UIElement{
             Rect: nextTurnRect,
             PlaySoundLeftClick: true,
@@ -6486,7 +6556,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 // the next turn image contains the entire hud background in it
                 options.GeoM.Translate(240, 174)
                 scale.DrawScaled(screen, nextTurnImage, &options)
-                if nextTurnClicked {
+                if nextTurnClicked || game.Counter < nextTurnFlashUntil {
                     options.GeoM.Translate(6, 5)
                     scale.DrawScaled(screen, nextTurnImageClicked, &options)
                 }
@@ -6958,6 +7028,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     if player.Skip {
         return
     }
+
+    player.MovedStacksThisTurn = 0
 
     disbandedMessages := game.DisbandUnits(player)
 

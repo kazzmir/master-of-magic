@@ -62,7 +62,7 @@ func (engine *Engine) Update() error {
 func NewEngine(saveGame *load.SaveGame, admin bool) (*Engine, error) {
     cache := lbx.AutoCache()
 
-    game := saveGame.Convert(cache)
+    game := saveGame.Convert(cache, nil, nil)
     game.Model.CurrentPlayer = 0
     game.RefreshUI()
     // game.DoNextTurn()

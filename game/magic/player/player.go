@@ -352,6 +352,7 @@ type Player struct {
     Cities map[data.PlanePoint]*citylib.City
 
     SelectedStack *UnitStack
+    MovedStacksThisTurn int
 
     // track how much road work has been done per tile
     RoadWorkArcanus map[image.Point]float64
@@ -1209,6 +1210,17 @@ func (player *Player) OwnsStack(stack *UnitStack) bool {
     return slices.ContainsFunc(player.Stacks, func (check *UnitStack) bool {
         return check == stack
     })
+}
+
+// true if none of the player's stacks have any moves left, meaning there is nothing left for the player to do this turn
+func (player *Player) AllStacksOutOfMoves() bool {
+    for _, stack := range player.Stacks {
+        if !stack.OutOfMoves() {
+            return false
+        }
+    }
+
+    return true
 }
 
 func (player *Player) OwnsCity(city *citylib.City) bool {
