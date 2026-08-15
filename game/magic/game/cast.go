@@ -424,9 +424,17 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
         /*
             INSTANT SPELLS
-                TODO:
-                Spell of Mastery
         */
+        case "Spell of Mastery":
+            // the casting-started announcement already played when the player chose to
+            // start casting this spell (see game.go). completion of casting is the win
+            // condition, so queue an event rather than run the victory screens directly -
+            // this function does not have a yield to drive them (and it can be invoked
+            // from the non-yielding per-turn casting-progress code path).
+            select {
+                case game.Events <- &GameEventSpellOfMasteryComplete{Player: player}:
+                default:
+            }
         case "Spell of Return":
             selected := func (yield coroutine.YieldFunc, tileX int, tileY int){
                 city := player.FindCity(tileX, tileY, game.Model.Plane)

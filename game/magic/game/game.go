@@ -116,6 +116,10 @@ type GameEventCartographer struct {
 type GameEventNextTurn struct {
 }
 
+type GameEventSpellOfMasteryComplete struct {
+    Player *playerlib.Player
+}
+
 type GameEventCityListView struct {
 }
 
@@ -2424,6 +2428,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
 
                     case *GameEventNextTurn:
                         game.doNextTurn(yield)
+                    case *GameEventSpellOfMasteryComplete:
+                        masteryEvent := event.(*GameEventSpellOfMasteryComplete)
+                        game.doSpellOfMasteryVictory(yield, masteryEvent.Player)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventCartographer:
@@ -5474,6 +5481,47 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
             }
         }
     }))
+}
+
+// called when a player's casting of the Spell of Mastery completes. shows the vortex
+// banishing all other wizards, then the victory screen, then returns to the main menu -
+// the spell of mastery is the game's win condition, so the game ends here for everyone,
+// whether the winner is the human player or an ai.
+func (game *Game) doSpellOfMasteryVictory(yield coroutine.YieldFunc, player *playerlib.Player) {
+    var losers []data.WizardBase
+    for _, other := range game.Model.Players {
+        if other != player && !other.Defeated {
+            losers = append(losers, other.Wizard.Base)
+        }
+    }
+
+    game.Music.PushSong(musiclib.SongSpellOfMastery)
+    vortexLogic, vortexDraw := mastery.LabVortexScreen(game.Cache, player.Wizard.Base, losers)
+    game.PushDrawer(vortexDraw)
+    vortexLogic(yield)
+    game.PopDrawer()
+    game.Music.PopSong()
+
+    game.Music.PushSong(musiclib.SongYouWin)
+    endLogic, endDraw := mastery.SpellOfMasteryEndScreen(game.Cache, player.Wizard.Base)
+    game.PushDrawer(endDraw)
+    endLogic(yield)
+    game.PopDrawer()
+    game.Music.PopSong()
+
+    game.State = GameStateQuit
+
+    // the same StartPlayerTurn call that finished this cast may have queued other
+    // events (e.g. a research-spell prompt) before or after this one - the game is
+    // over, so drain them rather than let ProcessEvents act on them after we return.
+    draining := true
+    for draining {
+        select {
+            case <-game.Events:
+            default:
+                draining = false
+        }
+    }
 }
 
 func (game *Game) CityGoldBonus(x int, y int, plane data.Plane) int {
