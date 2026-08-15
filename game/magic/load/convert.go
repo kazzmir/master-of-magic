@@ -17,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/settings"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -1421,7 +1422,7 @@ func setupRelations(player *playerlib.Player, index int, playerData *PlayerData,
 }
 
 func (saveGame *SaveGame) Convert(cache *lbx.LbxCache) *gamelib.Game {
-    game := gamelib.MakeGame(cache, settings.MakeSettings(cache), saveGame.convertSettings())
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), saveGame.convertSettings())
     game.Model.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
