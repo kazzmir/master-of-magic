@@ -2587,8 +2587,8 @@ func (game *Game) doCastGlobalEnchantment(yield coroutine.YieldFunc, player *pla
     }
 
     if song != music.SongNone {
-        game.Settings.Music.PushSong(song)
-        defer game.Settings.Music.PopSong()
+        game.Music.PushSong(song)
+        defer game.Music.PopSong()
     }
 
     fonts := MakeGlobalEnchantmentFonts(game.Cache)

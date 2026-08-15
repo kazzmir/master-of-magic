@@ -47,7 +47,6 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
-    "github.com/kazzmir/master-of-magic/game/magic/music"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
@@ -55,6 +54,7 @@ import (
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/lib/lbx"
     "github.com/kazzmir/master-of-magic/lib/font"
@@ -185,7 +185,7 @@ type GameEventNewOutpost struct {
 type GameEventRunUI struct {
     Group *uilib.UIElementGroup
     Quit context.Context
-    Song music.Song
+    Song musiclib.Song
 }
 
 type GameEventSelectLocationForSpell struct {
@@ -368,6 +368,7 @@ type Game struct {
 
     GameLoader gamemenu.GameLoader
 
+    Music *musiclib.Music
     Settings *settingslib.Settings
 
     Fonts *GameFonts
@@ -522,7 +523,7 @@ func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
     return pool
 }
 
-func MakeGame(lbxCache *lbx.LbxCache, gameSettings *settingslib.Settings, settings setup.NewGameSettings) *Game {
+func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, settings setup.NewGameSettings) *Game {
 
     terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
     if err != nil {
@@ -550,12 +551,12 @@ func MakeGame(lbxCache *lbx.LbxCache, gameSettings *settingslib.Settings, settin
         return nil
     }
 
-    return MakeGameWithModel(lbxCache, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+    return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
         return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
     })
 }
 
-func MakeGameFromSerialized(lbxCache *lbx.LbxCache, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
+func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
 
     heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
@@ -583,12 +584,12 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, gameSettings *settingslib.Se
         return nil
     }
 
-    return MakeGameWithModel(lbxCache, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
+    return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
         return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
     })
 }
 
-func MakeGameWithModel(lbxCache *lbx.LbxCache, gameSettings *settingslib.Settings, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
+func MakeGameWithModel(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, makeModel func (*lbx.LbxCache, chan GameEvent) *GameModel) *Game {
     help, err := helplib.ReadHelpFromCache(lbxCache)
     if err != nil {
         return nil
@@ -607,6 +608,7 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, gameSettings *settingslib.Setting
     game := &Game{
         Cache: lbxCache,
         Help: help,
+        Music: music,
         Settings: gameSettings,
         MouseData: mouseData,
         Events: make(chan GameEvent, 1000),
@@ -626,14 +628,14 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, gameSettings *settingslib.Setting
         game.DrawGame(screen)
     })
 
-    game.Settings.Music.PushSongs(music.SongBackground1, music.SongBackground2, music.SongBackground3)
+    game.Music.PushSongs(musiclib.SongBackground1, musiclib.SongBackground2, musiclib.SongBackground3)
 
     return game
 }
 
 
 func (game *Game) Shutdown() {
-    game.Settings.Music.Stop()
+    game.Music.Stop()
 }
 
 func (game *Game) UpdateImages() {
@@ -1010,8 +1012,8 @@ func (game *Game) doDiplomacy(yield coroutine.YieldFunc, player *playerlib.Playe
     })
     defer game.PopDrawer()
 
-    game.Settings.Music.PushSong(diplomacy.GetSong(player, enemy))
-    defer game.Settings.Music.PopSong()
+    game.Music.PushSong(diplomacy.GetSong(player, enemy))
+    defer game.Music.PopSong()
 
     logic(yield)
 
@@ -1663,7 +1665,7 @@ type SettingsUI struct {
 }
 
 func (settings *SettingsUI) RunSettingsUI() {
-    group, quit := settingslib.MakeSettingsUI(settings.Yield, settings.Game.HudUI, settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Settings)
+    group, quit := settingslib.MakeSettingsUI(settings.Yield, settings.Game.HudUI, settings.Game.Cache, &settings.Game.ImageCache, settings.Game.Settings, settings.Game.Music)
     settings.Game.doRunUI(settings.Yield, group, quit)
 }
 
@@ -1725,7 +1727,7 @@ func (game *Game) doGameMenu(yield coroutine.YieldFunc) {
     event := GameEventRunUI{
         Group: gameMenu,
         Quit: quit,
-        Song: music.SongNone,
+        Song: musiclib.SongNone,
     }
 
     select {
@@ -2257,12 +2259,12 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 
     if event.Type.IsGood() {
-        game.Settings.Music.PushSong(music.SongGoodEvent)
+        game.Music.PushSong(musiclib.SongGoodEvent)
     } else {
-        game.Settings.Music.PushSong(music.SongBadEvent)
+        game.Music.PushSong(musiclib.SongBadEvent)
     }
 
-    defer game.Settings.Music.PopSong()
+    defer game.Music.PopSong()
 
     drawer := game.LastDrawer()
     game.PushDrawer(func (screen *ebiten.Image){
@@ -2384,14 +2386,14 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         }
                     case *GameEventRunUI:
                         runUI := event.(*GameEventRunUI)
-                        if runUI.Song != music.SongNone {
-                            game.Settings.Music.PushSong(runUI.Song)
+                        if runUI.Song != musiclib.SongNone {
+                            game.Music.PushSong(runUI.Song)
                         }
 
                         game.doRunUI(yield, runUI.Group, runUI.Quit)
 
-                        if runUI.Song != music.SongNone {
-                            game.Settings.Music.PopSong()
+                        if runUI.Song != musiclib.SongNone {
+                            game.Music.PopSong()
                         }
                     case *GameEventBuildRoad:
                         road := event.(*GameEventBuildRoad)
@@ -2514,9 +2516,9 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventNewBuilding:
                         buildingEvent := event.(*GameEventNewBuilding)
                         game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
-                        game.Settings.Music.PushSong(music.SongBuildingFinished)
+                        game.Music.PushSong(musiclib.SongBuildingFinished)
                         game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
-                        game.Settings.Music.PopSong()
+                        game.Music.PopSong()
                         game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
                     case *GameEventCityName:
                         cityEvent := event.(*GameEventCityName)
@@ -2527,35 +2529,35 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         player := summonUnit.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Settings.Music.PushSong(music.SongCommonSummoningSpell)
+                            game.Music.PushSong(musiclib.SongCommonSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
-                            game.Settings.Music.PopSong()
+                            game.Music.PopSong()
                         }
                     case *GameEventSummonArtifact:
                         summonArtifact := event.(*GameEventSummonArtifact)
                         player := summonArtifact.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Settings.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
-                            game.Settings.Music.PopSong()
+                            game.Music.PopSong()
                         }
                     case *GameEventSummonHero:
                         summonHero := event.(*GameEventSummonHero)
                         player := summonHero.Player
 
                         if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Settings.Music.PushSong(music.SongVeryRareSummoningSpell)
+                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
                             game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman(), summonHero.Female))
-                            game.Settings.Music.PopSong()
+                            game.Music.PopSong()
                         }
                     case *GameEventGameMenu:
                         game.doGameMenu(yield)
                     case *GameEventHeroLevelUp:
                         levelEvent := event.(*GameEventHeroLevelUp)
-                        game.Settings.Music.PushSong(music.SongHeroGainedALevel)
+                        game.Music.PushSong(musiclib.SongHeroGainedALevel)
                         game.showHeroLevelUpPopup(yield, levelEvent.Hero)
-                        game.Settings.Music.PopSong()
+                        game.Music.PopSong()
                     case *GameEventMoveCamera:
                         moveCamera := event.(*GameEventMoveCamera)
                         game.Model.Plane = moveCamera.Plane
@@ -4300,8 +4302,8 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
         animation = util.MakePaletteRotateAnimation(reloadLbx, lairIndex, rotateIndexLow, rotateIndexHigh)
     }
 
-    game.Settings.Music.PushSong(music.SongSiteDiscovery)
-    defer game.Settings.Music.PopSong()
+    game.Music.PushSong(musiclib.SongSiteDiscovery)
+    defer game.Music.PopSong()
 
     if len(encounter.Units) == 0 {
         game.showEncounter(yield, fmt.Sprintf("You have found %v %v.", article, encounter.Type.Name()), animation)
@@ -4700,7 +4702,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         })
         popCombatScreen = true
 
-        game.Settings.Music.PushSong(randomChoose(music.SongCombat1, music.SongCombat2))
+        game.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
 
         state = combat.CombatStateRunning
         for state == combat.CombatStateRunning {
@@ -4710,7 +4712,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
             }
         }
 
-        game.Settings.Music.PopSong()
+        game.Music.PopSong()
         combatScreen.MouseState = combat.CombatClickHud
     } else {
         // do non-graphical combat (ai vs ai)
@@ -5021,7 +5023,7 @@ func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, cast
     game.Events <- &GameEventRunUI{
         Group: group,
         Quit: quit,
-        Song: music.SongSupressMagicActivating,
+        Song: musiclib.SongSupressMagicActivating,
     }
 }
 
@@ -5427,7 +5429,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.CreateArtifact = created
             } else if spell.Name == "Spell of Mastery" {
                 // show an animation that the spell of mastery is being cast first
-                game.Settings.Music.PushSong(music.SongSpellOfMastery)
+                game.Music.PushSong(musiclib.SongSpellOfMastery)
                 logic, draw := mastery.ShowSpellOfMasteryScreen(game.Cache, player.Wizard.Name)
 
                 game.PushDrawer(draw)
@@ -5435,7 +5437,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 logic(yield)
 
                 game.PopDrawer()
-                game.Settings.Music.PopSong()
+                game.Music.PopSong()
             }
 
             castingCost := player.ComputeEffectiveSpellCost(spell, true)

@@ -16,8 +16,8 @@ import (
 )
 
 func (game *Game) wizlabAnimation(yield coroutine.YieldFunc, wizard setup.WizardCustom){
-    game.Settings.Music.PushSong(music.SongLearnSpell)
-    defer game.Settings.Music.PopSong()
+    game.Music.PushSong(music.SongLearnSpell)
+    defer game.Music.PopSong()
 
     var fade util.AlphaFadeFunc
 
