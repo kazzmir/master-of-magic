@@ -372,6 +372,10 @@ type Player struct {
 
     SelectedStack *UnitStack
     MovedStacksThisTurn int
+    // set when the player declines the end-of-turn disband warning, so the
+    // 'end of turn wait' auto-advance check doesn't just re-trigger the same
+    // warning again on the very next frame. Cleared at the start of each turn.
+    SuppressAutoNextTurn bool
 
     // track how much road work has been done per tile
     RoadWorkArcanus map[image.Point]float64
