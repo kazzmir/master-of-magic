@@ -5,6 +5,7 @@ import (
     "math"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/artifact"
 )
 
 func floatEqual(a, b float32) bool {
@@ -110,5 +111,21 @@ func TestHeroProgression(test *testing.T) {
     // zaldron starts with 7.5, at champion level, caster should be 37
     if int(zaldron.GetAbilityValue(data.AbilityCaster)) != 37 {
         test.Errorf("Expected caster level to be 37 but was %v", zaldron.GetAbilityValue(data.AbilityCaster))
+    }
+}
+
+func TestHeroToHitMeleeEquipment(test *testing.T) {
+    brax := MakeHeroSimple(HeroBrax)
+
+    base := brax.GetToHitMelee()
+
+    brax.Equipment[0] = &artifact.Artifact{
+        Powers: []artifact.Power{
+            {Type: artifact.PowerTypeToHit, Amount: 15},
+        },
+    }
+
+    if brax.GetToHitMelee() != base + 15 {
+        test.Errorf("Expected to-hit melee to include the equipped item's to-hit bonus: base=%v with-item=%v", base, brax.GetToHitMelee())
     }
 }
