@@ -2181,6 +2181,7 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
 
         no := func(){
             quit = true
+            player.SuppressAutoNextTurn = true
             game.HudUI.RemoveGroup(group)
         }
 
@@ -3867,7 +3868,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                         // if the player has disabled 'end of turn wait', automatically end the turn
                         // once there is nothing left to do: no stack selected and no stack with moves left
-                        if !game.Settings.EndOfTurnWait && player.MovedStacksThisTurn > 0 && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
+                        if !game.Settings.EndOfTurnWait && !player.SuppressAutoNextTurn && player.MovedStacksThisTurn > 0 && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
                             select {
                                 case game.Events <- &GameEventNextTurn{}:
                                 default:
@@ -7030,6 +7031,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     }
 
     player.MovedStacksThisTurn = 0
+    player.SuppressAutoNextTurn = false
 
     disbandedMessages := game.DisbandUnits(player)
 
