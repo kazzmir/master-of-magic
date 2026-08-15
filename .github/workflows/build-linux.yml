@@ -31,7 +31,24 @@ jobs:
         run: go vet ./...
 
       - name: Test
-        run: xvfb-run go test ./lib/... ./game/...
+        run: xvfb-run go test -coverprofile=coverage.out -covermode=atomic ./lib/... ./game/...
+
+      - name: Coverage summary
+        if: always()
+        run: go tool cover -func=coverage.out
+
+      - name: Coverage HTML report
+        if: always()
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage.out
+            coverage.html
 
       - name: Build
         run: go build ./game/magic
