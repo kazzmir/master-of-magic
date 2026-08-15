@@ -419,7 +419,7 @@ func (loader *OriginalGameLoader) LoadNewReader(readerOriginal io.Reader) error 
         return fmt.Errorf("Could not load")
     }
 
-    newGame := gamelib.MakeGameFromSerialized(loader.Cache, settingslib.MakeSettings(loader.Cache), &serializedGame)
+    newGame := gamelib.MakeGameFromSerialized(loader.Cache, musiclib.MakeMusic(loader.Cache), settingslib.MakeSettings(loader.Cache), &serializedGame)
     select {
         case loader.NewGame <- newGame:
         default:
@@ -527,7 +527,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 }
 
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
-    game := gamelib.MakeGame(magic.Cache, magic.Settings, settings)
+    game := gamelib.MakeGame(magic.Cache, musiclib.MakeMusic(magic.Cache), magic.Settings, settings)
 
     game.RefreshUI()
 

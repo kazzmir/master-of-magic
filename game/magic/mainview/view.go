@@ -327,8 +327,18 @@ type SettingsUI struct {
     ui *uilib.UI
 }
 
+type VolumeSettingsNoop struct {
+}
+
+func (volumeSettings *VolumeSettingsNoop) GetVolume() float64 {
+    return 1
+}
+
+func (volumeSettings *VolumeSettingsNoop) SetVolume(volume float64) {
+}
+
 func (settings *SettingsUI) RunSettingsUI() {
-    group, done := settingslib.MakeSettingsUI(settings.yield, settings.ui, settings.main.Cache, &settings.main.ImageCache, settings.main.Settings)
+    group, done := settingslib.MakeSettingsUI(settings.yield, settings.ui, settings.main.Cache, &settings.main.ImageCache, settings.main.Settings, &VolumeSettingsNoop{})
 
     settings.ui.AddGroup(group)
     defer settings.ui.RemoveGroup(group)
