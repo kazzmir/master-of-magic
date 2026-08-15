@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,7 +22,7 @@ type Engine struct {
 func NewEngine() (*Engine, error) {
     cache := lbx.AutoCache()
 
-    mainScreen := mainview.MakeMainScreen(cache, nil, settingslib.MakeSettings(cache))
+    mainScreen := mainview.MakeMainScreen(cache, nil, musiclib.MakeMusic(cache), settingslib.MakeSettings(cache))
 
     return &Engine{
         LbxCache: cache,
