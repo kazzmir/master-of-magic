@@ -21,6 +21,7 @@ import (
 
 const keysLayer = uilib.UILayer(6)
 const keyPressLayer = uilib.UILayer(7)
+const confirmLayer = uilib.UILayer(8)
 
 // runNestedUI adds group to parentUI, pumps it each frame via yield until quit is
 // cancelled, then removes it. Mirrors game.go's doRunUI, which needs *Game and so
@@ -109,10 +110,56 @@ func waitForKeyPress(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.L
     return pressed, !cancelled
 }
 
+// confirmRebind pops the standard game confirm dialog before applying a rebind
+// that would kick a key out from under another action. It matches the original
+// game's behaviour: the previous owner is unbound and the new action takes the
+// key. Returns true when the player confirmed (the caller performs the swap), or
+// false when they cancelled (leave the bindings unchanged). Mirrors the nested-UI
+// pump of waitForKeyPress: add a group and pump it via yield until it is gone.
+func confirmRebind(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, actionName, otherName string, key ebiten.Key) bool {
+    group := uilib.MakeGroup()
+    parentUI.AddGroup(group)
+    defer parentUI.RemoveGroup(group)
+
+    quit, cancel := context.WithCancel(context.Background())
+    accepted := false
+
+     // the dialog's container and its elements must be the same group: the
+     // confirm buttons' fade/removal are driven by this group's delays, which
+     // only fire when its elements live in this group. It is rendered on
+     // confirmLayer so it sits above the keys screen instead of being hidden
+     // behind it.
+    group.AddElements(uilib.MakeConfirmDialogWithLayer(group, cache, imageCache, confirmLayer,
+        fmt.Sprintf("Key %v is already bound to %q. Bind %q to it and unbind it from %q?", key.String(), otherName, actionName, otherName),
+        true,
+        func() {
+            accepted = true
+            cancel()
+          },
+        func() {
+            cancel()
+          }))
+
+     // let the click that opened this screen finish out its frame before the
+     // confirm group starts processing input, otherwise a same-frame click on the
+     // confirm group would fire immediately.
+    yield()
+
+    for quit.Err() == nil {
+        parentUI.StandardUpdate()
+        if yield() != nil {
+            break
+          }
+      }
+
+    return accepted
+}
+
 // MakeKeysUI builds the list of rebindable actions and their current key.
-// Clicking a row opens waitForKeyPress to rebind it. Back/Ok both just close
-// the screen - rebinding already applies immediately per keypress, there is
-// no separate save/cancel state for the screen as a whole.
+// Clicking a row opens waitForKeyPress to rebind it; if the chosen key is
+// already held by another action, confirmRebind asks whether to unbind the
+// previous owner. Back/Ok just close the screen - there is no separate
+// save/cancel state for the screen as a whole.
 func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, keybindings *keybinds.Keybindings) (*uilib.UIElementGroup, context.Context) {
     fonts := fontslib.MakeSettingsFonts(cache)
     background, _ := imageCache.GetImage("load.lbx", 11, 0)
@@ -140,9 +187,24 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
             Rect: image.Rect(x, y, x + rowWidth, y + rowHeight),
             LeftClick: func(element *uilib.UIElement){
                 key, ok := waitForKeyPress(yield, parentUI, cache, action.Name())
-                if ok {
-                    keybindings.Set(action, key)
-                }
+                if !ok {
+                    return
+                        }
+
+                    // If another action currently owns this key, ask the player how to
+                    // proceed before applying the rebind so a keypress can never fire
+                    // two actions at once.
+                if other, hasConflict := keybindings.ConflictingActionForKey(key); hasConflict && other != action {
+                    if !confirmRebind(yield, parentUI, cache, imageCache, action.Name(), other.Name(), key) {
+                        return
+                        }
+
+                    // confirmed: unbind the previous owner first, matching the original
+                    // game, then bind the key to this action.
+                    keybindings.Set(other, keybinds.Unbound)
+                    }
+
+                keybindings.Set(action, key)
             },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 var options ebiten.DrawImageOptions
