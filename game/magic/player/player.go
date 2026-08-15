@@ -352,6 +352,7 @@ type Player struct {
     Cities map[data.PlanePoint]*citylib.City
 
     SelectedStack *UnitStack
+    MovedStacksThisTurn int
 
     // track how much road work has been done per tile
     RoadWorkArcanus map[image.Point]float64

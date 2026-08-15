@@ -3388,6 +3388,8 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
         return
     }
 
+    player.MovedStacksThisTurn += 1
+
     mapUse := game.GetMap(stack.Plane())
 
     stepsTaken := 0
@@ -3858,7 +3860,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 
                         // if the player has disabled 'end of turn wait', automatically end the turn
                         // once there is nothing left to do: no stack selected and no stack with moves left
-                        if !game.Settings.EndOfTurnWait && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
+                        if !game.Settings.EndOfTurnWait && player.MovedStacksThisTurn > 0 && player.SelectedStack == nil && player.AllStacksOutOfMoves() {
                             select {
                                 case game.Events <- &GameEventNextTurn{}:
                                 default:
@@ -6978,6 +6980,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
     if player.Skip {
         return
     }
+
+    player.MovedStacksThisTurn = 0
 
     disbandedMessages := game.DisbandUnits(player)
 
