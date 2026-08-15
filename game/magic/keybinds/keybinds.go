@@ -29,6 +29,7 @@ const (
     ActionGrandVizier
     ActionMirror
     ActionNextTurn
+    ActionQuitWithoutSaving
 )
 
 // AllActions lists every rebindable action, in the order they should be
@@ -51,6 +52,7 @@ var AllActions = []Action{
     ActionGrandVizier,
     ActionMirror,
     ActionNextTurn,
+    ActionQuitWithoutSaving,
 }
 
 func (action Action) Name() string {
@@ -72,6 +74,7 @@ func (action Action) Name() string {
         case ActionGrandVizier: return "Grand Vizier"
         case ActionMirror: return "Mirror"
         case ActionNextTurn: return "Next Turn"
+        case ActionQuitWithoutSaving: return "Quit Without Saving"
     }
 
     return "Unknown"
@@ -98,6 +101,7 @@ func (action Action) Default() ebiten.Key {
         case ActionGrandVizier: return ebiten.KeyF8
         case ActionMirror: return ebiten.KeyF9
         case ActionNextTurn: return ebiten.KeyN
+        case ActionQuitWithoutSaving: return Unbound
     }
 
     return Unbound
