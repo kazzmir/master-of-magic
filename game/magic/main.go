@@ -130,8 +130,8 @@ func runNewWizard(yield coroutine.YieldFunc, game *MagicGame) (bool, setup.Wizar
     return state == setup.NewWizardScreenStateCanceled, newWizard.CustomWizard
 }
 
-func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) (*gamelib.Game, mainview.MainScreenState) {
-    menu := mainview.MakeMainScreen(game.Cache, gameLoader, game.Settings)
+func runMainMenu(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader, music *musiclib.Music) (*gamelib.Game, mainview.MainScreenState) {
+    menu := mainview.MakeMainScreen(game.Cache, gameLoader, music, game.Settings)
 
     game.Drawer = func(screen *ebiten.Image) {
         menu.Draw(screen)
@@ -731,7 +731,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     for {
-        newGame, state := runMainMenu(yield, game, gameLoader)
+        newGame, state := runMainMenu(yield, game, gameLoader, music)
         switch state {
             case mainview.MainScreenStateQuit:
                 game.Drawer = shutdown

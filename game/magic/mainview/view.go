@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/gamemenu"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
+    musiclib "github.com/kazzmir/master-of-magic/game/magic/music"
     fontslib "github.com/kazzmir/master-of-magic/game/magic/fonts"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     helplib "github.com/kazzmir/master-of-magic/game/magic/help"
@@ -43,6 +44,7 @@ type MainScreen struct {
     Cache *lbx.LbxCache
     State MainScreenState
     Settings *settingslib.Settings
+    Music *musiclib.Music
     ImageCache util.ImageCache
     UI *uilib.UI
     GameLoader gamemenu.GameLoader
@@ -50,11 +52,12 @@ type MainScreen struct {
     Drawer func(screen *ebiten.Image)
 }
 
-func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader, settings *settingslib.Settings) *MainScreen {
+func MakeMainScreen(cache *lbx.LbxCache, gameLoader gamemenu.GameLoader, music *musiclib.Music, settings *settingslib.Settings) *MainScreen {
     main := &MainScreen{
         Counter: 0,
         Cache: cache,
         Settings: settings,
+        Music: music,
         ImageCache: util.MakeImageCache(cache),
         State: MainScreenStateRunning,
         GameLoader: gameLoader,
@@ -327,18 +330,8 @@ type SettingsUI struct {
     ui *uilib.UI
 }
 
-type VolumeSettingsNoop struct {
-}
-
-func (volumeSettings *VolumeSettingsNoop) GetVolume() float64 {
-    return 1
-}
-
-func (volumeSettings *VolumeSettingsNoop) SetVolume(volume float64) {
-}
-
 func (settings *SettingsUI) RunSettingsUI() {
-    group, done := settingslib.MakeSettingsUI(settings.yield, settings.ui, settings.main.Cache, &settings.main.ImageCache, settings.main.Settings, &VolumeSettingsNoop{})
+    group, done := settingslib.MakeSettingsUI(settings.yield, settings.ui, settings.main.Cache, &settings.main.ImageCache, settings.main.Settings, settings.main.Music)
 
     settings.ui.AddGroup(group)
     defer settings.ui.RemoveGroup(group)
