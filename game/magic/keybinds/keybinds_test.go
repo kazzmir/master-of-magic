@@ -126,3 +126,41 @@ func TestConflictingActionForKeyTracksRebind(test *testing.T) {
         test.Errorf("expected old owner %v to be unbound after rebind", ActionNextTurn.Name())
      }
 }
+
+// ResetToDefaults backs the Keys screen's reset button: a player muddles their
+// bindings, clicks reset, and every action returns to the original game's
+// default key.
+func TestResetToDefaultsRestoresEveryAction(test *testing.T) {
+    keybindings := MakeKeybindings()
+
+    // muddle every action onto the same key and unbind another, so no default
+    // key survives by luck.
+    for _, action := range AllActions {
+        keybindings.Set(action, ebiten.KeyQ)
+        }
+    keybindings.Set(ActionCitiesScreen, Unbound)
+
+    keybindings.ResetToDefaults()
+
+    for _, action := range AllActions {
+        if keybindings.Get(action) != action.Default() {
+            test.Errorf("expected %v to reset to %v, got %v", action.Name(), action.Default(), keybindings.Get(action))
+        }
+    }
+}
+
+// reset must clear a key that was only reachable because every action had been
+// clobbered onto it, leaving the defaults conflict-free again.
+func TestResetToDefaultsClearsClobberedConflict(test *testing.T) {
+    keybindings := MakeKeybindings()
+
+    for _, action := range AllActions {
+        keybindings.Set(action, ebiten.KeyQ)
+        }
+
+    keybindings.ResetToDefaults()
+
+    if _, ok := keybindings.ConflictingActionForKey(ebiten.KeyQ); ok {
+        test.Errorf("KeyQ should no longer be held by any action after reset")
+      }
+}

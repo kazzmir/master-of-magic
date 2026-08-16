@@ -242,6 +242,31 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
         }
     }
 
+    makeActionButton := func(x int, y int, label string, rectW int, onClick func()) *uilib.UIElement {
+        rect := image.Rect(x, y, x + rectW, y + 13)
+        return &uilib.UIElement{
+            Layer: keysLayer,
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                onClick()
+             },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 96, G: 60, B: 20, A: 255}, false)
+                util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 200, B: 100, A: 255})
+
+                var options ebiten.DrawImageOptions
+                fonts.OptionFont.PrintOptions(screen, float64(rect.Min.X + 6), float64(rect.Min.Y + 3), font.FontOptions{Scale: scale.ScaleAmount, DropShadow: true, Options: &options}, label)
+             },
+        }
+    }
+
+     // sits in the empty band between the action rows and the Back/Ok buttons, so
+     // a player can restore the original game's default bindings for every action
+     // in one click instead of re-pressing each row by hand.
+    group.AddElement(makeActionButton(10, 150, "Reset To Defaults", 180, func() {
+        keybindings.ResetToDefaults()
+         }))
+
     // matches the two button slots already baked into the load.lbx background art
     // (the same ones the settings screen's own Keys/Ok buttons sit on)
     group.AddElement(makeCloseButton(214, 176, "Back"))
