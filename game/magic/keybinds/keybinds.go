@@ -129,6 +129,24 @@ func (keybindings *Keybindings) Get(action Action) ebiten.Key {
     return keybindings.bindings[action]
 }
 
+// ConflictingActionForKey returns the action currently bound to key, or the
+// zero-value ActionGameScreen and false if no action holds that key. It is the
+// primitive the Keys screen consults before applying a rebind so a key can
+// never end up driving two actions at once.
+func (keybindings *Keybindings) ConflictingActionForKey(key ebiten.Key) (Action, bool) {
+    if key == Unbound {
+        return ActionGameScreen, false
+    }
+
+    for action, bound := range keybindings.bindings {
+        if bound == key {
+            return action, true
+        }
+    }
+
+    return ActionGameScreen, false
+}
+
 func (keybindings *Keybindings) Set(action Action, key ebiten.Key) {
     keybindings.bindings[action] = key
 }

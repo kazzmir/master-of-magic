@@ -180,6 +180,13 @@ func MakeSettingsUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.Lb
         musicSettings.IsMusicEnabled,
         musicSettings.SetMusicEnabled,
     )
+     // gates whether game.Model.DoRandomEvents() gets called each turn: when off,
+     // no new random events are rolled while in-flight ones (plague, conjunctions)
+     // still run through their normal decay path.
+    addCheckbox(group, fonts, &getAlpha, 30, 150, "Random Events",
+        func() bool { return settings.RandomEvents },
+        func(value bool) { settings.RandomEvents = value },
+     )
 
     return group, quit
 }

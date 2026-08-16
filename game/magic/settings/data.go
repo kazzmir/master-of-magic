@@ -13,6 +13,7 @@ import (
 type Settings struct {
     EndOfTurnWait bool
     StrategicCombatOnly bool
+    RandomEvents bool
     Keybindings *keybinds.Keybindings
 }
 
@@ -20,6 +21,7 @@ func MakeSettings(cache *lbx.LbxCache) *Settings {
     return &Settings{
         EndOfTurnWait: true,
         StrategicCombatOnly: false,
+        RandomEvents: true,
         Keybindings: keybinds.MakeKeybindings(),
     }
 }
