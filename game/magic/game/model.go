@@ -32,7 +32,7 @@ type GameModel struct {
     Players []*playerlib.Player
     Plane data.Plane
 
-    ArtifactPool map[string]*artifact.Artifact
+    ArtifactPool *artifact.Catalog
 
     Settings setup.NewGameSettings
 
@@ -64,7 +64,7 @@ type GameModel struct {
 func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
                    startingPlane data.Plane, events chan GameEvent,
                    heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
-                   artifactPool map[string]*artifact.Artifact,
+                   artifactPool *artifact.Catalog,
                    buildingInfo buildinglib.BuildingInfos,
                ) *GameModel {
 
@@ -1074,9 +1074,9 @@ func (model *GameModel) DoRandomEvents() {
                         return MakePiracyEvent(model.TurnNumber, gold, target), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
-                        for _, artifact := range model.ArtifactPool {
-                            if canUseArtifact(artifact, target.Wizard) {
-                                out = append(out, artifact)
+                        for _, candidate := range model.ArtifactPool.AvailableArtifacts() {
+                            if canUseArtifact(candidate, target.Wizard) {
+                                out = append(out, candidate)
                             }
                         }
 
@@ -1087,7 +1087,7 @@ func (model *GameModel) DoRandomEvents() {
 
                         use := out[rand.N(len(out))]
 
-                        delete(model.ArtifactPool, use.Name)
+                        model.ArtifactPool.Award(use)
 
                         // returning GameEventVault here is ugly but we need a way to have the vault event
                         // be added to game.Events after the random event
