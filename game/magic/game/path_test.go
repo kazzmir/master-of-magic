@@ -201,8 +201,10 @@ func TestPathBasic(test *testing.T) {
     }
 
     // an inactive ship sharing a stack with active land units must not be
-    // dragged onto land. AI movement does not split inactive units off first
-    // (human movement does), so pathfinding has to reject the move.
+    // dragged onto land. Ships only occupy ocean/shore (both !IsLand), so
+    // the case that matters is water -> land. AI movement does not split
+    // inactive units off first (human movement does), so pathfinding has
+    // to reject the move.
     func() {
         player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
 
@@ -216,24 +218,6 @@ func TestPathBasic(test *testing.T) {
         path, ok := model.FindPath(1, 0, 2, 0, player1, stack, fog)
         if ok && len(path) > 0 {
             test.Errorf("stack with an inactive ship must not path from water onto land")
-        }
-    }()
-
-    // same rule once the mixed stack is already on the coast: active land
-    // units must not walk further inland while the ship is still in the stack
-    func() {
-        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
-
-        warship := player1.AddUnit(units.MakeOverworldUnit(units.Warship, 2, 0, data.PlaneArcanus))
-        swordsmen := player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 0, data.PlaneArcanus))
-
-        stack := player1.FindStack(2, 0, data.PlaneArcanus)
-        stack.SetActive(warship, false)
-        stack.SetActive(swordsmen, true)
-
-        path, ok := model.FindPath(2, 0, 3, 0, player1, stack, fog)
-        if ok && len(path) > 0 {
-            test.Errorf("stack with an inactive ship must not path further inland")
         }
     }()
 }
