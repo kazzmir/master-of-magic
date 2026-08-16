@@ -116,6 +116,9 @@ type GameEventCartographer struct {
 type GameEventNextTurn struct {
 }
 
+type GameEventDefaultItemEditor struct {
+}
+
 type GameEventSpellOfMasteryComplete struct {
     Player *playerlib.Player
 }
@@ -512,19 +515,14 @@ func (loader *DummyGameLoader) LoadNew(path string) error {
     return errors.New("cannot load")
 }
 
-func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
+func createArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
         log.Printf("Error reading artifacts")
-        return nil
+        return artifact.MakeCatalog(nil)
     }
 
-    pool := make(map[string]*artifact.Artifact)
-    for _, artifact := range artifacts {
-        pool[artifact.Name] = &artifact
-    }
-
-    return pool
+    return artifact.MakeCatalog(artifacts)
 }
 
 func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, settings setup.NewGameSettings) *Game {
@@ -2052,9 +2050,9 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 
     var artifactCandidates []*artifact.Artifact
-    for _, artifact := range game.Model.ArtifactPool {
+    for _, candidate := range game.Model.ArtifactPool.AvailableArtifacts() {
         requirementsMet := true
-        for _, requirement := range artifact.Requirements {
+        for _, requirement := range candidate.Requirements {
             if requirement.Amount > 12 {
                 requirementsMet = false
                 break
@@ -2064,7 +2062,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
             continue
         }
 
-        artifactCandidates = append(artifactCandidates, artifact)
+        artifactCandidates = append(artifactCandidates, candidate)
     }
     if len(artifactCandidates) == 0 {
         return
@@ -2099,7 +2097,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     result := func(bought bool) {
         quit = true
         if bought {
-            delete(game.Model.ArtifactPool, artifact.Name)
+            game.Model.ArtifactPool.Award(artifact)
             player.Gold -= cost
             game.doVault(yield, artifact)
         }
@@ -2432,6 +2430,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSpellOfMasteryComplete:
                         masteryEvent := event.(*GameEventSpellOfMasteryComplete)
                         game.doSpellOfMasteryVictory(yield, masteryEvent.Player)
+                    case *GameEventDefaultItemEditor:
+                        game.doDefaultItemEditor(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventCartographer:
@@ -4405,11 +4405,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
         }
 
         makeArtifacts := func () []*artifact.Artifact {
-            var out []*artifact.Artifact
-            for _, artifact := range game.Model.ArtifactPool {
-                out = append(out, artifact)
-            }
-            return out
+            return game.Model.ArtifactPool.AvailableArtifacts()
         }
 
         // cannot find the last spell in treasure
@@ -4519,7 +4515,7 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                     }
                 }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
-                delete(game.Model.ArtifactPool, magicalItem.Artifact.Name)
+                game.Model.ArtifactPool.Award(magicalItem.Artifact)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
                 if player.IsHuman() {
@@ -5399,6 +5395,16 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors, true)
 }
 
+func (game *Game) doDefaultItemEditor(yield coroutine.YieldFunc) {
+    drawFunc := func(screen *ebiten.Image){}
+    game.PushDrawer(func(screen *ebiten.Image){
+        drawFunc(screen)
+    })
+    defer game.PopDrawer()
+
+    artifact.ShowDefaultItemEditor(yield, game.Cache, game.Model.ArtifactPool, game.AllSpells().CombatSpells(false), &drawFunc)
+}
+
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
     overlandSpells := player.KnownSpells.OverlandSpells()
     // don't show this spell in the spellbook, it will be cast automatically
@@ -5891,6 +5897,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 game.Model.SwitchPlane()
                                 game.doPlanarTraval()
                                 game.RefreshUI()
+                            case keybindings.Get(keybinds.ActionDefaultItemEditor):
+                                select {
+                                    case game.Events <- &GameEventDefaultItemEditor{}:
+                                    default:
+                                }
 
                             case ebiten.KeyTab:
                                 if !game.DebugMode {
