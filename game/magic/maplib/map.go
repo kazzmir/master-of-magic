@@ -357,11 +357,14 @@ func makeEncounter(encounterType EncounterType, difficulty data.DifficultySettin
             budget = (rand.N(30) + 1) * 30
         }
     } else {
+        // Wider spread and a lower floor so strong lairs vary more
+        // (fewer uniformly-maxed high-end lairs), then scaled down ~25%.
         if plane == data.PlaneArcanus || encounterType == EncounterTypePlaneTower {
-            budget = (rand.N(80) + 1) * 50 + 250
+            budget = (rand.N(145) + 1) * 30 + 75
         } else {
-            budget = (rand.N(90) + 1) * 50 + 250
+            budget = (rand.N(160) + 1) * 30 + 75
         }
+        budget = int(float64(budget) * 0.75)
     }
 
     bonus := float64(0)
@@ -1314,6 +1317,35 @@ func (mapObject *Map) GetEncounterLocations() []image.Point {
 
     for point, extras := range mapObject.ExtraMap {
         _, exists := extras[ExtraKindEncounter]
+        if exists {
+            out = append(out, point)
+        }
+    }
+
+    return out
+}
+
+func (mapObject *Map) GetMagicNodeLocations() []image.Point {
+    var out []image.Point
+
+    for point, extras := range mapObject.ExtraMap {
+        _, exists := extras[ExtraKindMagicNode]
+        if exists {
+            out = append(out, point)
+        }
+    }
+
+    return out
+}
+
+// GetOpenTowerLocations returns every tile on this map that holds an open
+// (already-cleared) plane tower. A unit standing on an open tower can planar
+// travel to the same tile on the opposite plane.
+func (mapObject *Map) GetOpenTowerLocations() []image.Point {
+    var out []image.Point
+
+    for point, extras := range mapObject.ExtraMap {
+        _, exists := extras[ExtraKindOpenTower]
         if exists {
             out = append(out, point)
         }

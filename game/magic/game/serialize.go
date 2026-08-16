@@ -194,7 +194,10 @@ func MakeModelFromSerialized(
             if player.GetBanner() == data.BannerBrown {
                 player.AIBehavior = ai.MakeRaiderAI()
             } else {
-                player.AIBehavior = ai.MakeEnemyAI()
+                // use the same active wizard AI as a freshly-started game
+                // (model.go AddPlayer) so loading a save doesn't silently drop
+                // back to the legacy EnemyAI
+                player.AIBehavior = ai.MakeEnemy2AI()
             }
             player.StrategicCombat = true
         }
