@@ -249,7 +249,7 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
             Rect: rect,
             LeftClick: func(element *uilib.UIElement){
                 onClick()
-             },
+            },
             Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                 vector.FillRect(screen, float32(scale.Scale(rect.Min.X)), float32(scale.Scale(rect.Min.Y)), float32(scale.Scale(rect.Dx())), float32(scale.Scale(rect.Dy())), color.NRGBA{R: 96, G: 60, B: 20, A: 255}, false)
                 util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, G: 200, B: 100, A: 255})
@@ -265,7 +265,7 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
      // in one click instead of re-pressing each row by hand.
     group.AddElement(makeActionButton(10, 150, "Reset To Defaults", 180, func() {
         keybindings.ResetToDefaults()
-         }))
+     }))
 
     // matches the two button slots already baked into the load.lbx background art
     // (the same ones the settings screen's own Keys/Ok buttons sit on)
