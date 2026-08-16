@@ -100,40 +100,9 @@ func ReadPowers(cache *lbx.LbxCache) ([]Power, map[Power]int, map[Power]set.Set[
         4: data.DeathMagic,
     }
 
-    abilityMap := map[uint32]data.ItemAbility{
-        1 << 0:  data.ItemAbilityVampiric,
-        1 << 1:  data.ItemAbilityGuardianWind,
-        1 << 2:  data.ItemAbilityLightning,
-        1 << 3:  data.ItemAbilityCloakOfFear,
-        1 << 4:  data.ItemAbilityDestruction,
-        1 << 5:  data.ItemAbilityWraithform,
-        1 << 6:  data.ItemAbilityRegeneration,
-        1 << 7:  data.ItemAbilityPathfinding,
-        1 << 8:  data.ItemAbilityWaterWalking,
-        1 << 9:  data.ItemAbilityResistElements,
-        1 << 10: data.ItemAbilityElementalArmor,
-        1 << 11: data.ItemAbilityChaos,
-        1 << 12: data.ItemAbilityStoning,
-        1 << 13: data.ItemAbilityEndurance,
-        1 << 14: data.ItemAbilityHaste,
-        1 << 15: data.ItemAbilityInvisibility,
-        1 << 16: data.ItemAbilityDeath,
-        1 << 17: data.ItemAbilityFlight,
-        1 << 18: data.ItemAbilityResistMagic,
-        1 << 19: data.ItemAbilityMagicImmunity,
-        1 << 20: data.ItemAbilityFlaming,
-        1 << 21: data.ItemAbilityHolyAvenger,
-        1 << 22: data.ItemAbilityTrueSight,
-        1 << 23: data.ItemAbilityPhantasmal,
-        1 << 24: data.ItemAbilityPowerDrain,
-        1 << 25: data.ItemAbilityBless,
-        1 << 26: data.ItemAbilityLionHeart,
-        1 << 27: data.ItemAbilityGiantStrength,
-        1 << 28: data.ItemAbilityPlanarTravel,
-        1 << 29: data.ItemAbilityMerging,
-        1 << 30: data.ItemAbilityRighteousness,
-        1 << 31: data.ItemAbilityInvulnerability,
-    }
+    // Reuse the canonical conversion maps so artifact parsing doesn't drift
+    // from item loading (both read the same itempow.lbx / itemdata.lbx).
+    _, _, abilityMap := GetItemConversionMaps()
 
     var powers []Power
     costs := make(map[Power]int)
