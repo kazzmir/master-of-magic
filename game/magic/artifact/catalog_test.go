@@ -90,6 +90,27 @@ func TestReplaceDoesNotResurrectAwardedSlot(test *testing.T) {
     }
 }
 
+func TestReplaceMutatesAwardedPointer(test *testing.T) {
+    catalog := MakeCatalog([]Artifact{
+        sampleSword("First", 1),
+        sampleSword("Second", 2),
+    })
+
+    held := catalog.Slots[0]
+    catalog.Award(held)
+
+    edited := sampleSword("Ultimate Defense", 3)
+    catalog.Replace(0, &edited)
+
+    if held != catalog.Slots[0] {
+        test.Errorf("Replace must keep the awarded pointer so equipped copies update")
+    }
+
+    if held.Name != "Ultimate Defense" || held.Powers[0].Amount != 3 {
+        test.Errorf("awarded item should show the edit, got %+v", held)
+    }
+}
+
 func TestReplaceUpdatesUnusedSlotForLaterAward(test *testing.T) {
     catalog := MakeCatalog([]Artifact{
         sampleSword("First", 1),

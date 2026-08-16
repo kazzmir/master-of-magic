@@ -123,16 +123,30 @@ func (catalog *Catalog) AwardByName(name string) {
     }
 }
 
-// Replace writes item into slot index without changing availability.
-// Used by the Default Item Editor: already-awarded slots stay awarded.
+// Replace copies item into slot index without changing availability and
+// without replacing the slot pointer. Awarded copies (hero equipment,
+// vault) share that pointer, so an in-game edit updates items already
+// in play. Used by the Default Item Editor.
 func (catalog *Catalog) Replace(index int, item *Artifact) {
     if catalog == nil || item == nil || index < 0 || index >= len(catalog.Slots) {
         return
     }
 
-    clone := CloneArtifact(item)
-    clone.CatalogIndex = index
-    catalog.Slots[index] = clone
+    slot := catalog.Slots[index]
+    if slot == nil {
+        slot = CloneArtifact(item)
+        slot.CatalogIndex = index
+        catalog.Slots[index] = slot
+        return
+    }
+
+    slot.Type = item.Type
+    slot.Image = item.Image
+    slot.Name = item.Name
+    slot.Cost = item.Cost
+    slot.Powers = append([]Power{}, item.Powers...)
+    slot.Requirements = append([]Requirement{}, item.Requirements...)
+    slot.CatalogIndex = index
 }
 
 // ApplyAvailabilityBitmap applies the 250-byte DOS save mask (1 = still
