@@ -135,10 +135,9 @@ func confirmRebind(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.Lbx
         func() {
             accepted = true
             cancel()
-          },
-        func() {
-            cancel()
-          }))
+        },
+        cancel,
+    ))
 
      // let the click that opened this screen finish out its frame before the
      // confirm group starts processing input, otherwise a same-frame click on the
@@ -189,7 +188,7 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
                 key, ok := waitForKeyPress(yield, parentUI, cache, action.Name())
                 if !ok {
                     return
-                        }
+                }
 
                     // If another action currently owns this key, ask the player how to
                     // proceed before applying the rebind so a keypress can never fire
@@ -197,12 +196,12 @@ func MakeKeysUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.LbxCac
                 if other, hasConflict := keybindings.ConflictingActionForKey(key); hasConflict && other != action {
                     if !confirmRebind(yield, parentUI, cache, imageCache, action.Name(), other.Name(), key) {
                         return
-                        }
+                    }
 
                     // confirmed: unbind the previous owner first, matching the original
                     // game, then bind the key to this action.
                     keybindings.Set(other, keybinds.Unbound)
-                    }
+                }
 
                 keybindings.Set(action, key)
             },
