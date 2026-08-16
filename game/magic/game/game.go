@@ -7615,7 +7615,11 @@ func (game *Game) EndOfTurn() {
 
     game.Model.TurnNumber += 1
 
-    game.Model.DoRandomEvents()
+     // gate random-event rolls behind the user toggle; in-flight events continue
+     // their normal decay path inside DoRandomEvents and this just skips new rolls.
+    if game.Settings.RandomEvents {
+        game.Model.DoRandomEvents()
+    }
 
     for _, player := range game.Model.Players {
         if player.Defeated || player.Banished {
