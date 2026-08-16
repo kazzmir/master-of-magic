@@ -221,8 +221,12 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         tileTo := useMap.GetTile(newX, newY)
         tileFrom := useMap.GetTile(oldX, oldY)
 
-        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
-        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
+        // if this stack contains a water-bound unit (a ship) that cannot walk on
+        // land then the move onto land is impossible. Check ALL units, not just
+        // the active ones: AI movement does not split inactive units off the
+        // stack (see doAiMoveUnit), so an inactive ship must not be dragged
+        // ashore when the active land units walk inland.
+        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(false) {
             return nil, false
         }
 
@@ -495,9 +499,11 @@ func (model *GameModel) ComputeTerrainCost(stack playerlib.PathStack, sourceX in
         return false
     }
 
-    // sailing units cannot move onto land
+    // sailing units cannot move onto land. Check ALL units (not just active
+    // ones) so an inactive ship in the stack is never dragged ashore when the
+    // active land units walk onto land.
     if tileTo.Tile.IsLand() {
-        if !stack.CanMoveOnLand(true) {
+        if !stack.CanMoveOnLand(false) {
             return fraction.Zero(), false
         }
     }
