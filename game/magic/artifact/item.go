@@ -156,6 +156,10 @@ type Artifact struct {
     Cost int
     Powers []Power
     Requirements []Requirement
+
+    // CatalogIndex is the ITEMDATA slot this artifact came from (0-249),
+    // or NotPremade if it was crafted in play.
+    CatalogIndex int
 }
 
 // if true then generally this artifact should be rendered with a glow around it
