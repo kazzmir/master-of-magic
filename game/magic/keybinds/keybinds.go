@@ -105,7 +105,8 @@ func (action Action) Default() ebiten.Key {
         case ActionMirror: return ebiten.KeyF9
         case ActionNextTurn: return ebiten.KeyN
         case ActionQuitWithoutSaving: return Unbound
-        case ActionDefaultItemEditor: return Unbound
+        // remake default: original/CP left this unbound. E is free.
+        case ActionDefaultItemEditor: return ebiten.KeyE
     }
 
     return Unbound
