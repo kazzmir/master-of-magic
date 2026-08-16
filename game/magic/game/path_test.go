@@ -199,4 +199,41 @@ func TestPathBasic(test *testing.T) {
     if !checkValidPathUnexplored(2, 1, units.HighMenSwordsmen) {
         test.Errorf("Land walker should be able to path to unexplored water tile")
     }
+
+    // an inactive ship sharing a stack with active land units must not be
+    // dragged onto land. AI movement does not split inactive units off first
+    // (human movement does), so pathfinding has to reject the move.
+    func() {
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
+
+        warship := player1.AddUnit(units.MakeOverworldUnit(units.Warship, 1, 0, data.PlaneArcanus))
+        swordsmen := player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 1, 0, data.PlaneArcanus))
+
+        stack := player1.FindStack(1, 0, data.PlaneArcanus)
+        stack.SetActive(warship, false)
+        stack.SetActive(swordsmen, true)
+
+        path, ok := model.FindPath(1, 0, 2, 0, player1, stack, fog)
+        if ok && len(path) > 0 {
+            test.Errorf("stack with an inactive ship must not path from water onto land")
+        }
+    }()
+
+    // same rule once the mixed stack is already on the coast: active land
+    // units must not walk further inland while the ship is still in the stack
+    func() {
+        player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, 3, 1, map[herolib.HeroType]string{}, &model)
+
+        warship := player1.AddUnit(units.MakeOverworldUnit(units.Warship, 2, 0, data.PlaneArcanus))
+        swordsmen := player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 2, 0, data.PlaneArcanus))
+
+        stack := player1.FindStack(2, 0, data.PlaneArcanus)
+        stack.SetActive(warship, false)
+        stack.SetActive(swordsmen, true)
+
+        path, ok := model.FindPath(2, 0, 3, 0, player1, stack, fog)
+        if ok && len(path) > 0 {
+            test.Errorf("stack with an inactive ship must not path further inland")
+        }
+    }()
 }
