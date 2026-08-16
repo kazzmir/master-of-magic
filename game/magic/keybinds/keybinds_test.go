@@ -77,10 +77,10 @@ func TestConflictingActionForKeyFindsCurrentHolder(test *testing.T) {
     got, ok := keybindings.ConflictingActionForKey(ebiten.KeyN)
     if !ok {
         test.Fatalf("expected KeyN to resolve to an action in defaults")
-     }
+    }
     if got != ActionNextTurn {
         test.Errorf("expected KeyN to be held by %v, got %v", ActionNextTurn.Name(), got.Name())
-     }
+    }
 }
 
 func TestConflictingActionForKeyUnboundReturnsNo(test *testing.T) {
@@ -90,7 +90,7 @@ func TestConflictingActionForKeyUnboundReturnsNo(test *testing.T) {
     // any real action.
     if _, ok := keybindings.ConflictingActionForKey(Unbound); ok {
         test.Errorf("Unbound should not resolve to an action")
-     }
+    }
 }
 
 func TestConflictingActionForKeyFreeKeyReturnsNo(test *testing.T) {
@@ -99,7 +99,7 @@ func TestConflictingActionForKeyFreeKeyReturnsNo(test *testing.T) {
     // KeyX is not used by any default action.
     if _, ok := keybindings.ConflictingActionForKey(ebiten.KeyX); ok {
         test.Errorf("did not expect KeyX to be held by any action")
-     }
+    }
 }
 
 // The Keys screen's flow unbinds the previous owner before applying a
@@ -115,10 +115,10 @@ func TestConflictingActionForKeyTracksRebind(test *testing.T) {
     got, ok := keybindings.ConflictingActionForKey(ebiten.KeyN)
     if !ok {
         test.Fatalf("expected KeyN to still resolve after rebind")
-     }
+    }
     if got != ActionGameScreen {
         test.Errorf("expected KeyN to be held by %v after rebind, got %v", ActionGameScreen.Name(), got.Name())
-     }
+    }
 
     // the old owner should now be unbound, and KeyN must resolve to exactly
     // one action (the new owner) with nothing else also claiming it.
@@ -137,7 +137,7 @@ func TestResetToDefaultsRestoresEveryAction(test *testing.T) {
     // key survives by luck.
     for _, action := range AllActions {
         keybindings.Set(action, ebiten.KeyQ)
-        }
+    }
     keybindings.Set(ActionCitiesScreen, Unbound)
 
     keybindings.ResetToDefaults()
@@ -156,11 +156,11 @@ func TestResetToDefaultsClearsClobberedConflict(test *testing.T) {
 
     for _, action := range AllActions {
         keybindings.Set(action, ebiten.KeyQ)
-        }
+    }
 
     keybindings.ResetToDefaults()
 
     if _, ok := keybindings.ConflictingActionForKey(ebiten.KeyQ); ok {
         test.Errorf("KeyQ should no longer be held by any action after reset")
-      }
+    }
 }
