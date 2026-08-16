@@ -144,8 +144,8 @@ func (catalog *Catalog) Replace(index int, item *Artifact) {
     slot.Image = item.Image
     slot.Name = item.Name
     slot.Cost = item.Cost
-    slot.Powers = append([]Power{}, item.Powers...)
-    slot.Requirements = append([]Requirement{}, item.Requirements...)
+    slot.Powers = slices.Clone(item.Powers)
+    slot.Requirements = slices.Clone(item.Requirements)
     slot.CatalogIndex = index
 }
 
@@ -212,7 +212,7 @@ func (catalog *Catalog) AvailableMask() []bool {
         return nil
     }
 
-    return append([]bool{}, catalog.available...)
+    return slices.Clone(catalog.available)
 }
 
 func ReconstructCatalog(items []SerializedArtifact, available []bool, allSpells spellbook.Spells) *Catalog {
@@ -243,8 +243,8 @@ func CloneArtifact(src *Artifact) *Artifact {
     }
 
     clone := *src
-    clone.Powers = append([]Power{}, src.Powers...)
-    clone.Requirements = append([]Requirement{}, src.Requirements...)
+    clone.Powers = slices.Clone(src.Powers)
+    clone.Requirements = slices.Clone(src.Requirements)
     return &clone
 }
 
