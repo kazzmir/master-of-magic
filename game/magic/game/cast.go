@@ -113,25 +113,6 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         game.maybeDoNaturesWrath(player)
     }
 
-    // AI unit-enchantment casts carry a pre-chosen target unit; apply the
-    // enchantment directly instead of opening the interactive target picker
-    // (which only exists for the human player).
-    if player.IsAI() && player.CastingSpellTarget != nil {
-        target := player.CastingSpellTarget
-        player.CastingSpellTarget = nil
-
-        enchantment := spell.GetUnitEnchantment()
-        if enchantment != data.UnitEnchantmentNone {
-            // only apply if the unit is still alive (in one of our stacks)
-            // and doesn't already have the enchantment
-            if stack := player.FindStackByUnit(target); stack != nil && !target.HasEnchantment(enchantment) {
-                target.AddEnchantment(enchantment)
-            }
-            return
-        }
-        // not a recognized unit enchantment; fall through to normal handling
-    }
-
     switch spell.Name {
         /*
             SUMMONING SPELLS
@@ -1640,6 +1621,19 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
 }
 
 func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, animationIndex int, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
+    // AI unit-enchantment casts carry a pre-chosen target. Apply before/after
+    // here so Lycanthropy, Chaos Channels, Black Channels, etc. still run,
+    // instead of opening the human tile picker.
+    if player.IsAI() && player.CastingSpellTarget != nil {
+        target := player.CastingSpellTarget
+        player.CastingSpellTarget = nil
+
+        if player.FindStackByUnit(target) != nil && before(target) {
+            after(target)
+        }
+        return
+    }
+
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)
