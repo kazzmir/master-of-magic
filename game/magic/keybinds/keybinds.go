@@ -150,3 +150,13 @@ func (keybindings *Keybindings) ConflictingActionForKey(key ebiten.Key) (Action,
 func (keybindings *Keybindings) Set(action Action, key ebiten.Key) {
     keybindings.bindings[action] = key
 }
+
+// ResetToDefaults puts every action back to the original game's default key (see
+// Action.Default), reusing the same map the actions already live in so the Keys
+// screen can reset in place and the player reviews, or further tweaks, the
+// bindings before closing the screen.
+func (keybindings *Keybindings) ResetToDefaults() {
+    for _, action := range AllActions {
+        keybindings.bindings[action] = action.Default()
+    }
+}
