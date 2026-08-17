@@ -323,8 +323,10 @@ func calculateCost(artifact *Artifact, costs map[Power]int) int {
 func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCache, fonts ArtifactFonts, picLow int, picHigh int, powerGroups [][]Power, costs map[Power]int, artifact *Artifact, customName *string, selectCount *int) []*uilib.UIElement {
     var elements []*uilib.UIElement
 
-    // image
-    artifact.Image = picLow
+    // image - keep a loaded catalog image if it is already in this type's range
+    if artifact.Image < picLow || artifact.Image > picHigh {
+        artifact.Image = picLow
+    }
 
     elements = append(elements, &uilib.UIElement{
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
@@ -487,6 +489,14 @@ func makePowersFull(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.ImageCac
         groupRight := printRight
 
         var lastPower *Power = nil
+        for i, power := range group {
+            if artifact.ContainsPower(power) {
+                groupSelect = i
+                last := power
+                lastPower = &last
+            }
+        }
+
         for i, power := range group {
             rect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth(power.Name, 1)), y + fonts.PowerFont.Height())
             if groupRight {
@@ -811,6 +821,15 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
         var lastPower *Power = nil
         selected := make([]bool, len(group))
         for i, power := range group {
+            if artifact.ContainsPower(power) {
+                groupSelect = i
+                last := power
+                lastPower = &last
+                selected[i] = true
+            }
+        }
+
+        for i, power := range group {
             artifactTypes := compatibilities[power]
             if artifactTypes.Contains(artifact.Type) && wizard.MagicLevel(power.Magic) >= power.Amount {
                 totalItems += 1
@@ -901,10 +920,19 @@ func makeAbilityElements(ui *uilib.UI, cache *lbx.LbxCache, imageCache *util.Ima
     // spell charges
     if len(availableSpells.Spells) > 0 && (artifact.Type == ArtifactTypeWand || artifact.Type == ArtifactTypeStaff) {
         xRect := image.Rect(x, y, x + int(fonts.PowerFont.MeasureTextWidth("Spell Charges", 1)), y + fonts.PowerFont.Height())
-        selected := false
+        selected := artifact.HasSpellCharges()
         totalItems += 1
 
         addedPower := Power{Type: PowerTypeNone}
+        if selected {
+            spell, charges := artifact.GetSpellCharge()
+            addedPower = Power{
+                Type: PowerTypeSpellCharges,
+                Spell: spell,
+                Amount: charges,
+                Name: fmt.Sprintf("%v x%v", spell.Name, charges),
+            }
+        }
 
         elements = append(elements, &uilib.UIElement{
             Rect: xRect,
@@ -1300,4 +1328,262 @@ func ShowCreateArtifactScreen(yield coroutine.YieldFunc, cache *lbx.LbxCache, cr
     ui.UnfocusElement()
 
     return currentArtifact, canceled
+}
+
+// unrestrictedWizard satisfies spellbook.Wizard with 11 books in every
+// realm so the Default Item Editor lists every compatible power, the way
+// ITEMMAKE does (it is a data editor, not a spell).
+type unrestrictedWizard struct {
+}
+
+func (unrestrictedWizard) MagicLevel(kind data.MagicType) int {
+    return 11
+}
+
+func (unrestrictedWizard) RetortEnabled(retort data.Retort) bool {
+    return false
+}
+
+// ShowDefaultItemEditor is the in-game ITEMMAKE replacement. It edits the
+// premade catalog in place (availability is unchanged) and returns when
+// the player clicks OK. draw is set each frame like ShowCreateArtifactScreen.
+func ShowDefaultItemEditor(yield coroutine.YieldFunc, cache *lbx.LbxCache, catalog *Catalog, availableSpells spellbook.Spells, draw *func(*ebiten.Image)) {
+    if catalog == nil || catalog.Len() == 0 {
+        return
+    }
+
+    fonts := makeFonts(cache)
+
+    imageCache := util.MakeImageCache(cache)
+
+    ui := &uilib.UI{
+        Cache: cache,
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            background, _ := imageCache.GetImage("spellscr.lbx", 13, 0)
+            scale.DrawScaled(screen, background, &options)
+
+            ui.StandardDraw(screen)
+        },
+    }
+
+    ui.SetElementsFromArray(nil)
+
+    powerEntries, costs, compatibilities, err := ReadPowers(cache)
+    if err != nil {
+        log.Printf("Unable to read item powers: %v", err)
+        return
+    }
+
+    wizard := unrestrictedWizard{}
+
+    currentIndex := 0
+    customName := ""
+    var currentArtifact *Artifact
+    var powerElements []*uilib.UIElement
+    var abilityElements []*uilib.UIElement
+    selectCount := 0
+
+    commitCurrent := func(){
+        if currentArtifact == nil {
+            return
+        }
+
+        currentArtifact.Name = getName(currentArtifact, customName)
+        currentArtifact.Cost = calculateCost(currentArtifact, costs)
+        currentArtifact.Requirements = RequirementsFromPowers(currentArtifact.Powers)
+        catalog.Replace(currentIndex, currentArtifact)
+    }
+
+    var selectedButton *uilib.UIElement
+    typeButtons := make(map[ArtifactType]*uilib.UIElement)
+
+    var refreshPowers func()
+    refreshPowers = func(){
+        ui.RemoveElements(powerElements)
+        ui.RemoveElements(abilityElements)
+
+        if currentArtifact == nil {
+            powerElements = nil
+            abilityElements = nil
+            return
+        }
+
+        picLow, picHigh := ImageRange(currentArtifact.Type)
+        ClampImageToType(currentArtifact)
+        groups := groupPowers(powerEntries, costs, compatibilities, currentArtifact.Type, CreationCreateArtifact)
+        selectCount = len(currentArtifact.Powers)
+        powerElements = makePowersFull(ui, cache, &imageCache, fonts, picLow, picHigh, groups, costs, currentArtifact, &customName, &selectCount)
+        abilityElements = makeAbilityElements(ui, cache, &imageCache, currentArtifact, &customName, fonts, powerEntries, compatibilities, costs, &selectCount, wizard, availableSpells)
+        ui.AddElements(powerElements)
+        ui.AddElements(abilityElements)
+    }
+
+    loadIndex := func(index int){
+        if catalog.Len() == 0 {
+            return
+        }
+
+        if index < 0 {
+            index = catalog.Len() - 1
+        }
+        if index >= catalog.Len() {
+            index = 0
+        }
+
+        currentIndex = index
+        currentArtifact = CloneArtifact(catalog.Slots[index])
+        if currentArtifact == nil {
+            currentArtifact = &Artifact{Type: ArtifactTypeSword, CatalogIndex: index}
+        }
+        NormalizePowers(currentArtifact, powerEntries)
+        customName = currentArtifact.Name
+        selectedButton = typeButtons[currentArtifact.Type]
+        refreshPowers()
+    }
+
+    makeButton := func(x int, y int, unselected int, selected int, item ArtifactType) *uilib.UIElement {
+        index := 0
+        imageRect, _ := imageCache.GetImage("spellscr.lbx", unselected, 0)
+        rect := util.ImageRect(x, y, imageRect)
+        return &uilib.UIElement{
+            Rect: rect,
+            PlaySoundLeftClick: true,
+            LeftClick: func(element *uilib.UIElement){
+                index = 1
+            },
+            LeftClickRelease: func(element *uilib.UIElement){
+                selectedButton = element
+                index = 0
+
+                if currentArtifact == nil {
+                    return
+                }
+
+                FilterPowersForType(currentArtifact, item, compatibilities)
+                ClampImageToType(currentArtifact)
+                currentArtifact.Name = getName(currentArtifact, customName)
+                refreshPowers()
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                var options ebiten.DrawImageOptions
+                options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+                use := unselected
+                if selectedButton == element {
+                    use = selected
+                }
+                image, _ := imageCache.GetImage("spellscr.lbx", use, index)
+                scale.DrawScaled(screen, image, &options)
+            },
+        }
+    }
+
+    unselectedImageStart := 14
+    selectedImageStart := 25
+    tmpImage, _ := imageCache.GetImage("spellscr.lbx", unselectedImageStart, 0)
+
+    for i := 0; i < 10; i++ {
+        x := 156 + (i % 5) * (tmpImage.Bounds().Dx() + 2)
+        y := 3 + (i / 5) * (tmpImage.Bounds().Dy() + 2)
+
+        itemType := ArtifactType(i + 1)
+        button := makeButton(x, y, unselectedImageStart + i, selectedImageStart + i, itemType)
+        typeButtons[itemType] = button
+        ui.AddElement(button)
+    }
+
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            cost := 0
+            if currentArtifact != nil {
+                cost = calculateCost(currentArtifact, costs)
+            }
+            fonts.PowerFontWhite.PrintOptions(screen, 198, 185, font.FontOptions{Scale: scale.ScaleAmount}, fmt.Sprintf("Cost: %v", cost))
+        },
+    })
+
+    leftImages, _ := imageCache.GetImages("spellscr.lbx", 35)
+    rightImages, _ := imageCache.GetImages("spellscr.lbx", 36)
+
+    itemLeftIndex := 0
+    itemLeftRect := util.ImageRect(40, 24, leftImages[0])
+    ui.AddElement(&uilib.UIElement{
+        Rect: itemLeftRect,
+        PlaySoundLeftClick: true,
+        LeftClick: func(element *uilib.UIElement){
+            itemLeftIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            itemLeftIndex = 0
+            commitCurrent()
+            loadIndex(currentIndex - 1)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(itemLeftRect.Min.X), float64(itemLeftRect.Min.Y))
+            scale.DrawScaled(screen, leftImages[itemLeftIndex], &options)
+        },
+    })
+
+    itemRightIndex := 0
+    itemRightRect := util.ImageRect(118, 24, rightImages[0])
+    ui.AddElement(&uilib.UIElement{
+        Rect: itemRightRect,
+        PlaySoundLeftClick: true,
+        LeftClick: func(element *uilib.UIElement){
+            itemRightIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            itemRightIndex = 0
+            commitCurrent()
+            loadIndex(currentIndex + 1)
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(itemRightRect.Min.X), float64(itemRightRect.Min.Y))
+            scale.DrawScaled(screen, rightImages[itemRightIndex], &options)
+        },
+    })
+
+    ui.AddElement(&uilib.UIElement{
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            fonts.NameFont.PrintOptions(screen, 80, 25, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter}, fmt.Sprintf("Item #%v", currentIndex + 1))
+        },
+    })
+
+    quit := false
+
+    okButtons, _ := imageCache.GetImages("spellscr.lbx", 24)
+    okIndex := 0
+    okRect := util.ImageRect(281, 180, okButtons[0])
+    ui.AddElement(&uilib.UIElement{
+        Rect: okRect,
+        PlaySoundLeftClick: true,
+        LeftClick: func(element *uilib.UIElement){
+            okIndex = 1
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            okIndex = 0
+            commitCurrent()
+            quit = true
+        },
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(float64(okRect.Min.X), float64(okRect.Min.Y))
+            scale.DrawScaled(screen, okButtons[okIndex], &options)
+        },
+    })
+
+    loadIndex(0)
+
+    *draw = func(screen *ebiten.Image) {
+        ui.Draw(ui, screen)
+    }
+
+    for !quit {
+        ui.StandardUpdate()
+        yield()
+    }
+
+    ui.UnfocusElement()
 }

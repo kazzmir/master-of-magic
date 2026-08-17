@@ -84,6 +84,32 @@ func (engine *Engine) ArtifactRoutine() func (coroutine.YieldFunc) error {
     }
 }
 
+func (engine *Engine) EditorRoutine() func (coroutine.YieldFunc) error {
+    spells, err := spellbook.ReadSpellsFromCache(engine.Cache)
+    if err != nil {
+        log.Printf("Unable to read spells: %v", err)
+    }
+
+    items, err := artifact.ReadArtifacts(engine.Cache)
+    if err != nil {
+        log.Printf("Unable to read artifacts: %v", err)
+        return func(yield coroutine.YieldFunc) error {
+            return nil
+        }
+    }
+
+    catalog := artifact.MakeCatalog(items)
+
+    return func(yield coroutine.YieldFunc) error {
+        artifact.ShowDefaultItemEditor(yield, engine.Cache, catalog, spells.CombatSpells(false), &engine.Drawer)
+        log.Printf("Default item editor closed, %v slots", catalog.Len())
+        if catalog.Len() > 0 {
+            log.Printf("Slot 0: %+v", catalog.Slots[0])
+        }
+        return nil
+    }
+}
+
 func (engine *Engine) Update() error {
     engine.Counter += 1
     inputmanager.Update()
@@ -103,6 +129,10 @@ func (engine *Engine) Update() error {
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
                 log.Printf("Artificer %v Runemaster %v", engine.Books.Artificer, engine.Books.Runemaster)
+            case ebiten.KeyF3:
+                engine.ShowUpdate = 60
+                engine.Coroutine = coroutine.MakeCoroutine(engine.EditorRoutine())
+                log.Printf("Default item editor")
         }
     }
 

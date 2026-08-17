@@ -30,6 +30,7 @@ const (
     ActionMirror
     ActionNextTurn
     ActionQuitWithoutSaving
+    ActionDefaultItemEditor
 )
 
 // AllActions lists every rebindable action, in the order they should be
@@ -53,6 +54,7 @@ var AllActions = []Action{
     ActionMirror,
     ActionNextTurn,
     ActionQuitWithoutSaving,
+    ActionDefaultItemEditor,
 }
 
 func (action Action) Name() string {
@@ -75,6 +77,7 @@ func (action Action) Name() string {
         case ActionMirror: return "Mirror"
         case ActionNextTurn: return "Next Turn"
         case ActionQuitWithoutSaving: return "Quit Without Saving"
+        case ActionDefaultItemEditor: return "Default Item Editor"
     }
 
     return "Unknown"
@@ -102,6 +105,8 @@ func (action Action) Default() ebiten.Key {
         case ActionMirror: return ebiten.KeyF9
         case ActionNextTurn: return ebiten.KeyN
         case ActionQuitWithoutSaving: return Unbound
+        // remake default: original/CP left this unbound. E is free.
+        case ActionDefaultItemEditor: return ebiten.KeyE
     }
 
     return Unbound
