@@ -157,25 +157,26 @@ type AIData struct {
 }
 
 func rawUnitAttackPower(unit units.Unit) int {
-    meleePower := float32(unit.GetMeleeAttackPower())
-    rangedPower := float32(unit.GetRangedAttackPower())
-    if unit.GetRangedAttackDamageType() == units.DamageRangedMagical {
-        rangedPower *= 1.5
-    }
-
-    return int(max(meleePower, rangedPower)) * unit.GetCount()
+    overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
+    return unitAttackPower(overworld)
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {
     total := 0
     for _, u := range unit {
-        meleePower := float32(u.GetMeleeAttackPower())
-        rangedPower := float32(u.GetRangedAttackPower())
+        meleePower := float32(u.GetMeleeAttackPower()) * float32(u.GetToHitMelee()) / 100
+        rangedPower := float32(u.GetRangedAttackPower()) * 0.3
         if u.GetRangedAttackDamageType() == units.DamageRangedMagical {
             rangedPower *= 1.5
         }
 
-        power := int(max(meleePower, rangedPower)) * u.GetCount()
+        best := max(meleePower, rangedPower)
+        // to-hit can shrink a 1-attack unit below 1; keep a floor so they
+        // still count as combatants. True 0-attack units (settlers) stay 0.
+        power := 0
+        if best > 0 {
+            power = int(max(1, best)) * u.GetCount()
+        }
 
         total += power
     }
@@ -758,7 +759,8 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                                 Building: buildinglib.BuildingTradeGoods,
                                 Unit: units.UnitNone,
                             })
-                        case chance(40):
+                        // always try to build something rather than sitting idle
+                        default:
 
                             // FIXME: if unrest is high then build a shrine/temple/etc
                             // if money production is low then build a marketplace/bank/etc
@@ -862,7 +864,14 @@ func (ai *Enemy2AI) Update(self *playerlib.Player, aiServices playerlib.AIServic
 }
 
 func (ai *Enemy2AI) ConfirmEncounter(stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter) bool {
-    return false
+    armyPower := stackAttackPower(stack)
+
+    encounterPower := 0
+    for _, unit := range encounter.Units {
+        encounterPower += rawUnitAttackPower(unit)
+    }
+
+    return armyPower >= encounterPower - rand.N(10)
 }
 
 func (ai *Enemy2AI) InvalidMove(stack *playerlib.UnitStack) {
@@ -918,11 +927,32 @@ func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {
 
     player.RebalanceFood()
 
-    ai.Attacking = make(map[*playerlib.UnitStack]bool)
-
-    for _, city := range player.Cities {
-        log.Printf("ai %v city %v farmer=%v worker=%v rebel=%v", player.Wizard.Name, city.Name, city.Farmers, city.Workers, city.Rebels)
+    ok := true
+    for ok && player.Gold + player.GoldPerTurn() * 3 < 0 {
+        var newRate fraction.Fraction
+        newRate, ok = player.NextTaxRate(player.TaxRate)
+        if ok {
+            player.UpdateTaxRate(newRate)
+        }
     }
+
+    if player.Gold < 50 && player.Mana > 200 {
+        ai.ConvertManaToGold(player)
+    }
+
+    ai.Attacking = make(map[*playerlib.UnitStack]bool)
+}
+
+func (ai *Enemy2AI) ConvertManaToGold(self *playerlib.Player) {
+    manaToConvert := int(float64(self.Mana) * 0.2)
+
+    alchemyConversion := 0.5
+    if self.Wizard.RetortEnabled(data.RetortAlchemy) {
+        alchemyConversion = 1
+    }
+
+    self.Mana -= manaToConvert
+    self.Gold += int(float64(manaToConvert) * alchemyConversion)
 }
 
 func (ai *Enemy2AI) ConfirmRazeTown(city *citylib.City) bool {

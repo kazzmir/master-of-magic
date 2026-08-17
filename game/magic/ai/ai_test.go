@@ -7,7 +7,21 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
+
+func TestUnitAttackPowerUsesToHit(test *testing.T) {
+    swordsmen := units.MakeOverworldUnit(units.HighMenSwordsmen, 0, 0, data.PlaneArcanus)
+    if unitAttackPower(swordsmen) <= 0 {
+        test.Errorf("swordsmen should have positive attack power after to-hit scaling")
+    }
+
+    settler := units.MakeOverworldUnit(units.HighMenSettlers, 0, 0, data.PlaneArcanus)
+    if unitAttackPower(settler) != 0 {
+        test.Errorf("settlers should still count as 0 attack power, got %v", unitAttackPower(settler))
+    }
+}
 
 func TestBuyItem(test *testing.T) {
     enemy := MakeEnemyAI()
