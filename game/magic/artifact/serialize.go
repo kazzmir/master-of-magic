@@ -12,6 +12,7 @@ type SerializedArtifact struct {
     Cost int `json:"cost"`
     Powers []SerializedPower `json:"powers"`
     Requirements []Requirement `json:"requirements"`
+    CatalogIndex int `json:"catalog-index"`
 }
 
 type SerializedPower struct {
@@ -75,6 +76,7 @@ func SerializeArtifact(artifact *Artifact) SerializedArtifact {
         Cost: artifact.Cost,
         Powers: serializePowers(artifact.Powers),
         Requirements: append(make([]Requirement, 0), artifact.Requirements...),
+        CatalogIndex: artifact.CatalogIndex,
     }
 }
 
@@ -86,5 +88,6 @@ func ReconstructArtifact(serialized *SerializedArtifact, allSpells spellbook.Spe
         Cost: serialized.Cost,
         Powers: reconstructPowers(serialized.Powers, allSpells),
         Requirements: serialized.Requirements,
+        CatalogIndex: serialized.CatalogIndex,
     }
 }
