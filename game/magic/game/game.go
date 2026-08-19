@@ -3344,14 +3344,29 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
+    attacker.DidConquerCity(city, raze)
+    defender.DidLoseCity(city)
+
+    // player is defeated if they have no cities left
+    defeated := len(defender.Cities) == 0
+
+    if defeated {
+        defender.Defeated = true
+        attacker.DidDefeat(defender)
+    }
+
     if containedFortress {
         defender.Banished = true
+
+        attacker.DidBanish(defender)
 
         if attacker.IsHuman() || defender.IsHuman() {
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
 
-        // FIXME: automatically start casting spell of return if possible
+        if !defeated {
+            defender.CastSpellOfReturn()
+        }
     }
 
     return raze, gold
@@ -3987,7 +4002,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if create.Patrol {
                         overworldUnit.SetBusy(units.BusyStatusPatrol)
                     }
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIUpdateCityDecision:
                     update := decision.(*playerlib.AIUpdateCityDecision)
@@ -3999,14 +4014,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
-                    var stack units.StackUnit
-                    for _, unit := range build.Stack.Units() {
-                        if unit.HasAbility(data.AbilityCreateOutpost) {
-                            stack = unit
-                            break
-                        }
-                    }
-
+                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
@@ -4959,7 +4967,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         // first remove sailing units
         for _, unit := range stack.Units() {
             if unit.IsSailing() && unit.GetHealth() <= 0 {
-                player.RemoveUnit(unit)
+                player.LoseUnit(unit)
             }
         }
 
@@ -7279,7 +7287,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     }
 
                     overworldUnit.AddExperience(newUnit.Experience)
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(city.X, city.Y, city.Plane)
 
                     if player.AIBehavior != nil {
@@ -7739,6 +7747,12 @@ func (game *Game) DoNextTurn(){
     if len(game.Model.Players) > 0 {
         player := game.Model.Players[game.Model.CurrentPlayer]
 
+        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
+
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.PreTurn(aiPlayer)
+        }
+
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
         } else {
@@ -7750,7 +7764,6 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }

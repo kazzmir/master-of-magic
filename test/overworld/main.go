@@ -48,6 +48,7 @@ type Engine struct {
 }
 
 type DummyAI struct {
+    playerlib.DefaultAIEvents
 }
 
 func (ai *DummyAI) Update(self *playerlib.Player, services playerlib.AIServices) []playerlib.AIDecision {
@@ -55,6 +56,9 @@ func (ai *DummyAI) Update(self *playerlib.Player, services playerlib.AIServices)
 }
 
 func (ai *DummyAI) PostUpdate(self *playerlib.Player, services playerlib.AIServices) {
+}
+
+func (ai *DummyAI) PreTurn(self *playerlib.Player) {
 }
 
 func (ai *DummyAI) NewTurn(self *playerlib.Player) {

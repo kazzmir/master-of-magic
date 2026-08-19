@@ -23,6 +23,7 @@ import (
 )
 
 type EnemyAI struct {
+    playerlib.DefaultAIEvents
 }
 
 func MakeEnemyAI() *EnemyAI {
@@ -311,6 +312,9 @@ func (ai *EnemyAI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISer
             stacks = self.FindAllStacks(location.X, location.Y, location.Plane)
         }
     }
+}
+
+func (ai *EnemyAI) PreTurn(player *playerlib.Player) {
 }
 
 func (ai *EnemyAI) NewTurn(player *playerlib.Player) {

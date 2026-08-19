@@ -1,0 +1,52 @@
+Neural network that uses a reward system as the feedback mechanism:
+  penalty for not having achieved population growth by year X
+  penalty for losing units (either via battle or any other means)
+  reward for population growth
+  reward for making units
+  reward for defeating other wizards
+  reward for defeating enemy wizards' units
+  reward for mana production
+  reward for taking over mana nodes
+  reward for exploring
+  reward for accessing other plane for the first time
+
+Use a two layer approach to AI where the first layer is the strategizer, and uses a reinforcement learning
+algorithm to learn what strategies to take. The second layer accepts the strategies as inputs, and invokes
+actions. For example the set of strategies can be
+
+  military_expansion = 0.4
+  attack = 0.8
+  grow_population = 0.3
+  defend_cities = 0.6
+
+Then the operational layer will inspect each city and decide what that city should do, biased by the strategy weights.
+For a single city, the operational layer will use the population size, defending units, nearby enemy units, and set of buildings
+to determine what action the city should take. The city maybe produce a set of strategies like
+
+  build_settlers = 0.2
+  trade_goods = 0.4
+  housing = 0.3
+  build_defender = 0.5
+  build_attacker = 0.1
+  building_growth = 0.4
+  ...
+
+  Then for each strategy, multiply it by the tier 1 layer, sort, and use the top value.
+
+  values = sort([build_settlers * grow_population, trade_goods * acquire_money, ...])
+  action = values[0]
+
+So the tier 1 layer can heavily influence the tier 2 operational layer, but the operational layer can override tier 1 in extreme cases.
+
+The tier 1 layer can be modeled as a neural network that is trained based on a reward that is computed every N turns. The tier 1
+layer receives as input a state extraction vector derived from the game state, computes the strategy probabilities, and then after turn N updates the weights using back propagation. A neural network with some number of hidden neuron layers can be used, with initial weights set randomly. Hidden neurons can use LeakyReLU(x) = {1 if x > 0 else 0.01x} for the activation function such that the back propagated value is either 1 or 0.01x.
+This requires D output neurons, one for each strategy probability possible.
+
+Feature extraction can result in a vector of 20 or 30 elements based on the game state that the wizard has access to.
+  number of units, overall unit power, gold, mana, food, absolute population, population growth, % of map explored, etc
+
+The tier 2 layer can be hard coded, but accepts the tier 1 probabilities as biases. Tier 2 operational agents:
+  - city agent
+  - unit agent
+  - spell casting agent
+  - diplomacy agent

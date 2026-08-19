@@ -133,6 +133,10 @@ type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
+type AIMeldDecision struct {
+    Stack *UnitStack
+}
+
 // implemented by the Game object
 type AIServices interface {
     CityEnchantmentsProvider
@@ -158,7 +162,19 @@ type AIServices interface {
     GetBuildingInfos() buildinglib.BuildingInfos
 }
 
+type AIEvents interface {
+    DidBanish(self *Player, player *Player)
+    DidDefeat(self *Player, player *Player)
+    DidSummonUnit(self *Player, unit *units.OverworldUnit)
+    DidConquerCity(city *citylib.City, raze bool)
+    DidLoseCity(city *citylib.City)
+    DidLoseUnit(unit units.StackUnit)
+    DidCreateUnit(unit units.StackUnit)
+}
+
 type AIBehavior interface {
+    AIEvents
+
     // return a list of decisions to make for the current turn
     Update(*Player, AIServices) []AIDecision
 
@@ -167,6 +183,9 @@ type AIBehavior interface {
 
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)
+
+    // any initialization that needs to be done before any turn data is computed
+    PreTurn(*Player)
 
     // called when a new unit is produced in the city
     ProducedUnit(*citylib.City, *Player)
@@ -585,6 +604,36 @@ func (player *Player) AllianceWithPlayer(other *Player) {
 func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool) {
     relation, ok := player.PlayerRelations[other]
     return relation, ok
+}
+
+func (player *Player) DidDefeat(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidDefeat(player, other)
+    }
+}
+
+func (player *Player) DidBanish(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidBanish(player, other)
+    }
+}
+
+func (player *Player) DidSummonUnit(unit *units.OverworldUnit) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidSummonUnit(player, unit)
+    }
+}
+
+func (player *Player) DidConquerCity(city *citylib.City, raze bool) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidConquerCity(city, raze)
+    }
+}
+
+func (player *Player) DidLoseCity(city *citylib.City) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseCity(city)
+    }
 }
 
 func (player *Player) IsAI() bool {
@@ -1016,6 +1065,14 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
                 }
             }
         }
+    }
+}
+
+func (player *Player) CastSpellOfReturn() {
+    spellOfReturn := player.KnownSpells.FindByName("Spell of Return")
+    if spellOfReturn.Valid() {
+        player.CastingSpellProgress = 0
+        player.CastingSpell = spellOfReturn
     }
 }
 
@@ -1562,6 +1619,16 @@ func (player *Player) UpdateUnitLocation(unit units.StackUnit, x int, y int, pla
     newStack.AddUnit(unit)
 }
 
+// similar to RemoveUnit but the reason is due to the unit being lost as a direct
+// consequence of a battle
+func (player *Player) LoseUnit(unit units.StackUnit) {
+    player.RemoveUnit(unit)
+
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseUnit(unit)
+    }
+}
+
 func (player *Player) RemoveUnit(unit units.StackUnit) {
 
     for i := 0; i < len(player.Heroes); i++ {
@@ -1614,6 +1681,15 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
     unit.SetGlobalEnchantmentProvider(player.MakeUnitEnchantmentProvider())
     unit.SetExperienceInfo(player.MakeExperienceInfo())
     return unit
+}
+
+// similar to AddUnit but specifically due to producing a unit in a city
+func (player *Player) CreateUnit(unit units.StackUnit) units.StackUnit {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidCreateUnit(unit)
+    }
+
+    return player.AddUnit(unit)
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {

@@ -39,6 +39,8 @@ import (
 )
 
 type Enemy2AI struct {
+    playerlib.DefaultAIEvents
+
     // units that are currently moving towards an enemy
     Attacking map[*playerlib.UnitStack]bool
 
@@ -426,9 +428,13 @@ type AIData struct {
     GoldPerTurn func() int
 }
 
-func rawUnitAttackPower(unit units.Unit) int {
-    overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
-    return unitAttackPower(overworld)
+func rawUnitAttackPower(units_... units.Unit) int {
+    total := 0
+    for _, unit := range units_ {
+        overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
+        total += unitAttackPower(overworld)
+    }
+    return total
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {
@@ -3043,6 +3049,9 @@ func (ai *Enemy2AI) PostUpdate(self *playerlib.Player, aiServices playerlib.AISe
 
     // make sure food is balanced at the end
     self.RebalanceFood()
+}
+
+func (ai *Enemy2AI) PreTurn(player *playerlib.Player) {
 }
 
 func (ai *Enemy2AI) NewTurn(player *playerlib.Player) {

@@ -4,6 +4,7 @@ import (
     "fmt"
     "bytes"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 func parseName(name []byte) string {
@@ -86,6 +87,27 @@ func (info BuildingInfos) GetBuildingByName(name string) *BuildingInfo {
     return nil
 }
 
+// return all dependencies of this building, including transitive dependencies, and including the building itself
+func (info BuildingInfos) TransitiveDependencies(building Building) []Building {
+    out := set.MakeSet[Building]()
+
+    var check func (dependency Building)
+    check = func (building Building) {
+        for _, dependency := range info.Dependencies(building) {
+            if !out.Contains(building) {
+                out.Insert(dependency)
+                check(dependency)
+            }
+        }
+    }
+
+    out.Insert(building)
+    check(building)
+
+    return out.Values()
+}
+
+// return immediate dependencies of this building
 func (info BuildingInfos) Dependencies(building Building) []Building {
     var out []Building
     data := info.BuildingInfo(building)
