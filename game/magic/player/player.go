@@ -67,6 +67,19 @@ type AICastSpellDecision struct {
     Spell spellbook.Spell
 }
 
+// request that the AI begin casting a unit-enchantment spell on a specific
+// target unit. The engine sets CastingSpell + CastingSpellTarget; when the
+// multi-turn cast completes, the enchantment is applied directly to Target
+// (bypassing the interactive target-selection UI used by human players).
+type AICastUnitSpellDecision struct {
+    Spell spellbook.Spell
+    Target units.StackUnit
+}
+
+func (decision *AICastUnitSpellDecision) String() string {
+    return fmt.Sprintf("CastUnitSpell %v on %v", decision.Spell.Name, decision.Target.GetName())
+}
+
 type AICreateUnitDecision struct {
     Unit units.Unit
     X int
@@ -78,6 +91,41 @@ type AICreateUnitDecision struct {
 
 type AIBuildOutpostDecision struct {
     Stack *UnitStack
+}
+
+// request the engineer stack to build a road from its current location to the
+// target tile (typically another friendly city). The engine computes the road
+// path and starts construction.
+type AIBuildRoadDecision struct {
+    Stack *UnitStack
+    X int
+    Y int
+}
+
+func (decision *AIBuildRoadDecision) String() string {
+    return fmt.Sprintf("BuildRoad from (%v,%v) to (%v,%v)", decision.Stack.X(), decision.Stack.Y(), decision.X, decision.Y)
+}
+
+// request that a spirit (a unit with the Meld ability) standing on a magic node
+// meld with it, bringing the node's magic power under the wizard's control. The
+// engine validates the stack is on an unmelded node and consumes the spirit.
+type AIMeldNodeDecision struct {
+    Stack *UnitStack
+}
+
+func (decision *AIMeldNodeDecision) String() string {
+    return fmt.Sprintf("MeldNode at (%v,%v)", decision.Stack.X(), decision.Stack.Y())
+}
+
+// request that a stack standing on an open plane tower travel to the same tile
+// on the opposite plane. The engine validates the move (PlaneShift) and clears
+// the stack's stale path.
+type AIPlaneShiftDecision struct {
+    Stack *UnitStack
+}
+
+func (decision *AIPlaneShiftDecision) String() string {
+    return fmt.Sprintf("PlaneShift at (%v,%v)", decision.Stack.X(), decision.Stack.Y())
 }
 
 // choose a new spell to research
@@ -339,6 +387,10 @@ type Player struct {
     // how much mana has been put towards the current spell. When this value equals
     // the spell's casting cost, the spell is cast
     CastingSpellProgress int
+
+    // for AI unit-enchantment casts: the unit the spell should be applied to
+    // when the cast completes. nil for human casts and non-targeted spells.
+    CastingSpellTarget units.StackUnit
 
     // the artifact currently being created by a spell cast of Create Artifact or Enchant Item
     CreateArtifact *artifact.Artifact
@@ -971,6 +1023,7 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
 func (player *Player) InterruptCastingSpell() {
     player.CastingSpell = spellbook.Spell{}
     player.CastingSpellProgress = 0
+    player.CastingSpellTarget = nil
 }
 
 // the base casting skill + any heroes with the caster ability in the fortress

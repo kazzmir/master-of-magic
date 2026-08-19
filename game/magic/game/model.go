@@ -1750,7 +1750,7 @@ func (model *GameModel) FindStacksOnContinent(x int, y int, plane data.Plane, pl
 
 type MovementHandler interface {
     ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool)
-    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int)
+    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState
     DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
     DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
 }
@@ -1818,7 +1818,15 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
 
         if encounter != nil {
             // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
-            handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+            state := handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+
+            // if we fled the encounter, step back off its tile instead of
+            // lingering on top of the (still-guarded) lair / node / tower
+            if state == combat.CombatStateAttackerFlee {
+                stack.SetX(oldX)
+                stack.SetY(oldY)
+            }
+
             return nil
         }
 
