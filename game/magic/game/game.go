@@ -5597,9 +5597,11 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     return newCity
 }
 
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode){
-    node.Meld(player, unit.GetRawUnit())
+func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode) bool {
+    melded := node.Meld(player, unit.GetRawUnit())
+    // whether melding succeeded or not the melding unit is removed
     player.RemoveUnit(unit)
+    return melded
 }
 
 // tryMeldNode melds the magic node the given stack is standing on, if the stack
@@ -5619,8 +5621,9 @@ func (game *Game) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Play
     }
     for _, unit := range stack.Units() {
         if unit.HasAbility(data.AbilityMeld) {
-            game.DoMeld(unit, player, node)
-            return true
+            if game.DoMeld(unit, player, node) {
+                return true
+            }
         }
     }
     return false
