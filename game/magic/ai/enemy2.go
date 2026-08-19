@@ -428,9 +428,13 @@ type AIData struct {
     GoldPerTurn func() int
 }
 
-func rawUnitAttackPower(unit units.Unit) int {
-    overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
-    return unitAttackPower(overworld)
+func rawUnitAttackPower(units_... units.Unit) int {
+    total := 0
+    for _, unit := range units_ {
+        overworld := units.MakeOverworldUnit(unit, 0, 0, data.PlaneArcanus)
+        total += unitAttackPower(overworld)
+    }
+    return total
 }
 
 func unitAttackPower(unit ...units.StackUnit) int {
