@@ -116,6 +116,9 @@ type GameEventCartographer struct {
 type GameEventNextTurn struct {
 }
 
+type GameEventDefaultItemEditor struct {
+}
+
 type GameEventSpellOfMasteryComplete struct {
     Player *playerlib.Player
 }
@@ -512,19 +515,14 @@ func (loader *DummyGameLoader) LoadNew(path string) error {
     return errors.New("cannot load")
 }
 
-func createArtifactPool(lbxCache *lbx.LbxCache) map[string]*artifact.Artifact {
+func createArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
         log.Printf("Error reading artifacts")
-        return nil
+        return artifact.MakeCatalog(nil)
     }
 
-    pool := make(map[string]*artifact.Artifact)
-    for _, artifact := range artifacts {
-        pool[artifact.Name] = &artifact
-    }
-
-    return pool
+    return artifact.MakeCatalog(artifacts)
 }
 
 func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, settings setup.NewGameSettings) *Game {
@@ -2052,9 +2050,9 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     }
 
     var artifactCandidates []*artifact.Artifact
-    for _, artifact := range game.Model.ArtifactPool {
+    for _, candidate := range game.Model.ArtifactPool.AvailableArtifacts() {
         requirementsMet := true
-        for _, requirement := range artifact.Requirements {
+        for _, requirement := range candidate.Requirements {
             if requirement.Amount > 12 {
                 requirementsMet = false
                 break
@@ -2064,7 +2062,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
             continue
         }
 
-        artifactCandidates = append(artifactCandidates, artifact)
+        artifactCandidates = append(artifactCandidates, candidate)
     }
     if len(artifactCandidates) == 0 {
         return
@@ -2099,7 +2097,7 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
     result := func(bought bool) {
         quit = true
         if bought {
-            delete(game.Model.ArtifactPool, artifact.Name)
+            game.Model.ArtifactPool.Award(artifact)
             player.Gold -= cost
             game.doVault(yield, artifact)
         }
@@ -2432,6 +2430,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                     case *GameEventSpellOfMasteryComplete:
                         masteryEvent := event.(*GameEventSpellOfMasteryComplete)
                         game.doSpellOfMasteryVictory(yield, masteryEvent.Player)
+                    case *GameEventDefaultItemEditor:
+                        game.doDefaultItemEditor(yield)
                     case *GameEventSurveyor:
                         game.doSurveyor(yield)
                     case *GameEventCartographer:
@@ -3908,8 +3908,8 @@ func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.Un
     handlers.Game.showMovement(handlers.Yield, x, y, stack, center)
 }
 
-func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) {
-    handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
+func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
+    return handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
@@ -3928,7 +3928,7 @@ func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
 }
 
 func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
-    log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
+    // log.Printf("AI %v year %v: make decisions", player.Wizard.Name, game.Model.TurnNumber)
 
     if player.AIBehavior != nil {
         decisionResult := make(chan []playerlib.AIDecision)
@@ -3939,7 +3939,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             close(decisionResult)
         }()
 
-        log.Printf("AI %v waiting for decisions", player.Wizard.Name)
+        // log.Printf("AI %v waiting for decisions", player.Wizard.Name)
         var decisions []playerlib.AIDecision
         done := false
 
@@ -3979,7 +3979,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         game.PopDrawer()
 
-        log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
+        // log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
         for _, decision := range decisions {
             switch decision.(type) {
@@ -4018,21 +4018,29 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
-                case *playerlib.AIMeldDecision:
-                    stack := decision.(*playerlib.AIMeldDecision).Stack
-
-                    melder := stack.GetActiveUnitWithAbility(data.AbilityMeld)
-
-                    if player.OwnsStack(stack) && melder != nil {
-                        node := game.Model.GetMap(stack.Plane()).GetMagicNode(stack.X(), stack.Y())
-                        if node != nil {
-                            game.DoMeld(melder, player, node)
+                case *playerlib.AIBuildRoadDecision:
+                    build := decision.(*playerlib.AIBuildRoadDecision)
+                    roadStack := build.Stack
+                    path := game.FindRoadPath(roadStack.X(), roadStack.Y(), build.X, build.Y, player, roadStack, player.GetFog(roadStack.Plane()))
+                    if len(path) > 0 {
+                        for _, unit := range roadStack.Units() {
+                            if unit.HasAbility(data.AbilityConstruction) {
+                                unit.SetBuildRoadPath(path)
+                            }
                         }
+                        game.MaybeBuildRoads(roadStack, player)
                     }
-
+                case *playerlib.AIMeldNodeDecision:
+                    meld := decision.(*playerlib.AIMeldNodeDecision)
+                    game.tryMeldNode(meld.Stack, player)
+                case *playerlib.AIPlaneShiftDecision:
+                    shift := decision.(*playerlib.AIPlaneShiftDecision)
+                    if err := game.PlaneShift(shift.Stack, player); err == nil {
+                        shift.Stack.CurrentPath = nil
+                    }
                 case *playerlib.AIProduceDecision:
                     produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("ai %v city %v producing %v %v", player.Wizard.Name, produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
+                    log.Printf("Year=%v AI %v(%v) city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
                     produce.City.ProducingBuilding = produce.Building
                     produce.City.ProducingUnit = produce.Unit
                 case *playerlib.AIResearchSpellDecision:
@@ -4047,6 +4055,12 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if player.CastingSpell.Invalid() {
                         player.CastingSpell = cast.Spell
                     }
+                case *playerlib.AICastUnitSpellDecision:
+                    cast := decision.(*playerlib.AICastUnitSpellDecision)
+                    if player.CastingSpell.Invalid() {
+                        player.CastingSpell = cast.Spell
+                        player.CastingSpellTarget = cast.Target
+                    }
             }
         }
 
@@ -4057,6 +4071,20 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
             for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
                 stack.CurrentPath = game.Model.doAiMoveUnit(moveHandlers, player, stack)
             }
+        }
+
+        // continue any in-progress road building and attempt to meld any node
+        // a stack is now standing on (engineers/melders may have just arrived).
+        for _, stack := range slices.Clone(player.Stacks) {
+            for _, unit := range stack.Units() {
+                if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
+                    game.MaybeBuildRoads(stack, player)
+                    break
+                }
+            }
+        }
+        for _, stack := range slices.Clone(player.Stacks) {
+            game.tryMeldNode(stack, player)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
@@ -4425,11 +4453,7 @@ func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int,
         }
 
         makeArtifacts := func () []*artifact.Artifact {
-            var out []*artifact.Artifact
-            for _, artifact := range game.Model.ArtifactPool {
-                out = append(out, artifact)
-            }
-            return out
+            return game.Model.ArtifactPool.AvailableArtifacts()
         }
 
         // cannot find the last spell in treasure
@@ -4539,7 +4563,7 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                     }
                 }
                 // if the treasure was one of the premade artifacts, then remove it from the pool
-                delete(game.Model.ArtifactPool, magicalItem.Artifact.Name)
+                game.Model.ArtifactPool.Award(magicalItem.Artifact)
             case *TreasurePrisonerHero:
                 hero := item.(*TreasurePrisonerHero)
                 if player.IsHuman() {
@@ -5419,6 +5443,16 @@ func (game *Game) MakeInfoUI(cornerX int, cornerY int) []*uilib.UIElement {
     return uilib.MakeSelectionUI(game.HudUI, game.Cache, &game.ImageCache, cornerX, cornerY, "Select An Advisor", advisors, true)
 }
 
+func (game *Game) doDefaultItemEditor(yield coroutine.YieldFunc) {
+    drawFunc := func(screen *ebiten.Image){}
+    game.PushDrawer(func(screen *ebiten.Image){
+        drawFunc(screen)
+    })
+    defer game.PopDrawer()
+
+    artifact.ShowDefaultItemEditor(yield, game.Cache, game.Model.ArtifactPool, game.AllSpells().CombatSpells(false), &drawFunc)
+}
+
 func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerlib.Player){
     overlandSpells := player.KnownSpells.OverlandSpells()
     // don't show this spell in the spellbook, it will be cast automatically
@@ -5571,9 +5605,36 @@ func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Play
     return newCity
 }
 
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode){
-    node.Meld(player, unit.GetRawUnit())
+func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode) bool {
+    melded := node.Meld(player, unit.GetRawUnit())
+    // whether melding succeeded or not the melding unit is removed
     player.RemoveUnit(unit)
+    return melded
+}
+
+// tryMeldNode melds the magic node the given stack is standing on, if the stack
+// contains a unit able to meld (a magic spirit) and the node is unowned by this
+// player and not warped. Returns true if a meld happened.
+func (game *Game) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
+    useMap := game.GetMap(stack.Plane())
+    if useMap == nil {
+        return false
+    }
+    if useMap.GetEncounter(stack.X(), stack.Y()) != nil {
+        return false
+    }
+    node := useMap.GetMagicNode(stack.X(), stack.Y())
+    if node == nil || node.Warped || node.MeldingWizard == player {
+        return false
+    }
+    for _, unit := range stack.Units() {
+        if unit.HasAbility(data.AbilityMeld) {
+            if game.DoMeld(unit, player, node) {
+                return true
+            }
+        }
+    }
+    return false
 }
 
 func (game *Game) DoBuildAction(player *playerlib.Player){
@@ -5911,6 +5972,11 @@ func (game *Game) MakeHudUI() *uilib.UI {
                                 game.Model.SwitchPlane()
                                 game.doPlanarTraval()
                                 game.RefreshUI()
+                            case keybindings.Get(keybinds.ActionDefaultItemEditor):
+                                select {
+                                    case game.Events <- &GameEventDefaultItemEditor{}:
+                                    default:
+                                }
 
                             case ebiten.KeyTab:
                                 if !game.DebugMode {
@@ -7189,7 +7255,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                             default:
                         }
                     } else {
-                        log.Printf("ai created %v", game.Model.BuildingInfo.Name(newBuilding.Building))
+                        log.Printf("Year=%v AI %v(%v) city %v created %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
                     }
                 case *citylib.CityEventOutpostDestroyed:
                     removeCities = append(removeCities, city)
@@ -7226,6 +7292,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
                     if player.AIBehavior != nil {
                         player.AIBehavior.ProducedUnit(city, player)
+                        log.Printf("Year=%v AI %v(%v) city %v created unit %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, overworldUnit.GetName())
                     }
                 }
             }
@@ -7647,6 +7714,19 @@ func (game *Game) EndOfTurn() {
         }
 
         player.UpdateDiplomaticRelations()
+    }
+
+    if game.WatchMode {
+        log.Printf("---- End of Year %v Summary ----", game.Model.TurnNumber - 1)
+        for _, player := range game.Model.Players {
+            if !player.IsHuman() {
+                power := game.Model.ComputePower(player)
+                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Tax: %v, Research: %v (%v)",
+                    player.Wizard.Name, player.GetBanner(), player.Gold, player.GoldPerTurn(), player.FoodPerTurn(), player.Mana, player.ManaPerTurn(power, game.Model),
+                    len(player.Cities), player.UnitCount(), player.TaxRate,
+                    player.ResearchingSpell.Name, player.ResearchProgress)
+            }
+        }
     }
 
 }

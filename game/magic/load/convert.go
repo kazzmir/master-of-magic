@@ -631,7 +631,9 @@ func (saveGame *SaveGame) convertPlayer(playerIndex int, wizards []setup.WizardC
 
     var aiBehavior playerlib.AIBehavior
     if !human {
-        aiBehavior = ai.MakeEnemyAI()
+        // use the active wizard AI (same as a freshly-started game) rather than
+        // the legacy EnemyAI, so imported original saves play with the real AI
+        aiBehavior = ai.MakeEnemy2AI()
     }
 
     enchantmentMap := map[int]data.Enchantment{
@@ -1426,6 +1428,10 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache, music *musiclib.Music, se
     game.Model.TurnNumber = uint64(saveGame.Turn)
 
     artifacts := saveGame.convertArtifacts(game.AllSpells())
+    // DOS saves store a 250-byte mask of which ITEMDATA slots are still
+    // available; apply that first, then also award anything already in play
+    // (name match) so a missing/zero mask still drops found premade items.
+    game.Model.ArtifactPool.ApplyAvailabilityBitmap(saveGame.PremadeItems)
     // artifacts that are in the game are removed from the pool
     // because the ones in the pool are the ones not found yet.
     // an artifact that is not in the pool must have been created
@@ -1435,10 +1441,7 @@ func (saveGame *SaveGame) Convert(cache *lbx.LbxCache, music *musiclib.Music, se
             continue
         }
 
-        _, ok := game.Model.ArtifactPool[artifact.Name]
-        if ok {
-            delete(game.Model.ArtifactPool, artifact.Name)
-        }
+        game.Model.ArtifactPool.Award(artifact)
     }
 
     /*

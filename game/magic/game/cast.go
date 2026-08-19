@@ -1621,6 +1621,19 @@ func (game *Game) doDisenchantArea(yield coroutine.YieldFunc, player *playerlib.
 }
 
 func (game *Game) doCastOnUnit(player *playerlib.Player, spell spellbook.Spell, animationIndex int, before UnitEnchantmentCallback, after UnitEnchantmentCallback) {
+    // AI unit-enchantment casts carry a pre-chosen target. Apply before/after
+    // here so Lycanthropy, Chaos Channels, Black Channels, etc. still run,
+    // instead of opening the human tile picker.
+    if player.IsAI() && player.CastingSpellTarget != nil {
+        target := player.CastingSpellTarget
+        player.CastingSpellTarget = nil
+
+        if player.FindStackByUnit(target) != nil && before(target) {
+            after(target)
+        }
+        return
+    }
+
     var selected func (yield coroutine.YieldFunc, tileX int, tileY int)
     selected = func (yield coroutine.YieldFunc, tileX int, tileY int){
         game.doMoveCamera(yield, tileX, tileY)

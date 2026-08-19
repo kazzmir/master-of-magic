@@ -2,8 +2,6 @@ package game
 
 import (
     "time"
-    "maps"
-    "slices"
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/ai"
@@ -73,7 +71,11 @@ type SerializedGame struct {
     Arcanus maplib.SerializedMap `json:"arcanus"`
     Myrror maplib.SerializedMap `json:"myrror"`
     Plane data.Plane `json:"plane"`
-    ArtifactPool []string `json:"artifact-pool"`
+    // ArtifactPool is the old remaining-name list. New saves also write
+    // ArtifactCatalog + ArtifactAvailable; load prefers those when present.
+    ArtifactPool []string `json:"artifact-pool,omitempty"`
+    ArtifactCatalog []artifact.SerializedArtifact `json:"artifact-catalog,omitempty"`
+    ArtifactAvailable []bool `json:"artifact-available,omitempty"`
     Settings setup.NewGameSettings `json:"settings"`
     CurrentPlayer int `json:"current-player"`
     Turn uint64 `json:"turn"`
@@ -96,7 +98,9 @@ func SerializeModel(model *GameModel, saveName string) SerializedGame {
         },
         Arcanus: maplib.SerializeMap(model.ArcanusMap),
         Myrror: maplib.SerializeMap(model.MyrrorMap),
-        ArtifactPool: slices.Collect(maps.Keys(model.ArtifactPool)),
+        ArtifactPool: model.ArtifactPool.AvailableNames(),
+        ArtifactCatalog: model.ArtifactPool.Serialize(),
+        ArtifactAvailable: model.ArtifactPool.AvailableMask(),
         Plane:  model.Plane,
         Settings: model.Settings,
         CurrentPlayer: model.CurrentPlayer,
@@ -107,16 +111,12 @@ func SerializeModel(model *GameModel, saveName string) SerializedGame {
     }
 }
 
-func reconstructArtifactPool(items []string, artifactPool map[string]*artifact.Artifact) map[string]*artifact.Artifact {
-    out := make(map[string]*artifact.Artifact)
-
-    for _, itemName := range items {
-        if item, ok := artifactPool[itemName]; ok {
-            out[itemName] = item
-        }
+func reconstructArtifactPool(serializedGame *SerializedGame, vanilla *artifact.Catalog, allSpells spellbook.Spells) *artifact.Catalog {
+    if len(serializedGame.ArtifactCatalog) > 0 {
+        return artifact.ReconstructCatalog(serializedGame.ArtifactCatalog, serializedGame.ArtifactAvailable, allSpells)
     }
 
-    return out
+    return vanilla.WithAvailableNames(serializedGame.ArtifactPool)
 }
 
 func reconstructRandomEvents(serializedEvents []SerializedRandomEvent, model *GameModel) []*RandomEvent {
@@ -163,13 +163,13 @@ func MakeModelFromSerialized(
     serializedGame *SerializedGame, events chan GameEvent,
     heroNames map[int]map[herolib.HeroType]string,
     allSpells spellbook.Spells,
-    artifactPool map[string]*artifact.Artifact,
+    artifactPool *artifact.Catalog,
     buildingInfo buildinglib.BuildingInfos,
     terrainData *terrain.TerrainData,
 ) *GameModel {
     model := &GameModel{
         Plane: serializedGame.Plane,
-        ArtifactPool: reconstructArtifactPool(serializedGame.ArtifactPool, artifactPool),
+        ArtifactPool: reconstructArtifactPool(serializedGame, artifactPool, allSpells),
         Settings: serializedGame.Settings,
         heroNames: heroNames,
         allSpells: allSpells,
@@ -194,7 +194,10 @@ func MakeModelFromSerialized(
             if player.GetBanner() == data.BannerBrown {
                 player.AIBehavior = ai.MakeRaiderAI()
             } else {
-                player.AIBehavior = ai.MakeEnemyAI()
+                // use the same active wizard AI as a freshly-started game
+                // (model.go AddPlayer) so loading a save doesn't silently drop
+                // back to the legacy EnemyAI
+                player.AIBehavior = ai.MakeEnemy2AI()
             }
             player.StrategicCombat = true
         }

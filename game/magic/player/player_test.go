@@ -8,6 +8,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 func TestHeroNames(test *testing.T) {
@@ -78,6 +79,20 @@ func TestResearchPoints(test *testing.T) {
 
     if computeEffectiveResearchPerTurn(&wizard, points, natureSpell) != int(points * (1 + 0.1 + 0.25)) {
         test.Errorf("Research points computation doesn't work")
+    }
+}
+
+func TestNextTaxRate(test *testing.T) {
+    player := MakePlayer(setup.WizardCustom{}, true, 1, 1, make(map[hero.HeroType]string), nil)
+
+    rate, ok := player.NextTaxRate(fraction.FromInt(1))
+    if !ok || !rate.Equals(fraction.Make(3, 2)) {
+        test.Errorf("expected 1 -> 3/2, got %v ok=%v", rate, ok)
+    }
+
+    rate, ok = player.NextTaxRate(fraction.Make(3, 1))
+    if ok {
+        test.Errorf("3 gold tax is the maximum, got next %v", rate)
     }
 }
 

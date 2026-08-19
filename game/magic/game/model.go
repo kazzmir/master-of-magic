@@ -5,7 +5,7 @@ import (
     "slices"
     "math"
     "math/rand/v2"
-    "log"
+    _ "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -32,7 +32,7 @@ type GameModel struct {
     Players []*playerlib.Player
     Plane data.Plane
 
-    ArtifactPool map[string]*artifact.Artifact
+    ArtifactPool *artifact.Catalog
 
     Settings setup.NewGameSettings
 
@@ -64,7 +64,7 @@ type GameModel struct {
 func MakeGameModel(terrainData *terrain.TerrainData, settings setup.NewGameSettings,
                    startingPlane data.Plane, events chan GameEvent,
                    heroNames map[int]map[herolib.HeroType]string, allSpells spellbook.Spells,
-                   artifactPool map[string]*artifact.Artifact,
+                   artifactPool *artifact.Catalog,
                    buildingInfo buildinglib.BuildingInfos,
                ) *GameModel {
 
@@ -221,8 +221,12 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         tileTo := useMap.GetTile(newX, newY)
         tileFrom := useMap.GetTile(oldX, oldY)
 
-        // if this is a water unit that cannot walk on land then just return nil immediately since the move is impossible
-        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(true) {
+        // if this stack contains a water-bound unit (a ship) that cannot walk on
+        // land then the move onto land is impossible. Check ALL units, not just
+        // the active ones: AI movement does not split inactive units off the
+        // stack (see doAiMoveUnit), so an inactive ship must not be dragged
+        // ashore when the active land units walk inland.
+        if tileTo.Tile.IsLand() && !stack.CanMoveOnLand(false) {
             return nil, false
         }
 
@@ -495,9 +499,11 @@ func (model *GameModel) ComputeTerrainCost(stack playerlib.PathStack, sourceX in
         return false
     }
 
-    // sailing units cannot move onto land
+    // sailing units cannot move onto land. Check ALL units (not just active
+    // ones) so an inactive ship in the stack is never dragged ashore when the
+    // active land units walk onto land.
     if tileTo.Tile.IsLand() {
-        if !stack.CanMoveOnLand(true) {
+        if !stack.CanMoveOnLand(false) {
             return fraction.Zero(), false
         }
     }
@@ -1074,9 +1080,9 @@ func (model *GameModel) DoRandomEvents() {
                         return MakePiracyEvent(model.TurnNumber, gold, target), nil
                     case RandomEventGift:
                         var out []*artifact.Artifact
-                        for _, artifact := range model.ArtifactPool {
-                            if canUseArtifact(artifact, target.Wizard) {
-                                out = append(out, artifact)
+                        for _, candidate := range model.ArtifactPool.AvailableArtifacts() {
+                            if canUseArtifact(candidate, target.Wizard) {
+                                out = append(out, candidate)
                             }
                         }
 
@@ -1087,7 +1093,7 @@ func (model *GameModel) DoRandomEvents() {
 
                         use := out[rand.N(len(out))]
 
-                        delete(model.ArtifactPool, use.Name)
+                        model.ArtifactPool.Award(use)
 
                         // returning GameEventVault here is ugly but we need a way to have the vault event
                         // be added to game.Events after the random event
@@ -1744,7 +1750,7 @@ func (model *GameModel) FindStacksOnContinent(x int, y int, plane data.Plane, pl
 
 type MovementHandler interface {
     ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool)
-    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int)
+    DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState
     DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
     DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
 }
@@ -1770,7 +1776,7 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
     to := path[0]
     path = path[1:]
 
-    log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
+    // log.Printf("  moving stack %v to %v, %v", stack, to.X, to.Y)
     getStack := func(x int, y int) (playerlib.PathStack, bool) {
         found := player.FindStack(x, y, stack.Plane())
         return found, found != nil
@@ -1812,7 +1818,15 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
 
         if encounter != nil {
             // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
-            handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+            state := handlers.DoEncounter(player, stack, encounter, mapUse, stack.X(), stack.Y())
+
+            // if we fled the encounter, step back off its tile instead of
+            // lingering on top of the (still-guarded) lair / node / tower
+            if state == combat.CombatStateAttackerFlee {
+                stack.SetX(oldX)
+                stack.SetY(oldY)
+            }
+
             return nil
         }
 
