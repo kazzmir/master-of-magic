@@ -401,6 +401,7 @@ type Game struct {
     MovingStack *playerlib.UnitStack
 
     HudUI *uilib.UI
+    WatchUI *uilib.UI
     Help helplib.Help
 
     Camera camera.Camera
@@ -2322,6 +2323,27 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
         game.Counter += 1
         yield()
     }
+}
+
+func (game *Game) SetWatchMode() {
+    game.WatchMode = true
+    game.WatchUI = game.MakeWatchUI()
+}
+
+func (game *Game) MakeWatchUI() *uilib.UI {
+
+    ui := &uilib.UI{
+        Cache: game.Cache,
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.StandardDraw(screen)
+        },
+    }
+
+    var elements []*uilib.UIElement
+
+    ui.SetElementsFromArray(elements)
+
+    return ui
 }
 
 // the game is in a paused state where the user can look around but no updates are occurring
@@ -8267,7 +8289,11 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    if !game.WatchMode {
+    if game.WatchMode {
+        overworld.DrawOverworld(screen, ebiten.GeoM{})
+
+        game.WatchUI.Draw(game.WatchUI, screen)
+    } else {
         overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
         overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
@@ -8284,8 +8310,6 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         */
 
         game.HudUI.Draw(game.HudUI, screen)
-    } else {
-        overworld.DrawOverworld(screen, ebiten.GeoM{})
     }
 
     // DEBUGGING: show tile coordinates on screen
