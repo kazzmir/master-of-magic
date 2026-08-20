@@ -2341,6 +2341,17 @@ func (game *Game) MakeWatchUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
+    turnBox := image.Rect(5, 5, 100, 30)
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.FillRect(screen, float32(turnBox.Min.X), float32(turnBox.Min.Y), float32(turnBox.Dx()), float32(turnBox.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+
+            var options ebiten.DrawImageOptions
+            game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X), float64(turnBox.Min.Y), font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+        },
+    })
+
     ui.SetElementsFromArray(elements)
 
     return ui
