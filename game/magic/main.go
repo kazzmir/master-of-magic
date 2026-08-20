@@ -622,7 +622,7 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
 
     realGame := initializeGame(game, settings, wizard)
 
-    realGame.WatchMode = true
+    realGame.SetWatchMode()
 
     human := realGame.Model.GetHumanPlayer()
     if human != nil {
