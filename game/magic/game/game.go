@@ -2359,13 +2359,22 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         },
     })
 
-    speedRect := image.Rect(0, 0, scale.Scale(100), scale.Scale(10)).Add(image.Pt(5, scale.Scale(data.ScreenHeight) - 5 - scale.Scale(10)))
     // slider that controls the speed of the game
+    speedRect := image.Rect(0, 0, scale.Scale(100), scale.Scale(10)).Add(image.Pt(5, scale.Scale(data.ScreenHeight) - 5 - scale.Scale(10)))
+    cursor, _ := game.ImageCache.GetImage("spellscr.lbx", 3, 0)
+    maxSpeed := 2000
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             vector.FillRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
             vector.StrokeRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+
+            relative := float64(game.watchSpeed) / float64(maxSpeed)
+            position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
+
+            var options ebiten.DrawImageOptions
+            options.GeoM.Translate(scale.Unscale(position), scale.Unscale(float64(speedRect.Min.Y + 2)))
+            scale.DrawScaled(screen, cursor, &options)
         },
     })
 
