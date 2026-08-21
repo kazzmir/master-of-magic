@@ -402,6 +402,9 @@ type Game struct {
 
     HudUI *uilib.UI
     WatchUI *uilib.UI
+
+    // speed that the game runs at (updates/second)
+    watchSpeed int
     Help helplib.Help
 
     Camera camera.Camera
@@ -2325,9 +2328,12 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 }
 
-func (game *Game) SetWatchMode() {
+func (game *Game) SetWatchMode(watchSpeed int) {
     game.WatchMode = true
     game.WatchUI = game.MakeWatchUI()
+    game.watchSpeed = watchSpeed
+
+    ebiten.SetTPS(watchSpeed)
 }
 
 func (game *Game) MakeWatchUI() *uilib.UI {
@@ -2341,14 +2347,25 @@ func (game *Game) MakeWatchUI() *uilib.UI {
 
     var elements []*uilib.UIElement
 
-    turnBox := image.Rect(5, 5, 100, 30)
+    // show the current turn
+    turnBox := image.Rect(5, 5, scale.Scale(35), scale.Scale(10))
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
             vector.FillRect(screen, float32(turnBox.Min.X), float32(turnBox.Min.Y), float32(turnBox.Dx()), float32(turnBox.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
 
             var options ebiten.DrawImageOptions
-            game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X), float64(turnBox.Min.Y), font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+            game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X) + 1, float64(turnBox.Min.Y) + 1, font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+        },
+    })
+
+    speedRect := image.Rect(0, 0, scale.Scale(100), scale.Scale(10)).Add(image.Pt(5, scale.Scale(data.ScreenHeight) - 5 - scale.Scale(10)))
+    // slider that controls the speed of the game
+    elements = append(elements, &uilib.UIElement{
+        Layer: 1,
+        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+            vector.FillRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.StrokeRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
         },
     })
 

@@ -622,7 +622,7 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
 
     realGame := initializeGame(game, settings, wizard)
 
-    realGame.SetWatchMode()
+    realGame.SetWatchMode(300)
 
     human := realGame.Model.GetHumanPlayer()
     if human != nil {
@@ -892,10 +892,6 @@ func main() {
     mouse.Initialize()
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
-
-    if watchMode {
-        ebiten.SetTPS(300)
-    }
 
     game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic, watchMode)
 
