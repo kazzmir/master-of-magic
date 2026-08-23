@@ -2,6 +2,8 @@ package artifact
 
 import (
     "image"
+    "slices"
+    "cmp"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -50,15 +52,74 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
 
     dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
     savedGeom := options.GeoM
-    for i, power := range artifact.Powers {
+
+    maxRowLength := itemBackground.Bounds().Dx() - 20
+
+    type PowerColumn struct {
+        power Power
+        length float64
+    }
+
+    // a row can contain X powers (usually at most 2). If a row contains a power that is too long
+    // then that row will only contain 1 power, and the next power will be on the next row
+    type Row struct {
+        Columns []PowerColumn
+    }
+
+    var rows []Row
+
+    columns := make([]PowerColumn, len(artifact.Powers))
+    for i := range artifact.Powers {
+        power := artifact.Powers[i]
+        width := float64(attributeFont.MeasureTextWidth(power.Name, 1))
+        powerLength := width + 3 + float64(dot.Bounds().Dx()) + 1
+
+        // force column alignment
+        if powerLength < 80 {
+            powerLength = 80
+        }
+        columns[i] = PowerColumn{power: power, length: powerLength}
+    }
+
+    columns = slices.SortedFunc(slices.Values(columns), func(a, b PowerColumn) int {
+        return cmp.Compare(a.length, b.length)
+    })
+
+    // combine powers into rows greedily
+    for i := range columns {
+        column := columns[i]
+
+        added := false
+        for rowI := range rows {
+            size := float64(0)
+            for _, col := range rows[rowI].Columns {
+                size += col.length
+            }
+            if size + column.length <= float64(maxRowLength) {
+                rows[rowI].Columns = append(rows[rowI].Columns, column)
+                added = true
+                break
+            }
+        }
+
+        if !added {
+            rows = append(rows, Row{Columns: []PowerColumn{column}})
+        }
+    }
+
+    for rowI, row := range rows {
         options.GeoM = savedGeom
+
         options.GeoM.Translate(float64(3), float64(26))
-        // integer division is important here
-        options.GeoM.Translate(float64((i/2) * 80), float64((i % 2) * 13))
+        options.GeoM.Translate(0, float64(rowI * 13))
 
-        scale.DrawScaled(screen, dot, &options)
+        for _, column := range row.Columns {
+            scale.DrawScaled(screen, dot, &options)
 
-        x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-        attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, power.Name)
+            x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
+            attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, column.power.Name)
+
+            options.GeoM.Translate(column.length + 2, 0)
+        }
     }
 }
