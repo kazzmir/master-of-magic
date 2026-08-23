@@ -31,9 +31,14 @@ type Engine struct {
 type Books struct {
     Artificer bool
     Runemaster bool
+    HasAllBooks bool
 }
 
 func (books *Books) MagicLevel(magic data.MagicType) int {
+    if books.HasAllBooks {
+        return 11
+    }
+
     switch magic {
         case data.ChaosMagic: return 11
         case data.MagicNone: return 0
@@ -133,6 +138,10 @@ func (engine *Engine) Update() error {
                 engine.ShowUpdate = 60
                 engine.Coroutine = coroutine.MakeCoroutine(engine.EditorRoutine())
                 log.Printf("Default item editor")
+            case ebiten.KeyF4:
+                engine.Books.HasAllBooks = !engine.Books.HasAllBooks
+                engine.ShowUpdate = 60
+                engine.Coroutine = coroutine.MakeCoroutine(engine.ArtifactRoutine())
         }
     }
 
@@ -151,7 +160,7 @@ func (engine *Engine) Draw(screen *ebiten.Image){
     engine.Drawer(screen)
 
     if engine.ShowUpdate > 0 {
-        ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Artificer %v Runemaster %v", engine.Books.Artificer, engine.Books.Runemaster), 0, 0)
+        ebitenutil.DebugPrintAt(screen, fmt.Sprintf("Artificer %v Runemaster %v All Books %v", engine.Books.Artificer, engine.Books.Runemaster, engine.Books.HasAllBooks), 0, 0)
     }
 }
 
