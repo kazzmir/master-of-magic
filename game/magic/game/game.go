@@ -2485,6 +2485,11 @@ func (game *Game) MakeWatchUI() *uilib.UI {
             continue
         }
 
+        // skip neutral player
+        if player.GetBanner() == data.BannerBrown {
+            continue
+        }
+
         portraitLarge, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.Wizard.Banner), 0)
         portrait := ebiten.NewImage(portraitLarge.Bounds().Dx() / 2, portraitLarge.Bounds().Dy() / 2)
         var scaleOptions ebiten.DrawImageOptions
