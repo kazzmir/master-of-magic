@@ -4,6 +4,8 @@ import (
     "image"
     "slices"
     "cmp"
+    "fmt"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -56,7 +58,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
     maxRowLength := itemBackground.Bounds().Dx() - 20
 
     type PowerColumn struct {
-        power Power
+        name string
         length float64
     }
 
@@ -71,14 +73,20 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
     columns := make([]PowerColumn, len(artifact.Powers))
     for i := range artifact.Powers {
         power := artifact.Powers[i]
-        width := float64(attributeFont.MeasureTextWidth(power.Name, 1))
+
+        name := power.Name
+        if enchantment := power.Ability.Enchantment(); enchantment != data.UnitEnchantmentNone {
+            name = fmt.Sprintf("%v, as %v spell", power.Ability.Name(), strings.ToLower(enchantment.Name()))
+        }
+
+        width := float64(attributeFont.MeasureTextWidth(name, 1))
         powerLength := width + 3 + float64(dot.Bounds().Dx()) + 1
 
         // force column alignment
         if powerLength < 80 {
             powerLength = 80
         }
-        columns[i] = PowerColumn{power: power, length: powerLength}
+        columns[i] = PowerColumn{name: name, length: powerLength}
     }
 
     columns = slices.SortedFunc(slices.Values(columns), func(a, b PowerColumn) int {
@@ -117,7 +125,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
             scale.DrawScaled(screen, dot, &options)
 
             x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-            attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, column.power.Name)
+            attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, column.name)
 
             options.GeoM.Translate(column.length + 2, 0)
         }
