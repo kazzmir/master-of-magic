@@ -2382,24 +2382,33 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         ebiten.SetTPS(game.watchSpeed)
     }
 
+    scaleAlpha := func(fade util.AlphaFadeFunc, minAlpha float32) util.AlphaFadeFunc {
+        return func() float32 {
+            value := fade()
+            return minAlpha + (1 - minAlpha) * value
+        }
+    }
+
+    speedAlphaMin := float32(0.4)
+
     var speedRectAlpha util.AlphaFadeFunc = func () float32 {
-        return 0.2
+        return speedAlphaMin
     }
     updateSpeedRectAlpha := false
 
     elements = append(elements, &uilib.UIElement{
-        Layer: 2,
+        Layer: 1,
         Rect: speedRect.Inset(-10),
         Inside: func(element *uilib.UIElement, x int, y int){
             if !updateSpeedRectAlpha {
-                speedRectAlpha = util.MakeFadeIn(20, &game.Counter)
+                speedRectAlpha = scaleAlpha(util.MakeFadeIn(20, &game.Counter), speedAlphaMin)
                 updateSpeedRectAlpha = true
             }
         },
         NotInside: func(element *uilib.UIElement){
             if updateSpeedRectAlpha {
                 updateSpeedRectAlpha = false
-                speedRectAlpha = util.MakeFadeOut(20, &game.Counter)
+                speedRectAlpha = scaleAlpha(util.MakeFadeOut(20, &game.Counter), speedAlphaMin)
             }
         },
     })
