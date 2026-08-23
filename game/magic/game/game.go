@@ -2474,6 +2474,43 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         },
     )...)
 
+    // show wizard portraits. clicking on them focuses the camera on the city that contains wizard's fortress
+
+    for i, player := range game.Model.Players {
+        if player.Admin {
+            continue
+        }
+
+        if player.Defeated {
+            continue
+        }
+
+        portraitLarge, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.Wizard.Banner), 0)
+        portrait := ebiten.NewImage(portraitLarge.Bounds().Dx() / 2, portraitLarge.Bounds().Dy() / 2)
+        var scaleOptions ebiten.DrawImageOptions
+        scaleOptions.GeoM.Scale(0.5, 0.5)
+        portrait.DrawImage(portraitLarge, &scaleOptions)
+
+        rect := image.Rect(0, 0, portrait.Bounds().Dx(), portrait.Bounds().Dy()).Add(image.Pt(data.ScreenWidth - 5 - portrait.Bounds().Dx(), 5 + i * (portrait.Bounds().Dy() + 5)))
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter,
+            func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+                return &uilib.UIElement{
+                    Rect: rect,
+                    Layer: 1,
+                    LeftClick: func(element *uilib.UIElement){
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        options.ColorScale.Reset()
+                        options.ColorScale.ScaleAlpha((*alphaFunc)())
+                        scale.DrawScaled(screen, portrait, &options)
+                    },
+                }
+            },
+        )...)
+    }
+
     ui.SetElementsFromArray(elements)
 
     return ui
