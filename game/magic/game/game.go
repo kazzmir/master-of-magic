@@ -2360,21 +2360,52 @@ func (game *Game) MakeWatchUI() *uilib.UI {
     })
 
     // slider that controls the speed of the game
-    speedRect := image.Rect(0, 0, scale.Scale(100), scale.Scale(10)).Add(image.Pt(5, scale.Scale(data.ScreenHeight) - 5 - scale.Scale(10)))
+    speedRect := image.Rect(0, 0, 150, 10).Add(image.Pt(5, data.ScreenHeight - 5 - 10))
     cursor, _ := game.ImageCache.GetImage("spellscr.lbx", 3, 0)
     maxSpeed := 2000
+    lowestSpeed := 5
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
+        Rect: speedRect,
+        LeftClick: func(element *uilib.UIElement){
+            mouseX, _ := inputmanager.MousePosition()
+            mouseX = scale.Unscale(mouseX)
+            log.Printf("mouseX: %v, speedRect: %v", mouseX, speedRect)
+            relative := float64(mouseX - speedRect.Min.X) / float64(speedRect.Dx() - cursor.Bounds().Dx())
+            if relative < 0 {
+                // can't go lower than 5 TPS
+                relative = 0
+            }
+            if relative > 1 {
+                relative = 1
+            }
+            game.watchSpeed = int(relative * float64(maxSpeed))
+            if game.watchSpeed < lowestSpeed {
+                game.watchSpeed = lowestSpeed
+            }
+            log.Printf("watch speed: %v", game.watchSpeed)
+            ebiten.SetTPS(game.watchSpeed)
+        },
+        /*
+        Inside: func(element *uilib.UIElement, x int, y int){
+            log.Printf("inside speed rect: %v, %v", x, y)
+        },
+        */
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.FillRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
-            vector.StrokeRect(screen, float32(speedRect.Min.X), float32(speedRect.Min.Y), float32(speedRect.Dx()), float32(speedRect.Dy()), 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+            vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
 
             relative := float64(game.watchSpeed) / float64(maxSpeed)
             position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
 
             var options ebiten.DrawImageOptions
-            options.GeoM.Translate(scale.Unscale(position), scale.Unscale(float64(speedRect.Min.Y + 2)))
+            options.GeoM.Translate(position, float64(speedRect.Min.Y + 2))
             scale.DrawScaled(screen, cursor, &options)
+
+            options.GeoM.Translate(0, -2 - float64(game.Fonts.WhiteFont.Height()))
+            _, y := options.GeoM.Apply(0, 0)
+            game.Fonts.WhiteFont.PrintOptions(screen, float64(speedRect.Min.X), y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Speed: %v", game.watchSpeed))
+
         },
     })
 
@@ -3881,6 +3912,12 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
     }
 
     if game.WatchMode {
+        game.WatchUI.StandardUpdate()
+
+        if ebiten.IsKeyPressed(ebiten.KeyEscape) || ebiten.IsKeyPressed(ebiten.KeyCapsLock) {
+            game.State = GameStateQuit
+        }
+
         keys := inpututil.AppendJustPressedKeys(nil)
         for _, key := range keys {
             switch key {
@@ -3916,6 +3953,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     switch game.State {
         case GameStateRunning:
             game.HudUI.StandardUpdate()
+
+            if game.WatchMode {
+                game.WatchUI.StandardUpdate()
+            }
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
             if len(game.Model.Players) > 0 && game.Model.CurrentPlayer >= 0 {
