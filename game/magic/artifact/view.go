@@ -4,6 +4,8 @@ import (
     "image"
     "slices"
     "cmp"
+    "fmt"
+    "strings"
 
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/game/magic/util"
@@ -39,49 +41,34 @@ func RenderArtifactImage(screen *ebiten.Image, imageCache *util.ImageCache, arti
     return itemImage
 }
 
-func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, titleFont *font.Font, attributeFont *font.Font, options ebiten.DrawImageOptions) {
-    itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
-    scale.DrawScaled(screen, itemBackground, &options)
-
-    options.GeoM.Translate(float64(10), float64(8))
-
-    itemImage := RenderArtifactImage(screen, imageCache, artifact, counter, options)
-
-    x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X + 3), float64(4))
-    titleFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, artifact.Name)
-
-    dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
-    savedGeom := options.GeoM
-
-    maxRowLength := itemBackground.Bounds().Dx() - 20
-
-    type PowerColumn struct {
-        power Power
+func renderItemRows(screen *ebiten.Image, maxRowLength int, savedGeom ebiten.GeoM, names []string, dot *ebiten.Image, attributeFont *font.Font, options *ebiten.DrawImageOptions) {
+    type Column struct {
+        name string
         length float64
     }
 
     // a row can contain X powers (usually at most 2). If a row contains a power that is too long
     // then that row will only contain 1 power, and the next power will be on the next row
     type Row struct {
-        Columns []PowerColumn
+        Columns []Column
     }
 
     var rows []Row
 
-    columns := make([]PowerColumn, len(artifact.Powers))
-    for i := range artifact.Powers {
-        power := artifact.Powers[i]
-        width := float64(attributeFont.MeasureTextWidth(power.Name, 1))
+    columns := make([]Column, len(names))
+    for i := range names {
+        name := names[i]
+        width := float64(attributeFont.MeasureTextWidth(name, 1))
         powerLength := width + 3 + float64(dot.Bounds().Dx()) + 1
 
         // force column alignment
         if powerLength < 80 {
             powerLength = 80
         }
-        columns[i] = PowerColumn{power: power, length: powerLength}
+        columns[i] = Column{name: name, length: powerLength}
     }
 
-    columns = slices.SortedFunc(slices.Values(columns), func(a, b PowerColumn) int {
+    columns = slices.SortedFunc(slices.Values(columns), func(a, b Column) int {
         return cmp.Compare(a.length, b.length)
     })
 
@@ -103,7 +90,7 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         }
 
         if !added {
-            rows = append(rows, Row{Columns: []PowerColumn{column}})
+            rows = append(rows, Row{Columns: []Column{column}})
         }
     }
 
@@ -114,12 +101,42 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         options.GeoM.Translate(0, float64(rowI * 13))
 
         for _, column := range row.Columns {
-            scale.DrawScaled(screen, dot, &options)
+            scale.DrawScaled(screen, dot, options)
 
             x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-            attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, column.power.Name)
+            attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: options, Scale: scale.ScaleAmount}, column.name)
 
             options.GeoM.Translate(column.length + 2, 0)
         }
     }
+}
+
+func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifact Artifact, counter uint64, titleFont *font.Font, attributeFont *font.Font, options ebiten.DrawImageOptions) {
+    itemBackground, _ := imageCache.GetImage("itemisc.lbx", 25, 0)
+    scale.DrawScaled(screen, itemBackground, &options)
+
+    options.GeoM.Translate(float64(10), float64(8))
+
+    itemImage := RenderArtifactImage(screen, imageCache, artifact, counter, options)
+
+    x, y := options.GeoM.Apply(float64(itemImage.Bounds().Max.X + 3), float64(4))
+    titleFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Options: &options}, artifact.Name)
+
+    dot, _ := imageCache.GetImage("itemisc.lbx", 26, 0)
+
+    maxRowLength := itemBackground.Bounds().Dx() - 20
+
+    names := make([]string, len(artifact.Powers))
+    for i := range artifact.Powers {
+        power := artifact.Powers[i]
+
+        name := power.Name
+        if enchantment := power.Ability.Enchantment(); enchantment != data.UnitEnchantmentNone {
+            name = fmt.Sprintf("%v, as %v spell", power.Ability.Name(), strings.ToLower(enchantment.Name()))
+        }
+
+        names[i] = name
+    }
+
+    renderItemRows(screen, maxRowLength, options.GeoM, names, dot, attributeFont, &options)
 }
