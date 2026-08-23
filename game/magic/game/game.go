@@ -2336,6 +2336,42 @@ func (game *Game) SetWatchMode(watchSpeed int) {
     ebiten.SetTPS(watchSpeed)
 }
 
+func makeFadeInElement(fadeSpeed uint64, minAlpha float32, insetDistance int, counter *uint64, makeElement func(*util.AlphaFadeFunc) *uilib.UIElement) []*uilib.UIElement {
+    scaleAlpha := func(fade util.AlphaFadeFunc, minAlpha float32) util.AlphaFadeFunc {
+        return func() float32 {
+            value := fade()
+            return minAlpha + (1 - minAlpha) * value
+        }
+    }
+
+    var alphaFunc util.AlphaFadeFunc = func () float32 {
+        return minAlpha
+    }
+    update := false
+
+    newElement := makeElement(&alphaFunc)
+
+    return []*uilib.UIElement{
+        &uilib.UIElement{
+            Layer: newElement.Layer,
+            Rect: newElement.Rect.Inset(-insetDistance),
+            Inside: func(element *uilib.UIElement, x int, y int){
+                if !update {
+                    alphaFunc = scaleAlpha(util.MakeFadeIn(fadeSpeed, counter), minAlpha)
+                    update = true
+                }
+            },
+            NotInside: func(element *uilib.UIElement){
+                if update {
+                    update = false
+                    alphaFunc = scaleAlpha(util.MakeFadeOut(fadeSpeed, counter), minAlpha)
+                }
+            },
+        },
+        newElement,
+    }
+}
+
 func (game *Game) MakeWatchUI() *uilib.UI {
 
     ui := &uilib.UI{
@@ -2382,79 +2418,54 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         ebiten.SetTPS(game.watchSpeed)
     }
 
-    scaleAlpha := func(fade util.AlphaFadeFunc, minAlpha float32) util.AlphaFadeFunc {
-        return func() float32 {
-            value := fade()
-            return minAlpha + (1 - minAlpha) * value
-        }
-    }
+    elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter, 
+        func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+            return &uilib.UIElement{
+                Layer: 1,
+                Rect: speedRect,
+                LeftClick: func(element *uilib.UIElement){
+                    mouseX, _ := inputmanager.MousePosition()
+                    mouseX = scale.Unscale(mouseX)
+                    updateSpeed(mouseX)
+                    speedClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement){
+                    speedClicked = false
+                },
+                Inside: func(element *uilib.UIElement, x int, y int) {
+                    if speedClicked {
+                        mouseX, _ := inputmanager.MousePosition()
+                        mouseX = scale.Unscale(mouseX)
+                        updateSpeed(mouseX)
+                    }
+                },
+                /*
+                Inside: func(element *uilib.UIElement, x int, y int){
+                    log.Printf("inside speed rect: %v, %v", x, y)
+                },
+                */
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    alpha := (*alphaFunc)()
 
-    speedAlphaMin := float32(0.4)
+                    vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.NRGBA{R: 0, G: 0, B: 0, A: uint8(float32(0x80) * alpha)}, false)
+                    vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: uint8(0xff * alpha)}, false)
 
-    var speedRectAlpha util.AlphaFadeFunc = func () float32 {
-        return speedAlphaMin
-    }
-    updateSpeedRectAlpha := false
+                    relative := float64(game.watchSpeed) / float64(maxSpeed)
+                    position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
 
-    elements = append(elements, &uilib.UIElement{
-        Layer: 1,
-        Rect: speedRect.Inset(-10),
-        Inside: func(element *uilib.UIElement, x int, y int){
-            if !updateSpeedRectAlpha {
-                speedRectAlpha = scaleAlpha(util.MakeFadeIn(20, &game.Counter), speedAlphaMin)
-                updateSpeedRectAlpha = true
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(alpha)
+                    options.GeoM.Translate(position, float64(speedRect.Min.Y + 2))
+                    scale.DrawScaled(screen, cursor, &options)
+
+                    options.GeoM.Translate(0, -2 - float64(game.Fonts.WhiteFont.Height()))
+                    _, y := options.GeoM.Apply(0, 0)
+                    game.Fonts.WhiteFont.PrintOptions(screen, float64(speedRect.Min.X), y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Speed: %v", game.watchSpeed))
+
+                },
             }
         },
-        NotInside: func(element *uilib.UIElement){
-            if updateSpeedRectAlpha {
-                updateSpeedRectAlpha = false
-                speedRectAlpha = scaleAlpha(util.MakeFadeOut(20, &game.Counter), speedAlphaMin)
-            }
-        },
-    })
-
-    elements = append(elements, &uilib.UIElement{
-        Layer: 1,
-        Rect: speedRect,
-        LeftClick: func(element *uilib.UIElement){
-            mouseX, _ := inputmanager.MousePosition()
-            mouseX = scale.Unscale(mouseX)
-            updateSpeed(mouseX)
-            speedClicked = true
-        },
-        LeftClickRelease: func(element *uilib.UIElement){
-            speedClicked = false
-        },
-        Inside: func(element *uilib.UIElement, x int, y int) {
-            if speedClicked {
-                mouseX, _ := inputmanager.MousePosition()
-                mouseX = scale.Unscale(mouseX)
-                updateSpeed(mouseX)
-            }
-        },
-        /*
-        Inside: func(element *uilib.UIElement, x int, y int){
-            log.Printf("inside speed rect: %v, %v", x, y)
-        },
-        */
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.NRGBA{R: 0, G: 0, B: 0, A: uint8(float32(0x80) * speedRectAlpha())}, false)
-            vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: uint8(0xff * speedRectAlpha())}, false)
-
-            relative := float64(game.watchSpeed) / float64(maxSpeed)
-            position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
-
-            var options ebiten.DrawImageOptions
-            options.ColorScale.ScaleAlpha(speedRectAlpha())
-            options.GeoM.Translate(position, float64(speedRect.Min.Y + 2))
-            scale.DrawScaled(screen, cursor, &options)
-
-            options.GeoM.Translate(0, -2 - float64(game.Fonts.WhiteFont.Height()))
-            _, y := options.GeoM.Apply(0, 0)
-            game.Fonts.WhiteFont.PrintOptions(screen, float64(speedRect.Min.X), y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Speed: %v", game.watchSpeed))
-
-        },
-    })
+    )...)
 
     ui.SetElementsFromArray(elements)
 
