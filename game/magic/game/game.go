@@ -2382,6 +2382,28 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         ebiten.SetTPS(game.watchSpeed)
     }
 
+    var speedRectAlpha util.AlphaFadeFunc = func () float32 {
+        return 0.2
+    }
+    updateSpeedRectAlpha := false
+
+    elements = append(elements, &uilib.UIElement{
+        Layer: 2,
+        Rect: speedRect.Inset(-10),
+        Inside: func(element *uilib.UIElement, x int, y int){
+            if !updateSpeedRectAlpha {
+                speedRectAlpha = util.MakeFadeIn(20, &game.Counter)
+                updateSpeedRectAlpha = true
+            }
+        },
+        NotInside: func(element *uilib.UIElement){
+            if updateSpeedRectAlpha {
+                updateSpeedRectAlpha = false
+                speedRectAlpha = util.MakeFadeOut(20, &game.Counter)
+            }
+        },
+    })
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Rect: speedRect,
@@ -2407,13 +2429,14 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         },
         */
         Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
-            vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, false)
+            vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.NRGBA{R: 0, G: 0, B: 0, A: uint8(float32(0x80) * speedRectAlpha())}, false)
+            vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: uint8(0xff * speedRectAlpha())}, false)
 
             relative := float64(game.watchSpeed) / float64(maxSpeed)
             position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
 
             var options ebiten.DrawImageOptions
+            options.ColorScale.ScaleAlpha(speedRectAlpha())
             options.GeoM.Translate(position, float64(speedRect.Min.Y + 2))
             scale.DrawScaled(screen, cursor, &options)
 
