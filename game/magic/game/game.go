@@ -2500,6 +2500,20 @@ func (game *Game) MakeWatchUI() *uilib.UI {
                     Rect: rect,
                     Layer: 1,
                     LeftClick: func(element *uilib.UIElement){
+                        fortress := player.FindFortressCity()
+                        if fortress != nil {
+                            event := GameEventMoveCamera{
+                                Plane: fortress.Plane,
+                                X: fortress.X,
+                                Y: fortress.Y,
+                                Instant: false,
+                            }
+
+                            select {
+                                case game.Events <- &event:
+                                default:
+                            }
+                        }
                     },
                     Draw: func(element *uilib.UIElement, screen *ebiten.Image){
                         options.ColorScale.Reset()
