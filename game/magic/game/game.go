@@ -2385,15 +2385,22 @@ func (game *Game) MakeWatchUI() *uilib.UI {
 
     // show the current turn
     turnBox := image.Rect(5, 5, scale.Scale(35), scale.Scale(10))
-    elements = append(elements, &uilib.UIElement{
-        Layer: 1,
-        Draw: func(element *uilib.UIElement, screen *ebiten.Image){
-            vector.FillRect(screen, float32(turnBox.Min.X), float32(turnBox.Min.Y), float32(turnBox.Dx()), float32(turnBox.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: 0x80}, false)
+    elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter, 
+        func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+            return &uilib.UIElement{
+                Layer: 1,
+                Rect: turnBox,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    alpha := (*alphaFunc)()
+                    vector.FillRect(screen, float32(turnBox.Min.X), float32(turnBox.Min.Y), float32(turnBox.Dx()), float32(turnBox.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: uint8(0x80 * alpha)}, false)
 
-            var options ebiten.DrawImageOptions
-            game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X) + 1, float64(turnBox.Min.Y) + 1, font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(alpha)
+                    game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X) + 1, float64(turnBox.Min.Y) + 1, font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+                },
+            }
         },
-    })
+    )...)
 
     // slider that controls the speed of the game
     speedRect := image.Rect(0, 0, 150, 10).Add(image.Pt(5, data.ScreenHeight - 5 - 10))
