@@ -2364,27 +2364,42 @@ func (game *Game) MakeWatchUI() *uilib.UI {
     cursor, _ := game.ImageCache.GetImage("spellscr.lbx", 3, 0)
     maxSpeed := 2000
     lowestSpeed := 5
+    speedClicked := false
+
+    updateSpeed := func(mouseX int) {
+        relative := float64(mouseX - speedRect.Min.X) / float64(speedRect.Dx() - cursor.Bounds().Dx())
+        if relative < 0 {
+            // can't go lower than 5 TPS
+            relative = 0
+        }
+        if relative > 1 {
+            relative = 1
+        }
+        game.watchSpeed = int(relative * float64(maxSpeed))
+        if game.watchSpeed < lowestSpeed {
+            game.watchSpeed = lowestSpeed
+        }
+        ebiten.SetTPS(game.watchSpeed)
+    }
+
     elements = append(elements, &uilib.UIElement{
         Layer: 1,
         Rect: speedRect,
         LeftClick: func(element *uilib.UIElement){
             mouseX, _ := inputmanager.MousePosition()
             mouseX = scale.Unscale(mouseX)
-            log.Printf("mouseX: %v, speedRect: %v", mouseX, speedRect)
-            relative := float64(mouseX - speedRect.Min.X) / float64(speedRect.Dx() - cursor.Bounds().Dx())
-            if relative < 0 {
-                // can't go lower than 5 TPS
-                relative = 0
+            updateSpeed(mouseX)
+            speedClicked = true
+        },
+        LeftClickRelease: func(element *uilib.UIElement){
+            speedClicked = false
+        },
+        Inside: func(element *uilib.UIElement, x int, y int) {
+            if speedClicked {
+                mouseX, _ := inputmanager.MousePosition()
+                mouseX = scale.Unscale(mouseX)
+                updateSpeed(mouseX)
             }
-            if relative > 1 {
-                relative = 1
-            }
-            game.watchSpeed = int(relative * float64(maxSpeed))
-            if game.watchSpeed < lowestSpeed {
-                game.watchSpeed = lowestSpeed
-            }
-            log.Printf("watch speed: %v", game.watchSpeed)
-            ebiten.SetTPS(game.watchSpeed)
         },
         /*
         Inside: func(element *uilib.UIElement, x int, y int){
