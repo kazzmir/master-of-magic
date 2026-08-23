@@ -2476,8 +2476,9 @@ func (game *Game) MakeWatchUI() *uilib.UI {
 
     // show wizard portraits. clicking on them focuses the camera on the city that contains wizard's fortress
 
-    for i, player := range game.Model.Players {
-        if player.Admin {
+    playerCount := 0
+    for _, player := range game.Model.Players {
+        if player.Admin || player.IsHuman() {
             continue
         }
 
@@ -2496,7 +2497,7 @@ func (game *Game) MakeWatchUI() *uilib.UI {
         scaleOptions.GeoM.Scale(0.5, 0.5)
         portrait.DrawImage(portraitLarge, &scaleOptions)
 
-        rect := image.Rect(0, 0, portrait.Bounds().Dx(), portrait.Bounds().Dy()).Add(image.Pt(data.ScreenWidth - 5 - portrait.Bounds().Dx(), 5 + i * (portrait.Bounds().Dy() + 5)))
+        rect := image.Rect(0, 0, portrait.Bounds().Dx(), portrait.Bounds().Dy()).Add(image.Pt(data.ScreenWidth - 5 - portrait.Bounds().Dx(), 5 + playerCount * (portrait.Bounds().Dy() + 5)))
         var options ebiten.DrawImageOptions
         options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
         elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter,
@@ -2528,6 +2529,8 @@ func (game *Game) MakeWatchUI() *uilib.UI {
                 }
             },
         )...)
+
+        playerCount += 1
     }
 
     ui.SetElementsFromArray(elements)
@@ -2563,7 +2566,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         // compress ui refreshes
                         switch lastEvent.(type) {
                             case *GameEventRefreshUI: // nothing, since we just did a refresh
-                            default: game.HudUI = game.MakeHudUI()
+                            default:
+                                game.HudUI = game.MakeHudUI()
+                                if game.WatchMode {
+                                    game.WatchUI = game.MakeWatchUI()
+                                }
                         }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
