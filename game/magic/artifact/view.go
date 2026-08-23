@@ -73,6 +73,11 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         power := artifact.Powers[i]
         width := float64(attributeFont.MeasureTextWidth(power.Name, 1))
         powerLength := width + 3 + float64(dot.Bounds().Dx()) + 1
+
+        // force column alignment
+        if powerLength < 80 {
+            powerLength = 80
+        }
         columns[i] = PowerColumn{power: power, length: powerLength}
     }
 
@@ -106,7 +111,6 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
         options.GeoM = savedGeom
 
         options.GeoM.Translate(float64(3), float64(26))
-        // integer division is important here
         options.GeoM.Translate(0, float64(rowI * 13))
 
         for _, column := range row.Columns {
@@ -118,18 +122,4 @@ func RenderArtifactBox(screen *ebiten.Image, imageCache *util.ImageCache, artifa
             options.GeoM.Translate(column.length + 2, 0)
         }
     }
-
-    /*
-    for i, power := range artifact.Powers {
-        options.GeoM = savedGeom
-        options.GeoM.Translate(float64(3), float64(26))
-        // integer division is important here
-        options.GeoM.Translate(float64((i/2) * 80), float64((i % 2) * 13))
-
-        scale.DrawScaled(screen, dot, &options)
-
-        x, y := options.GeoM.Apply(float64(dot.Bounds().Dx() + 1), 0)
-        attributeFont.PrintOptions(screen, x, y, font.FontOptions{DropShadow: true, Options: &options, Scale: scale.ScaleAmount}, power.Name)
-    }
-    */
 }
