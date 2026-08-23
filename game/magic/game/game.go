@@ -401,6 +401,10 @@ type Game struct {
     MovingStack *playerlib.UnitStack
 
     HudUI *uilib.UI
+    WatchUI *uilib.UI
+
+    // speed that the game runs at (updates/second)
+    watchSpeed int
     Help helplib.Help
 
     Camera camera.Camera
@@ -2324,6 +2328,216 @@ func (game *Game) doRandomEvent(yield coroutine.YieldFunc, event *RandomEvent, s
     }
 }
 
+func (game *Game) SetWatchMode(watchSpeed int) {
+    game.WatchMode = true
+    game.WatchUI = game.MakeWatchUI()
+    game.watchSpeed = watchSpeed
+
+    ebiten.SetTPS(watchSpeed)
+}
+
+func makeFadeInElement(fadeSpeed uint64, minAlpha float32, insetDistance int, counter *uint64, makeElement func(*util.AlphaFadeFunc) *uilib.UIElement) []*uilib.UIElement {
+    scaleAlpha := func(fade util.AlphaFadeFunc, minAlpha float32) util.AlphaFadeFunc {
+        return func() float32 {
+            value := fade()
+            return minAlpha + (1 - minAlpha) * value
+        }
+    }
+
+    var alphaFunc util.AlphaFadeFunc = func () float32 {
+        return minAlpha
+    }
+    update := false
+
+    newElement := makeElement(&alphaFunc)
+
+    return []*uilib.UIElement{
+        &uilib.UIElement{
+            Layer: newElement.Layer,
+            Rect: newElement.Rect.Inset(-insetDistance),
+            Inside: func(element *uilib.UIElement, x int, y int){
+                if !update {
+                    alphaFunc = scaleAlpha(util.MakeFadeIn(fadeSpeed, counter), minAlpha)
+                    update = true
+                }
+            },
+            NotInside: func(element *uilib.UIElement){
+                if update {
+                    update = false
+                    alphaFunc = scaleAlpha(util.MakeFadeOut(fadeSpeed, counter), minAlpha)
+                }
+            },
+        },
+        newElement,
+    }
+}
+
+func (game *Game) MakeWatchUI() *uilib.UI {
+
+    ui := &uilib.UI{
+        Cache: game.Cache,
+        Draw: func(ui *uilib.UI, screen *ebiten.Image){
+            ui.StandardDraw(screen)
+        },
+    }
+
+    var elements []*uilib.UIElement
+
+    // show the current turn
+    turnBox := image.Rect(5, 5, scale.Scale(35), scale.Scale(10))
+    elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter, 
+        func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+            return &uilib.UIElement{
+                Layer: 1,
+                Rect: turnBox,
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    alpha := (*alphaFunc)()
+                    vector.FillRect(screen, float32(turnBox.Min.X), float32(turnBox.Min.Y), float32(turnBox.Dx()), float32(turnBox.Dy()), color.RGBA{R: 0, G: 0, B: 0, A: uint8(0x80 * alpha)}, false)
+
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(alpha)
+                    game.Fonts.WhiteFont.PrintOptions(screen, float64(turnBox.Min.X) + 1, float64(turnBox.Min.Y) + 1, font.FontOptions{DropShadow: true, Scale: 2, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Turn: %v", game.Model.TurnNumber))
+                },
+            }
+        },
+    )...)
+
+    // slider that controls the speed of the game
+    speedRect := image.Rect(0, 0, 150, 10).Add(image.Pt(5, data.ScreenHeight - 5 - 10))
+    cursor, _ := game.ImageCache.GetImage("spellscr.lbx", 3, 0)
+    maxSpeed := 2000
+    lowestSpeed := 5
+    speedClicked := false
+
+    updateSpeed := func(mouseX int) {
+        relative := float64(mouseX - speedRect.Min.X) / float64(speedRect.Dx() - cursor.Bounds().Dx())
+        if relative < 0 {
+            // can't go lower than 5 TPS
+            relative = 0
+        }
+        if relative > 1 {
+            relative = 1
+        }
+        game.watchSpeed = int(relative * float64(maxSpeed))
+        if game.watchSpeed < lowestSpeed {
+            game.watchSpeed = lowestSpeed
+        }
+        ebiten.SetTPS(game.watchSpeed)
+    }
+
+    elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter, 
+        func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+            return &uilib.UIElement{
+                Layer: 1,
+                Rect: speedRect,
+                LeftClick: func(element *uilib.UIElement){
+                    mouseX, _ := inputmanager.MousePosition()
+                    mouseX = scale.Unscale(mouseX)
+                    updateSpeed(mouseX)
+                    speedClicked = true
+                },
+                LeftClickRelease: func(element *uilib.UIElement){
+                    speedClicked = false
+                },
+                Inside: func(element *uilib.UIElement, x int, y int) {
+                    if speedClicked {
+                        mouseX, _ := inputmanager.MousePosition()
+                        mouseX = scale.Unscale(mouseX)
+                        updateSpeed(mouseX)
+                    }
+                },
+                /*
+                Inside: func(element *uilib.UIElement, x int, y int){
+                    log.Printf("inside speed rect: %v, %v", x, y)
+                },
+                */
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                    alpha := (*alphaFunc)()
+
+                    vector.FillRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), color.NRGBA{R: 0, G: 0, B: 0, A: uint8(float32(0x80) * alpha)}, false)
+                    vector.StrokeRect(screen, scale.Scale(float32(speedRect.Min.X)), scale.Scale(float32(speedRect.Min.Y)), scale.Scale(float32(speedRect.Dx())), scale.Scale(float32(speedRect.Dy())), 1, color.NRGBA{R: 0xff, G: 0xff, B: 0xff, A: uint8(0xff * alpha)}, false)
+
+                    relative := float64(game.watchSpeed) / float64(maxSpeed)
+                    position := float64(speedRect.Min.X) + relative * float64(speedRect.Dx() - cursor.Bounds().Dx())
+
+                    var options ebiten.DrawImageOptions
+                    options.ColorScale.ScaleAlpha(alpha)
+                    options.GeoM.Translate(position, float64(speedRect.Min.Y + 2))
+                    scale.DrawScaled(screen, cursor, &options)
+
+                    options.GeoM.Translate(0, -2 - float64(game.Fonts.WhiteFont.Height()))
+                    _, y := options.GeoM.Apply(0, 0)
+                    game.Fonts.WhiteFont.PrintOptions(screen, float64(speedRect.Min.X), y, font.FontOptions{DropShadow: true, Scale: scale.ScaleAmount, Justify: font.FontJustifyLeft, Options: &options}, fmt.Sprintf("Speed: %v", game.watchSpeed))
+
+                },
+            }
+        },
+    )...)
+
+    // show wizard portraits. clicking on them focuses the camera on the city that contains wizard's fortress
+
+    playerCount := 0
+    for _, player := range game.Model.Players {
+        if player.Admin || player.IsHuman() {
+            continue
+        }
+
+        if player.Defeated {
+            continue
+        }
+
+        // skip neutral player
+        if player.GetBanner() == data.BannerBrown {
+            continue
+        }
+
+        portraitLarge, _ := game.ImageCache.GetImage("lilwiz.lbx", mirror.GetWizardPortraitIndex(player.Wizard.Base, player.Wizard.Banner), 0)
+        portrait := ebiten.NewImage(portraitLarge.Bounds().Dx() / 2, portraitLarge.Bounds().Dy() / 2)
+        var scaleOptions ebiten.DrawImageOptions
+        scaleOptions.GeoM.Scale(0.5, 0.5)
+        portrait.DrawImage(portraitLarge, &scaleOptions)
+
+        rect := image.Rect(0, 0, portrait.Bounds().Dx(), portrait.Bounds().Dy()).Add(image.Pt(data.ScreenWidth - 5 - portrait.Bounds().Dx(), 5 + playerCount * (portrait.Bounds().Dy() + 5)))
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(rect.Min.X), float64(rect.Min.Y))
+        elements = append(elements, makeFadeInElement(20, 0.4, 10, &game.Counter,
+            func (alphaFunc *util.AlphaFadeFunc) *uilib.UIElement {
+                return &uilib.UIElement{
+                    Rect: rect,
+                    Layer: 1,
+                    LeftClick: func(element *uilib.UIElement){
+                        fortress := player.FindFortressCity()
+                        if fortress != nil {
+                            event := GameEventMoveCamera{
+                                Plane: fortress.Plane,
+                                X: fortress.X,
+                                Y: fortress.Y,
+                                Instant: false,
+                            }
+
+                            select {
+                                case game.Events <- &event:
+                                default:
+                            }
+                        }
+                    },
+                    Draw: func(element *uilib.UIElement, screen *ebiten.Image){
+                        options.ColorScale.Reset()
+                        options.ColorScale.ScaleAlpha((*alphaFunc)())
+                        scale.DrawScaled(screen, portrait, &options)
+                    },
+                }
+            },
+        )...)
+
+        playerCount += 1
+    }
+
+    ui.SetElementsFromArray(elements)
+
+    return ui
+}
+
 // the game is in a paused state where the user can look around but no updates are occurring
 func (game *Game) DoPause(yield coroutine.YieldFunc) {
     for game.WatchModePaused {
@@ -2352,7 +2566,11 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                         // compress ui refreshes
                         switch lastEvent.(type) {
                             case *GameEventRefreshUI: // nothing, since we just did a refresh
-                            default: game.HudUI = game.MakeHudUI()
+                            default:
+                                game.HudUI = game.MakeHudUI()
+                                if game.WatchMode {
+                                    game.WatchUI = game.MakeWatchUI()
+                                }
                         }
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
@@ -3837,6 +4055,12 @@ func (game *Game) DoViewInput(yield coroutine.YieldFunc) {
     }
 
     if game.WatchMode {
+        game.WatchUI.StandardUpdate()
+
+        if ebiten.IsKeyPressed(ebiten.KeyEscape) || ebiten.IsKeyPressed(ebiten.KeyCapsLock) {
+            game.State = GameStateQuit
+        }
+
         keys := inpututil.AppendJustPressedKeys(nil)
         for _, key := range keys {
             switch key {
@@ -3872,6 +4096,10 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
     switch game.State {
         case GameStateRunning:
             game.HudUI.StandardUpdate()
+
+            if game.WatchMode {
+                game.WatchUI.StandardUpdate()
+            }
 
             // kind of a hack to not allow player to interact with anything other than the current ui modal
             if len(game.Model.Players) > 0 && game.Model.CurrentPlayer >= 0 {
@@ -8280,7 +8508,11 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         FogBlack: game.GetFogImage(),
     }
 
-    if !game.WatchMode {
+    if game.WatchMode {
+        overworld.DrawOverworld(screen, ebiten.GeoM{})
+
+        game.WatchUI.Draw(game.WatchUI, screen)
+    } else {
         overworldScreen := screen.SubImage(image.Rect(0, scale.Scale(18), scale.Scale(240), scale.Scale(data.ScreenHeight))).(*ebiten.Image)
         overworld.DrawOverworld(overworldScreen, ebiten.GeoM{})
 
@@ -8297,8 +8529,6 @@ func (game *Game) DrawGame(screen *ebiten.Image){
         */
 
         game.HudUI.Draw(game.HudUI, screen)
-    } else {
-        overworld.DrawOverworld(screen, ebiten.GeoM{})
     }
 
     // DEBUGGING: show tile coordinates on screen
