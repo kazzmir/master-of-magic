@@ -7,6 +7,7 @@ import (
     "cmp"
     "log"
     "math/rand/v2"
+    "strings"
     _ "log"
 
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -675,7 +676,11 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
         for mask, ability := range abilityMap {
             if abilitiesValue&mask != 0 {
-                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: ability.Name(), Ability: ability})
+                name := ability.Name()
+                if enchantment := ability.Enchantment(); enchantment != data.UnitEnchantmentNone {
+                    name = fmt.Sprintf("%v, as %v spell", ability.Name(), strings.ToLower(enchantment.Name()))
+                }
+                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: name, Ability: ability})
             }
         }
 

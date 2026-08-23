@@ -38,7 +38,7 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     ui.SetElementsFromArray(nil)
 
-    artifact := &artifact.Artifact{
+    useArtifact := &artifact.Artifact{
         Name: "Excalibur",
         Image: 7,
         Type: artifact.ArtifactTypeSword,
@@ -74,7 +74,33 @@ func NewEngine(scenario int) (*Engine, error) {
         Cost: 250,
     }
 
-    ui.AddElements(gamelib.MakeMerchantScreenUI(cache, ui, artifact, 250, func (bought bool){
+    // scenario 2: load a real premade item from itemdata.lbx that has a spell-mimicking
+    // ability (like Elemental Armor), to check issue #182's "Elemental Armor, as elemental
+    // armor spell" rendering against real data instead of a hand-built artifact.
+    if scenario == 2 {
+        realArtifacts, err := artifact.ReadArtifacts(cache)
+        if err != nil {
+            log.Printf("Error reading itemdata.lbx: %v", err)
+        } else {
+            var found, fallback *artifact.Artifact
+            for i := range realArtifacts {
+                for _, power := range realArtifacts[i].Powers {
+                    if power.Ability == data.ItemAbilityElementalArmor {
+                        found = &realArtifacts[i]
+                    }
+                }
+                if fallback == nil && realArtifacts[i].HasAbilityPower() {
+                    fallback = &realArtifacts[i]
+                }
+            }
+            switch {
+                case found != nil: useArtifact = found
+                case fallback != nil: useArtifact = fallback
+            }
+        }
+    }
+
+    ui.AddElements(gamelib.MakeMerchantScreenUI(cache, ui, useArtifact, 250, func (bought bool){
         log.Printf("bought %v", bought)
     }))
 
