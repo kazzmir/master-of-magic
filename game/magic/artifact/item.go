@@ -675,7 +675,9 @@ func ReadArtifacts(cache *lbx.LbxCache) ([]Artifact, error) {
 
         for mask, ability := range abilityMap {
             if abilitiesValue&mask != 0 {
-                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: ability.Name(), Ability: ability})
+                name := ability.Name()
+                // note: the "Spell as spell X" is rendered in the view code, not here
+                powers = append(powers, Power{Type: PowerTypeAbility1, Amount: 0, Name: name, Ability: ability})
             }
         }
 
