@@ -86,7 +86,7 @@ type Step struct {
 }
  
 type EnemyNetAI struct {
-    Stats PlayerStats
+    stats PlayerStats
     NeuralNet *deep.Neural
 
     Steps []Step
@@ -1241,39 +1241,39 @@ func (ai *EnemyNetAI) ApplyTraining() {
 }
 
 func (ai *EnemyNetAI) DidBanish(self *playerlib.Player, other *playerlib.Player) {
-    ai.Stats.enemiesBanished += 1
+    ai.stats.enemiesBanished += 1
 }
 
 func (ai *EnemyNetAI) DidDefeat(self *playerlib.Player, other *playerlib.Player) {
-    ai.Stats.enemiesDefeated += 1
+    ai.stats.enemiesDefeated += 1
 }
 
 func (ai *EnemyNetAI) DidLoseUnit(unit units.StackUnit) {
-    ai.Stats.unitsLost += 1
+    ai.stats.unitsLost += 1
 }
 
 func (ai *EnemyNetAI) DidCreateUnit(unit units.StackUnit) {
-    ai.Stats.unitsCreated += 1
+    ai.stats.unitsCreated += 1
 }
 
 func (ai *EnemyNetAI) DidSummonUnit(self *playerlib.Player, unit *units.OverworldUnit) {
-    ai.Stats.unitsSummoned += 1
+    ai.stats.unitsSummoned += 1
 }
 
 func (ai *EnemyNetAI) DidConquerCity(city *citylib.City, raze bool) {
     if raze {
-        ai.Stats.citiesRazed += 1
+        ai.stats.citiesRazed += 1
     } else {
-        ai.Stats.citiesCaptured += 1
+        ai.stats.citiesCaptured += 1
     }
 }
 
 func (ai *EnemyNetAI) DidLoseCity(city *citylib.City) {
-    ai.Stats.citiesLost += 1
+    ai.stats.citiesLost += 1
 }
 
 func (ai *EnemyNetAI) DidLearnSpell(spell spellbook.Spell) {
-    ai.Stats.spellsLearned += 1
+    ai.stats.spellsLearned += 1
 }
 
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
@@ -1282,40 +1282,40 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
     var reward float64 = 0
 
-    ai.Stats.goldDelta = player.Gold - ai.currentGold
-    ai.Stats.manaDelta = player.Mana - ai.currentMana
+    ai.stats.goldDelta = player.Gold - ai.currentGold
+    ai.stats.manaDelta = player.Mana - ai.currentMana
 
     if !ai.banished && player.Banished {
-        ai.Stats.wasBanished = 1
+        ai.stats.wasBanished = 1
     }
 
     if !ai.defeated && player.Defeated {
-        ai.Stats.wasDefeated = 1
+        ai.stats.wasDefeated = 1
     }
 
     // all these values picked on vibes. maybe a neural net can learn them?
-    reward -= float64(ai.Stats.wasBanished) * 10000
-    reward -= float64(ai.Stats.wasDefeated) * 5000
-    reward += float64(ai.Stats.enemiesBanished) * 1000
-    reward += float64(ai.Stats.enemiesDefeated) * 40
-    reward -= float64(ai.Stats.unitsLost)
-    reward += float64(ai.Stats.unitsCreated) * 0.8
-    reward += float64(ai.Stats.unitsSummoned) * 1.5
-    reward += float64(ai.Stats.citiesRazed) * 10
-    reward += float64(ai.Stats.citiesCaptured) * 20
-    reward -= float64(ai.Stats.citiesLost) * 20
-    reward += float64(ai.Stats.magicNodesGained) * 15
-    reward -= float64(ai.Stats.magicNodesLost) * 15
-    reward += float64(ai.Stats.goldDelta) * 0.3
-    reward += float64(ai.Stats.manaDelta) * 0.3
-    reward += float64(ai.Stats.territoryExplored) * 0.1
-    reward += float64(ai.Stats.spellsLearned) * 5
-    reward += float64(ai.Stats.heroesGained) * 20
-    reward -= float64(ai.Stats.heroesLost) * 20
-    reward += float64(ai.Stats.armyStrengthDelta) * 0.5
-    reward += float64(ai.Stats.roadsBuilt) * 0.2
-    reward += float64(ai.Stats.enemiesDiscovered) * 1.3
-    reward += ai.Stats.spellOfMasteryProgress * 50
+    reward -= float64(ai.stats.wasBanished) * 10000
+    reward -= float64(ai.stats.wasDefeated) * 5000
+    reward += float64(ai.stats.enemiesBanished) * 1000
+    reward += float64(ai.stats.enemiesDefeated) * 40
+    reward -= float64(ai.stats.unitsLost)
+    reward += float64(ai.stats.unitsCreated) * 0.8
+    reward += float64(ai.stats.unitsSummoned) * 1.5
+    reward += float64(ai.stats.citiesRazed) * 10
+    reward += float64(ai.stats.citiesCaptured) * 20
+    reward -= float64(ai.stats.citiesLost) * 20
+    reward += float64(ai.stats.magicNodesGained) * 15
+    reward -= float64(ai.stats.magicNodesLost) * 15
+    reward += float64(ai.stats.goldDelta) * 0.3
+    reward += float64(ai.stats.manaDelta) * 0.3
+    reward += float64(ai.stats.territoryExplored) * 0.1
+    reward += float64(ai.stats.spellsLearned) * 5
+    reward += float64(ai.stats.heroesGained) * 20
+    reward -= float64(ai.stats.heroesLost) * 20
+    reward += float64(ai.stats.armyStrengthDelta) * 0.5
+    reward += float64(ai.stats.roadsBuilt) * 0.2
+    reward += float64(ai.stats.enemiesDiscovered) * 1.3
+    reward += ai.stats.spellOfMasteryProgress * 50
 
     ai.Steps[len(ai.Steps)-1].Reward = reward
 
@@ -1347,7 +1347,7 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
 func (ai *EnemyNetAI) PreTurn(player *playerlib.Player) {
     // reset stats
-    ai.Stats = PlayerStats{}
+    ai.stats = PlayerStats{}
 
     ai.currentGold = player.Gold
     ai.currentMana = player.Mana
