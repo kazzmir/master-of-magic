@@ -1285,6 +1285,10 @@ func (ai *EnemyNetAI) DidLoseHero(hero *herolib.Hero) {
     ai.stats.heroesLost += 1
 }
 
+func (ai *EnemyNetAI) DidBuildRoad(x int, y int, plane data.Plane) {
+    ai.stats.roadsBuilt += 1
+}
+
 func (ai *EnemyNetAI) SpellOfMasteryProgress(progress float64) {
     ai.stats.spellOfMasteryProgress += progress
 }

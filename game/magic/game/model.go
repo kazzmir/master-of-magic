@@ -742,6 +742,8 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
             if amount >= tileWork.TotalWork {
                 model.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
 
+                player.BuiltRoad(x, y, plane)
+
                 for _, unit := range stack.Units() {
                     if unit.GetBusy() == units.BusyStatusBuildRoad {
                         unit.SetBusy(units.BusyStatusNone)

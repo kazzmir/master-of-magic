@@ -174,6 +174,7 @@ type AIEvents interface {
     DidGainHero(hero *herolib.Hero)
     DidLoseHero(hero *herolib.Hero)
     SpellOfMasteryProgress(relative float64)
+    DidBuildRoad(x int, y int, plane data.Plane)
 }
 
 type AIBehavior interface {
@@ -655,6 +656,12 @@ func (player *Player) IsNeutral() bool {
 
 func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
+}
+
+func (player *Player) BuiltRoad(x int, y int, plane data.Plane) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidBuildRoad(x, y, plane)
+    }
 }
 
 // true if this player has the given global enchantment enabled

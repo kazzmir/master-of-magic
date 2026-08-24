@@ -1,6 +1,7 @@
 package player
 
 import (
+    "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
@@ -40,6 +41,9 @@ func (*DefaultAIEvents) DidLoseHero(hero *herolib.Hero) {
 }
 
 func (*DefaultAIEvents) SpellOfMasteryProgress(progress float64) {
+}
+
+func (*DefaultAIEvents) DidBuildRoad(x int, y int, plane data.Plane) {
 }
 
 var _ AIEvents = (*DefaultAIEvents)(nil)
