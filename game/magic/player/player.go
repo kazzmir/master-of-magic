@@ -171,6 +171,7 @@ type AIEvents interface {
     DidLoseUnit(unit units.StackUnit)
     DidCreateUnit(unit units.StackUnit)
     DidLearnSpell(spellbook.Spell)
+    DidGainHero(hero *herolib.Hero)
 }
 
 type AIBehavior interface {
@@ -733,6 +734,11 @@ func (player *Player) AddHero(hero *herolib.Hero, x int, y int, plane data.Plane
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
 
             player.AddUnit(hero)
+
+            if player.AIBehavior != nil {
+                player.AIBehavior.DidGainHero(hero)
+            }
+
             return true
         }
     }

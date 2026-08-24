@@ -32,6 +32,7 @@ import (
 // the neural network uses reinforcement learning by using a set of reward signals as the loss/cost function to optimize the network weights
 
 // values that are updated since the last turn, used for reward calculation
+// keep all fields private
 type PlayerStats struct {
     // 1 if the wizard was banished or defeated this turn, 0 otherwise
     wasBanished int
@@ -1274,6 +1275,10 @@ func (ai *EnemyNetAI) DidLoseCity(city *citylib.City) {
 
 func (ai *EnemyNetAI) DidLearnSpell(spell spellbook.Spell) {
     ai.stats.spellsLearned += 1
+}
+
+func (ai *EnemyNetAI) DidGainHero(hero *herolib.Hero) {
+    ai.stats.heroesGained += 1
 }
 
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {

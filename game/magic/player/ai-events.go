@@ -4,6 +4,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
 )
 
 type DefaultAIEvents struct {}
@@ -30,6 +31,9 @@ func (ai *DefaultAIEvents) DidCreateUnit(unit units.StackUnit) {
 }
 
 func (*DefaultAIEvents) DidLearnSpell(spell spellbook.Spell) {
+}
+
+func (*DefaultAIEvents) DidGainHero(hero *herolib.Hero) {
 }
 
 var _ AIEvents = (*DefaultAIEvents)(nil)
