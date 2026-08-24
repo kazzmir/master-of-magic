@@ -175,6 +175,7 @@ type AIEvents interface {
     DidLoseHero(hero *herolib.Hero)
     SpellOfMasteryProgress(relative float64)
     DidBuildRoad(x int, y int, plane data.Plane)
+    DidExplore(x int, y int, plane data.Plane)
 }
 
 type AIBehavior interface {
@@ -1434,6 +1435,10 @@ func (player *Player) LiftFogAll(plane data.Plane){
 
     for x := 0; x < len(fog); x++ {
         for y := 0; y < len(fog[0]); y++ {
+            if fog[x][y] == data.FogTypeUnexplored {
+                player.IncrementExplored(x, y, plane)
+            }
+
             fog[x][y] = data.FogTypeVisible
         }
     }
@@ -1459,6 +1464,12 @@ func (player *Player) IsVisible(x int, y int, plane data.Plane) bool {
     return fog[x][y] == data.FogTypeVisible
 }
 
+func (player *Player) IncrementExplored(x int, y int, plane data.Plane) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidExplore(x, y, plane)
+    }
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
@@ -1469,6 +1480,10 @@ func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane)
 
             if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
+            }
+
+            if fog[mx][my] == data.FogTypeUnexplored {
+                player.IncrementExplored(mx, my, plane)
             }
 
             fog[mx][my] = data.FogTypeVisible
@@ -1491,6 +1506,8 @@ func (player *Player) ExploreFogSquare(x int, y int, squares int, plane data.Pla
 
             if fog[mx][my] == data.FogTypeUnexplored {
                 fog[mx][my] = data.FogTypeExplored
+
+                player.IncrementExplored(mx, my, plane)
             }
         }
     }
@@ -1511,6 +1528,11 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 
             // dx^2 + dy^2 <= (radius + 0.5)^2
             if 4 * (dx * dx + dy * dy) <= 4 * radius * radius + 4 * radius + 1 {
+
+                if fog[mx][my] == data.FogTypeUnexplored {
+                    player.IncrementExplored(mx, my, plane)
+                }
+
                 fog[mx][my] = data.FogTypeVisible
             }
         }

@@ -46,4 +46,7 @@ func (*DefaultAIEvents) SpellOfMasteryProgress(progress float64) {
 func (*DefaultAIEvents) DidBuildRoad(x int, y int, plane data.Plane) {
 }
 
+func (*DefaultAIEvents) DidExplore(x int, y int, plane data.Plane) {
+}
+
 var _ AIEvents = (*DefaultAIEvents)(nil)

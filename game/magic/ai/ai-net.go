@@ -1289,6 +1289,10 @@ func (ai *EnemyNetAI) DidBuildRoad(x int, y int, plane data.Plane) {
     ai.stats.roadsBuilt += 1
 }
 
+func (ai *EnemyNetAI) DidExplore(x int, y int, plane data.Plane) {
+    ai.stats.territoryExplored += 1
+}
+
 func (ai *EnemyNetAI) SpellOfMasteryProgress(progress float64) {
     ai.stats.spellOfMasteryProgress += progress
 }
