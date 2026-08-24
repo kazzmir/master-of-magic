@@ -170,6 +170,7 @@ type AIEvents interface {
     DidLoseCity(city *citylib.City)
     DidLoseUnit(unit units.StackUnit)
     DidCreateUnit(unit units.StackUnit)
+    DidLearnSpell(spellbook.Spell)
 }
 
 type AIBehavior interface {
@@ -923,6 +924,10 @@ func (player *Player) LearnSpell(spell spellbook.Spell) {
     if spell.Name == player.ResearchingSpell.Name {
         player.ResearchingSpell = spellbook.Spell{}
         player.ResearchProgress = 0
+    }
+
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLearnSpell(spell)
     }
 }
 

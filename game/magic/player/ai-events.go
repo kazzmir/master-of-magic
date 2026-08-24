@@ -2,6 +2,7 @@ package player
 
 import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
 )
 
@@ -26,6 +27,9 @@ func (ai *DefaultAIEvents) DidLoseUnit(unit units.StackUnit) {
 }
 
 func (ai *DefaultAIEvents) DidCreateUnit(unit units.StackUnit) {
+}
+
+func (*DefaultAIEvents) DidLearnSpell(spell spellbook.Spell) {
 }
 
 var _ AIEvents = (*DefaultAIEvents)(nil)
