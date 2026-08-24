@@ -34,33 +34,33 @@ import (
 // values that are updated since the last turn, used for reward calculation
 type PlayerStats struct {
     // 1 if the wizard was banished or defeated this turn, 0 otherwise
-    WasBanished int
-    WasDefeated int
+    wasBanished int
+    wasDefeated int
     // banished when the city containing the wizards tower is defeated
-    EnemiesBanished int
+    enemiesBanished int
     // defeated when all cities owned by the wizard are defeated
-    EnemiesDefeated int
-    UnitsLost int
+    enemiesDefeated int
+    unitsLost int
     // normal units
-    UnitsCreated int
+    unitsCreated int
     // fantastic units via spells
-    UnitsSummoned int
-    CitiesRazed int
-    CitiesCaptured int
-    CitiesLost int
-    MagicNodesGained int
-    MagicNodesLost int
-    GoldDelta int
-    ManaDelta int
-    TerritoryExplored int
-    SpellsLearned int
-    HeroesGained int
-    HeroesLost int
-    ArmyStrengthDelta int
-    RoadsBuilt int
-    EnemiesDiscovered int
+    unitsSummoned int
+    citiesRazed int
+    citiesCaptured int
+    citiesLost int
+    magicNodesGained int
+    magicNodesLost int
+    goldDelta int
+    manaDelta int
+    territoryExplored int
+    spellsLearned int
+    heroesGained int
+    heroesLost int
+    armyStrengthDelta int
+    roadsBuilt int
+    enemiesDiscovered int
     // value of 0 to 1
-    SpellOfMasteryProgress float64
+    spellOfMasteryProgress float64
 }
 
 type Strategy int
@@ -1241,39 +1241,39 @@ func (ai *EnemyNetAI) ApplyTraining() {
 }
 
 func (ai *EnemyNetAI) DidBanish(self *playerlib.Player, other *playerlib.Player) {
-    ai.Stats.EnemiesBanished += 1
+    ai.Stats.enemiesBanished += 1
 }
 
 func (ai *EnemyNetAI) DidDefeat(self *playerlib.Player, other *playerlib.Player) {
-    ai.Stats.EnemiesDefeated += 1
+    ai.Stats.enemiesDefeated += 1
 }
 
 func (ai *EnemyNetAI) DidLoseUnit(unit units.StackUnit) {
-    ai.Stats.UnitsLost += 1
+    ai.Stats.unitsLost += 1
 }
 
 func (ai *EnemyNetAI) DidCreateUnit(unit units.StackUnit) {
-    ai.Stats.UnitsCreated += 1
+    ai.Stats.unitsCreated += 1
 }
 
 func (ai *EnemyNetAI) DidSummonUnit(self *playerlib.Player, unit *units.OverworldUnit) {
-    ai.Stats.UnitsSummoned += 1
+    ai.Stats.unitsSummoned += 1
 }
 
 func (ai *EnemyNetAI) DidConquerCity(city *citylib.City, raze bool) {
     if raze {
-        ai.Stats.CitiesRazed += 1
+        ai.Stats.citiesRazed += 1
     } else {
-        ai.Stats.CitiesCaptured += 1
+        ai.Stats.citiesCaptured += 1
     }
 }
 
 func (ai *EnemyNetAI) DidLoseCity(city *citylib.City) {
-    ai.Stats.CitiesLost += 1
+    ai.Stats.citiesLost += 1
 }
 
 func (ai *EnemyNetAI) DidLearnSpell(spell spellbook.Spell) {
-    ai.Stats.SpellsLearned += 1
+    ai.Stats.spellsLearned += 1
 }
 
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
@@ -1282,40 +1282,40 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
     var reward float64 = 0
 
-    ai.Stats.GoldDelta = player.Gold - ai.currentGold
-    ai.Stats.ManaDelta = player.Mana - ai.currentMana
+    ai.Stats.goldDelta = player.Gold - ai.currentGold
+    ai.Stats.manaDelta = player.Mana - ai.currentMana
 
     if !ai.banished && player.Banished {
-        ai.Stats.WasBanished = 1
+        ai.Stats.wasBanished = 1
     }
 
     if !ai.defeated && player.Defeated {
-        ai.Stats.WasDefeated = 1
+        ai.Stats.wasDefeated = 1
     }
 
     // all these values picked on vibes. maybe a neural net can learn them?
-    reward -= float64(ai.Stats.WasBanished) * 10000
-    reward -= float64(ai.Stats.WasDefeated) * 5000
-    reward += float64(ai.Stats.EnemiesBanished) * 1000
-    reward += float64(ai.Stats.EnemiesDefeated) * 40
-    reward -= float64(ai.Stats.UnitsLost)
-    reward += float64(ai.Stats.UnitsCreated) * 0.8
-    reward += float64(ai.Stats.UnitsSummoned) * 1.5
-    reward += float64(ai.Stats.CitiesRazed) * 10
-    reward += float64(ai.Stats.CitiesCaptured) * 20
-    reward -= float64(ai.Stats.CitiesLost) * 20
-    reward += float64(ai.Stats.MagicNodesGained) * 15
-    reward -= float64(ai.Stats.MagicNodesLost) * 15
-    reward += float64(ai.Stats.GoldDelta) * 0.3
-    reward += float64(ai.Stats.ManaDelta) * 0.3
-    reward += float64(ai.Stats.TerritoryExplored) * 0.1
-    reward += float64(ai.Stats.SpellsLearned) * 5
-    reward += float64(ai.Stats.HeroesGained) * 20
-    reward -= float64(ai.Stats.HeroesLost) * 20
-    reward += float64(ai.Stats.ArmyStrengthDelta) * 0.5
-    reward += float64(ai.Stats.RoadsBuilt) * 0.2
-    reward += float64(ai.Stats.EnemiesDiscovered) * 1.3
-    reward += ai.Stats.SpellOfMasteryProgress * 50
+    reward -= float64(ai.Stats.wasBanished) * 10000
+    reward -= float64(ai.Stats.wasDefeated) * 5000
+    reward += float64(ai.Stats.enemiesBanished) * 1000
+    reward += float64(ai.Stats.enemiesDefeated) * 40
+    reward -= float64(ai.Stats.unitsLost)
+    reward += float64(ai.Stats.unitsCreated) * 0.8
+    reward += float64(ai.Stats.unitsSummoned) * 1.5
+    reward += float64(ai.Stats.citiesRazed) * 10
+    reward += float64(ai.Stats.citiesCaptured) * 20
+    reward -= float64(ai.Stats.citiesLost) * 20
+    reward += float64(ai.Stats.magicNodesGained) * 15
+    reward -= float64(ai.Stats.magicNodesLost) * 15
+    reward += float64(ai.Stats.goldDelta) * 0.3
+    reward += float64(ai.Stats.manaDelta) * 0.3
+    reward += float64(ai.Stats.territoryExplored) * 0.1
+    reward += float64(ai.Stats.spellsLearned) * 5
+    reward += float64(ai.Stats.heroesGained) * 20
+    reward -= float64(ai.Stats.heroesLost) * 20
+    reward += float64(ai.Stats.armyStrengthDelta) * 0.5
+    reward += float64(ai.Stats.roadsBuilt) * 0.2
+    reward += float64(ai.Stats.enemiesDiscovered) * 1.3
+    reward += ai.Stats.spellOfMasteryProgress * 50
 
     ai.Steps[len(ai.Steps)-1].Reward = reward
 
