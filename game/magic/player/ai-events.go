@@ -36,4 +36,7 @@ func (*DefaultAIEvents) DidLearnSpell(spell spellbook.Spell) {
 func (*DefaultAIEvents) DidGainHero(hero *herolib.Hero) {
 }
 
+func (*DefaultAIEvents) DidLoseHero(hero *herolib.Hero) {
+}
+
 var _ AIEvents = (*DefaultAIEvents)(nil)

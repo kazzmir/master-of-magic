@@ -172,6 +172,7 @@ type AIEvents interface {
     DidCreateUnit(unit units.StackUnit)
     DidLearnSpell(spellbook.Spell)
     DidGainHero(hero *herolib.Hero)
+    DidLoseHero(hero *herolib.Hero)
 }
 
 type AIBehavior interface {
@@ -1637,6 +1638,13 @@ func (player *Player) LoseUnit(unit units.StackUnit) {
 
     if player.AIBehavior != nil {
         player.AIBehavior.DidLoseUnit(unit)
+
+        // also count lost heroes
+        for _, hero := range player.Heroes {
+            if hero == unit {
+                player.AIBehavior.DidLoseHero(hero)
+            }
+        }
     }
 }
 

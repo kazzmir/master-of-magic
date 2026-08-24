@@ -1281,6 +1281,10 @@ func (ai *EnemyNetAI) DidGainHero(hero *herolib.Hero) {
     ai.stats.heroesGained += 1
 }
 
+func (ai *EnemyNetAI) DidLoseHero(hero *herolib.Hero) {
+    ai.stats.heroesLost += 1
+}
+
 func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AIServices) {
     // compute rewards
     // rewards are any event that can be quantified, like how many enemy units were killed, how much gold was gained, how many cities were captured, etc
