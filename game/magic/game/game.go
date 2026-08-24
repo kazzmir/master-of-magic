@@ -7390,8 +7390,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             manaSpent = remainingMana
         }
 
-        player.CastingSpellProgress += manaSpent
-        player.Mana -= manaSpent
+        player.IncreaseCastingSkillProgress(manaSpent)
 
         if spellCost <= player.CastingSpellProgress {
             game.doCastSpell(player, player.CastingSpell)

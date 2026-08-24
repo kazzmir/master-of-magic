@@ -173,6 +173,7 @@ type AIEvents interface {
     DidLearnSpell(spellbook.Spell)
     DidGainHero(hero *herolib.Hero)
     DidLoseHero(hero *herolib.Hero)
+    SpellOfMasteryProgress(relative float64)
 }
 
 type AIBehavior interface {
@@ -912,6 +913,16 @@ func (player *Player) TotalUnitUpkeepMana() int {
     }
 
     return total
+}
+
+func (player *Player) IncreaseCastingSkillProgress(amount int) {
+    player.CastingSpellProgress += amount
+    player.Mana -= amount
+
+    if player.AIBehavior != nil && player.CastingSpell.IsSpellOfMastery() {
+        relative := float64(amount) / float64(player.SpellOfMasteryCost)
+        player.AIBehavior.SpellOfMasteryProgress(relative)
+    }
 }
 
 func (player *Player) LearnSpell(spell spellbook.Spell) {

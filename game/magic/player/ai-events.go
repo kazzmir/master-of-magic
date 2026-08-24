@@ -39,4 +39,7 @@ func (*DefaultAIEvents) DidGainHero(hero *herolib.Hero) {
 func (*DefaultAIEvents) DidLoseHero(hero *herolib.Hero) {
 }
 
+func (*DefaultAIEvents) SpellOfMasteryProgress(progress float64) {
+}
+
 var _ AIEvents = (*DefaultAIEvents)(nil)
