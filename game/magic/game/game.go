@@ -628,6 +628,12 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettin
 
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
     game.Model = makeModel(lbxCache, game.Events)
+    game.Model.IsAggressiveAI = func() bool {
+        if gameSettings == nil {
+            return false
+        }
+        return gameSettings.AggressiveAI
+    }
 
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){

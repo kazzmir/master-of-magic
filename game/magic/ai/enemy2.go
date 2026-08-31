@@ -295,8 +295,85 @@ func chance(percent int) bool {
     return rand.N(100) < percent
 }
 
+// enemy2Knobs is Classic vs Aggressive (plus new-game difficulty) for Enemy2.
+// Classic (Aggressive AI off, Average) keeps today's expansion gates so Average
+// is not wildly meaner: settlers need a food surplus, engineers wait for 3
+// cities. Hard+ and the Aggressive AI checkbox settle earlier, will queue a
+// settler at 0 food, and start roads at 2 cities.
+//
+// City attacks on known/visible enemy cities never require a visible rival
+// stack — that gate was a bug versus original 1.31 (ReMoM as a behavior spec,
+// not code to copy). Lair raid margins are unchanged in both profiles.
+type enemy2Knobs struct {
+    Aggressive bool
+    Difficulty data.DifficultySetting
+}
+
+func makeEnemy2Knobs(aiServices playerlib.AIServices) enemy2Knobs {
+    return enemy2Knobs{
+        Aggressive: aiServices.GetAggressiveAI(),
+        Difficulty: aiServices.GetDifficulty(),
+    }
+}
+
+func (knobs enemy2Knobs) pressure() bool {
+    return knobs.Aggressive || knobs.Difficulty >= data.DifficultyHard
+}
+
+func (knobs enemy2Knobs) connectCitiesMin() int {
+    // Intro/Easy Classic wait for 3 cities. Average and up (and Aggressive)
+    // start roads at 2 — original 1.31 connected the first towns, and waiting
+    // for 3 meant engineers sat idle on Average because a second city was rare.
+    if knobs.Difficulty <= data.DifficultyEasy && !knobs.Aggressive {
+        return 3
+    }
+    return 2
+}
+
+// visibleCityAssumedPower is the dummy garrison we pretend a seen enemy city
+// has. Early stacks are ~6 (one swordsmen); 15 made city marches a no-op even
+// after the visible-stack gate was lifted.
+func (knobs enemy2Knobs) visibleCityAssumedPower() int {
+    if knobs.Aggressive {
+        return 5
+    }
+    if knobs.Difficulty >= data.DifficultyHard {
+        return 8
+    }
+    return 10
+}
+
+func (knobs enemy2Knobs) rememberedCityMinPower() int {
+    if knobs.pressure() {
+        return 12
+    }
+    return 20
+}
+
+func (knobs enemy2Knobs) settlerChance() int {
+    if knobs.Aggressive {
+        return 90
+    }
+    if knobs.Difficulty >= data.DifficultyHard {
+        return 75
+    }
+    return 60
+}
+
+func (knobs enemy2Knobs) canQueueSettler(foodPerTurn int) bool {
+    if foodPerTurn > 0 {
+        return true
+    }
+    // Aggressive / Hard+: do not starve expansion at break-even food forever
+    if foodPerTurn == 0 && knobs.pressure() {
+        return true
+    }
+    return false
+}
+
 func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AIServices) []EnemyGoal {
     var goals []EnemyGoal
+    knobs := makeEnemy2Knobs(aiServices)
 
     exploreGoal := EnemyGoal{
         Goal: GoalExploreTerritory,
@@ -312,6 +389,9 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
     // the standing-army target grows as the game goes on (more stacks = more
     // aggression / defense capacity).
     armyTarget := max(5, aiServices.GetTurnNumber() / 5)
+    if knobs.pressure() {
+        armyTarget = max(6, aiServices.GetTurnNumber() / 4)
+    }
     if armyTarget < 2 {
         armyTarget = 2
     }
@@ -321,7 +401,8 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
 
     // base goal priorities. These weights surface in the watch-mode debug overlay
     // so the AI's current disposition (aggressive vs. builder vs. turtle) is
-    // visible while spectating.
+    // visible while spectating. List order still picks which goal runs; weights
+    // are for LastGoalDebug, not selection.
     goals = []EnemyGoal{
         EnemyGoal{
             Goal: GoalDefeatEnemies,
@@ -344,9 +425,8 @@ func (ai *Enemy2AI) ComputeGoals(self *playerlib.Player, aiServices playerlib.AI
         },
     }
 
-    // once we have a small empire, dedicate some effort to connecting cities
-    // with roads (1 engineer per 3 cities) for faster troop movement and trade
-    if len(self.Cities) >= 3 {
+    // Intro/Easy Classic wait for 3 cities; Average and Aggressive/Hard+ start at 2
+    if len(self.Cities) >= knobs.connectCitiesMin() {
         goals = append(goals, EnemyGoal{
             Goal: GoalConnectCities,
             Weight: 0.5,
@@ -1538,6 +1618,12 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
 
     seenGoals.Insert(goal.Goal)
 
+    if ai.Attacking == nil {
+        ai.Attacking = make(map[*playerlib.UnitStack]bool)
+    }
+
+    knobs := makeEnemy2Knobs(aiServices)
+
     var decisions []playerlib.AIDecision
 
     // recursively satisfy subgoals first
@@ -1552,7 +1638,11 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
 
     switch goal.Goal {
         case GoalDefeatEnemies:
-            // find possible enemy targets
+            // March on visible enemy cities and remembered scouted cities even
+            // when no rival STACK is currently visible. Original 1.31 (ReMoM
+            // behavior spec) does not wait for a field army to appear first;
+            // requiring possibleTarget left city offense dead and only lair
+            // raids ran. Lair margins below stay independent of this gate.
             var possibleTarget []*playerlib.UnitStack
             var possibleCities []*citylib.City
             for _, enemyPlayer := range aiServices.GetEnemies(self) {
@@ -1572,7 +1662,15 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                 }
             }
 
-            if len(possibleTarget) > 0 {
+            hasUnseenKnownCity := false
+            for _, known := range ai.KnownEnemyCities {
+                if !self.IsVisible(known.X, known.Y, known.Plane) {
+                    hasUnseenKnownCity = true
+                    break
+                }
+            }
+
+            if len(possibleTarget) > 0 || len(possibleCities) > 0 || hasUnseenKnownCity {
                 for _, stack := range self.Stacks {
                     // never march a settler (or its escort) off to attack
                     if stackHasSettler(stack) {
@@ -1591,8 +1689,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
 
                         for _, city := range possibleCities {
                             if city.Plane == stack.Plane() {
-                                // just assume the city has some power in it
-                                targetPower := 15
+                                targetPower := knobs.visibleCityAssumedPower()
                                 if stackPower > targetPower - rand.N(10) {
                                     pathToCity, ok := aiServices.FindPath(stack.X(), stack.Y(), city.X, city.Y, self, stack, self.GetFog(stack.Plane()))
                                     if ok {
@@ -1628,7 +1725,7 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
                         // the AI keeps pressing an offensive using its scouting
                         // memory. Gated on a healthy attack power so we don't send
                         // weak stacks blindly into an unknown garrison.
-                        if len(shortestPath) == 0 && stackPower >= 20 {
+                        if len(shortestPath) == 0 && stackPower >= knobs.rememberedCityMinPower() {
                             for _, known := range ai.KnownEnemyCities {
                                 if known.Plane != stack.Plane() {
                                     continue
@@ -1976,11 +2073,14 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
             // turn while under the cap. The cap grows with the empire so larger
             // empires keep expanding.
             maxConcurrentSettlers := 1 + len(self.Cities)/3
+            if knobs.pressure() {
+                maxConcurrentSettlers = 1 + len(self.Cities)/2
+            }
             if maxConcurrentSettlers < 1 {
                 maxConcurrentSettlers = 1
             }
-            settlerChance := 60
-            if aiData.FoodPerTurn() > 0 && countSettlerPipeline(self) < maxConcurrentSettlers {
+            settlerChance := knobs.settlerChance()
+            if knobs.canQueueSettler(aiData.FoodPerTurn()) && countSettlerPipeline(self) < maxConcurrentSettlers {
                 for _, city := range self.Cities {
                     if !isMakingSomething(city) && chance(settlerChance) {
                         locations := aiServices.FindSettlableLocations(city.X, city.Y, city.Plane, self.GetFog(city.Plane))
@@ -2018,11 +2118,11 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
             for _, stack := range self.Stacks {
                 if stack.HasMoves() {
 
-                    // once the ConnectCities goal is active (>=3 cities) leave engineer
+                    // once the ConnectCities goal is active leave engineer
                     // stacks for it to dispatch as road builders instead of sending them
                     // off to scout/explore (engineers have a nominal attack power of 1
                     // and would otherwise pass the scout filter below)
-                    if len(self.Cities) >= 3 && stackHasEngineer(stack) {
+                    if len(self.Cities) >= knobs.connectCitiesMin() && stackHasEngineer(stack) {
                         continue
                     }
 
@@ -2393,13 +2493,15 @@ func (ai *Enemy2AI) GoalDecisions(self *playerlib.Player, aiServices playerlib.A
             }
 
         case GoalConnectCities:
-            // need a few cities before roads are worth the engineer investment
-            if len(self.Cities) < 3 {
+            // Intro/Easy Classic: 3 cities. Average and Aggressive/Hard+: 2 so
+            // engineers are not left idle until an empire that rarely forms.
+            minCities := knobs.connectCitiesMin()
+            if len(self.Cities) < minCities {
                 break
             }
 
-            // budget: one engineer per three cities
-            engineerBudget := len(self.Cities) / 3
+            // budget: one engineer per connectCitiesMin cities
+            engineerBudget := len(self.Cities) / minCities
             currentEngineers := countEngineers(self)
 
             // produce another engineer if we are under budget and can afford it

@@ -36,6 +36,10 @@ type GameModel struct {
 
     Settings setup.NewGameSettings
 
+    // live read of the session-only Aggressive AI checkbox (not serialized).
+    // Set by MakeGameWithModel from game Settings. Nil means Classic.
+    IsAggressiveAI func() bool
+
     heroNames map[int]map[herolib.HeroType]string
     allSpells spellbook.Spells
 
@@ -664,6 +668,13 @@ func (model *GameModel) FindStack(x int, y int, plane data.Plane) (*playerlib.Un
 
 func (model *GameModel) GetDifficulty() data.DifficultySetting {
     return model.Settings.Difficulty
+}
+
+func (model *GameModel) GetAggressiveAI() bool {
+    if model.IsAggressiveAI == nil {
+        return false
+    }
+    return model.IsAggressiveAI()
 }
 
 func (model *GameModel) GetTurnNumber() uint64 {
