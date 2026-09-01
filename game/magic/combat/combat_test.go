@@ -13,6 +13,8 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 func TestAngle(test *testing.T){
@@ -1238,4 +1240,97 @@ func TestSpellSavePower(test *testing.T) {
     if defender.GetHealth() > 0 {
         test.Errorf("Error: defender should have been banished")
     }
+}
+
+func makeTestCombatPlayer() *playerlib.Player {
+    return playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{})
+}
+
+type noopAIActions struct{}
+
+func (noopAIActions) RangeAttack(*ArmyUnit, RangeTarget) {}
+func (noopAIActions) MeleeAttack(*ArmyUnit, *ArmyUnit) {}
+func (noopAIActions) MeleeAttackWall(*ArmyUnit, int, int) {}
+func (noopAIActions) MoveMagicVortex(*MagicVortex, pathfinding.Path) {}
+func (noopAIActions) MoveUnit(*ArmyUnit, pathfinding.Path) {}
+func (noopAIActions) Teleport(*ArmyUnit, int, int, bool) {}
+func (noopAIActions) DoProjectiles() {}
+
+func TestLayoutUnitsStayInsideMap(test *testing.T) {
+    player := makeTestCombatPlayer()
+    model := &CombatModel{
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+    }
+
+    for _, team := range []Team{TeamAttacker, TeamDefender} {
+        army := &Army{Player: player}
+        for range 200 {
+            army.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+        }
+        army.LayoutUnits(team, model)
+        for _, unit := range army.units {
+            if !model.IsInsideMap(unit.X, unit.Y) {
+                test.Fatalf("layout placed unit off the combat map at %d,%d", unit.X, unit.Y)
+            }
+        }
+    }
+}
+
+func TestAIMovementPathfindingOffMapUnit(test *testing.T) {
+    defendingArmy := &Army{Player: makeTestCombatPlayer()}
+    attackingArmy := &Army{Player: makeTestCombatPlayer()}
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+    model := &CombatModel{
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    defender := defendingArmy.units[0]
+    attacker := attackingArmy.units[0]
+    defender.X = 30
+    defender.Y = 15
+    attacker.X = 10
+    attacker.Y = 10
+    attacker.MovesLeft = fraction.FromInt(2)
+    model.Tiles[attacker.Y][attacker.X].Unit = attacker
+
+    doAIMovementPathfinding(model, noopAIActions{}, attacker, defendingArmy)
+}
+
+func TestCombatOffMapTileAccessDoesNotPanic(test *testing.T) {
+    defendingArmy := &Army{Player: makeTestCombatPlayer()}
+    attackingArmy := &Army{Player: makeTestCombatPlayer()}
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+    attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+    model := &CombatModel{
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        DefendingArmy: defendingArmy,
+        AttackingArmy: attackingArmy,
+    }
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    defender := defendingArmy.units[0]
+    attacker := attackingArmy.units[0]
+    defender.X = 30
+    defender.Y = 15
+    attacker.X = 10
+    attacker.Y = 10
+    attacker.MovesLeft = fraction.FromInt(2)
+
+    model.ComputeWallDefense(attacker, defender)
+    model.canMeleeAttack(attacker, defender, true)
+    model.DestroyWall(30, 15)
+    model.MoveUnit(attacker, 30, 15)
+    attacker.X = 30
+    attacker.Y = 10
+    model.Teleport(attacker, 5, 5)
+    model.KillUnit(defender)
+    model.RemoveUnit(attacker)
 }

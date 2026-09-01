@@ -228,12 +228,19 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
     getPath := func (unit *ArmyUnit) pathfinding.Path {
         path, found := paths[unit]
         if !found {
+            tile := model.GetTile(unit.X, unit.Y)
+            if tile == nil || !model.IsInsideMap(aiUnit.X, aiUnit.Y) {
+                paths[unit] = nil
+                return nil
+            }
+
             // pretend that there is no unit at the tile. this is a sin of the highest order
 
-            model.Tiles[unit.Y][unit.X].Unit = nil
+            old := tile.Unit
+            tile.Unit = nil
             var ok bool
             path, ok = model.computePath(aiUnit.X, aiUnit.Y, unit.X, unit.Y, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
-            model.Tiles[unit.Y][unit.X].Unit = unit
+            tile.Unit = old
             if ok {
                 paths[unit] = path
             } else {

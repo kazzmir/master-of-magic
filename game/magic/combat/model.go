@@ -2143,6 +2143,8 @@ func StartingLocation(team Team) (int, int) {
 
 type LegalLocation interface {
     IsLegalLocation(x int, y int) bool
+    MaxWidth() int
+    MaxHeight() int
 }
 
 func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
@@ -2168,16 +2170,28 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
     row := 0
     offsetX := 0
 
+    mapWidth := legalLocation.MaxWidth()
+    mapHeight := legalLocation.MaxHeight()
+    if mapWidth < 1 {
+        mapWidth = 1
+    }
+    if mapHeight < 1 {
+        mapHeight = 1
+    }
+
+    occupied := make(map[[2]int]bool)
+
     for _, unit := range army.units {
         accept := false
         for !accept {
             newX := x + offsetX
             newY := cy
 
-            if legalLocation.IsLegalLocation(newX, newY) {
+            if !occupied[[2]int{newX, newY}] && legalLocation.IsLegalLocation(newX, newY) {
                 unit.X = newX
                 unit.Y = newY
                 unit.Facing = facing
+                occupied[[2]int{newX, newY}] = true
                 accept = true
             }
 
@@ -2191,6 +2205,34 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
                 row = 0
                 offsetX = 0
                 cy += rowDirection
+            }
+
+            // Off-map tiles are illegal. Without a fallback the search walks
+            // Y to 30+ forever (or used to place there, then AI indexed Tiles[30]).
+            if !accept && (cy < 0 || cy >= mapHeight) {
+                found := false
+                for ty := 0; ty < mapHeight && !found; ty++ {
+                    for tx := 0; tx < mapWidth; tx++ {
+                        if occupied[[2]int{tx, ty}] {
+                            continue
+                        }
+                        if legalLocation.IsLegalLocation(tx, ty) {
+                            unit.X = tx
+                            unit.Y = ty
+                            unit.Facing = facing
+                            occupied[[2]int{tx, ty}] = true
+                            found = true
+                            accept = true
+                            break
+                        }
+                    }
+                }
+                if !found {
+                    unit.X = max(0, min(x, mapWidth-1))
+                    unit.Y = max(0, min(y, mapHeight-1))
+                    unit.Facing = facing
+                    accept = true
+                }
             }
         }
     }
@@ -2368,6 +2410,10 @@ func (model *CombatModel) WallTiles() []TilePoint {
 }
 
 func (model *CombatModel) IsLegalLocation(x int, y int) bool {
+    if !model.IsInsideMap(x, y) {
+        return false
+    }
+
     if model.ContainsWallTower(x, y) {
         return false
     }
@@ -2429,11 +2475,27 @@ func (model *CombatModel) IsInsideMap(x int, y int) bool {
 }
 
 func (model *CombatModel) MaxWidth() int {
+    if len(model.Tiles) == 0 {
+        return 0
+    }
     return len(model.Tiles[0])
 }
 
 func (model *CombatModel) MaxHeight() int {
     return len(model.Tiles)
+}
+
+func (model *CombatModel) GetTile(x int, y int) *Tile {
+    if !model.IsInsideMap(x, y) {
+        return nil
+    }
+    return &model.Tiles[y][x]
+}
+
+func (model *CombatModel) setTileUnit(x int, y int, unit *ArmyUnit) {
+    if tile := model.GetTile(x, y); tile != nil {
+        tile.Unit = unit
+    }
 }
 
 func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int, overworldY int) {
@@ -2449,9 +2511,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, model.DefendingArmy.Player, model.Zone.City != nil)
-        if model.IsInsideMap(unit.X, unit.Y) {
-            model.Tiles[unit.Y][unit.X].Unit = unit
-        }
+        model.setTileUnit(unit.X, unit.Y, unit)
     }
 
     for _, unit := range model.AttackingArmy.units {
@@ -2459,9 +2519,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, model.AttackingArmy.Player, false)
-        if model.IsInsideMap(unit.X, unit.Y) {
-            model.Tiles[unit.Y][unit.X].Unit = unit
-        }
+        model.setTileUnit(unit.X, unit.Y, unit)
     }
 }
 
@@ -2852,25 +2910,11 @@ func (model *CombatModel) FindPath(unit *ArmyUnit, x int, y int, infiniteMovemen
 }
 
 func (model *CombatModel) GetUnit(x int, y int) *ArmyUnit {
-    if x >= 0 && y >= 0 && y < len(model.Tiles) && x < len(model.Tiles[0]) {
-        return model.Tiles[y][x].Unit
+    tile := model.GetTile(x, y)
+    if tile == nil {
+        return nil
     }
-
-    /*
-    for _, unit := range combat.DefendingArmy.Units {
-        if unit.Health > 0 && unit.X == x && unit.Y == y {
-            return unit
-        }
-    }
-
-    for _, unit := range combat.AttackingArmy.Units {
-        if unit.Health > 0 && unit.X == x && unit.Y == y {
-            return unit
-        }
-    }
-    */
-
-    return nil
+    return tile.Unit
 }
 
 func (model *CombatModel) ContainsMagicVortex(x int, y int) bool {
@@ -3072,7 +3116,7 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
         newUnit.Unit.SetEnchantmentProvider(nil)
     })
 
-    model.Tiles[y][x].Unit = &newUnit
+    model.setTileUnit(x, y, &newUnit)
 
     if player == model.DefendingArmy.Player {
         newUnit.Team = TeamDefender
@@ -3663,8 +3707,8 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyUnit) int {
     if model.InsideCityWall(defender.X, defender.Y) && !model.InsideCityWall(attacker.X, attacker.Y) {
 
-        tile := &model.Tiles[defender.Y][defender.X]
-        if tile.Wall != nil && !tile.WallDestroyed {
+        tile := model.GetTile(defender.X, defender.Y)
+        if tile != nil && tile.Wall != nil && !tile.WallDestroyed {
             if tile.Wall.Contains(WallKindGate) {
                 return 1
             }
@@ -3784,13 +3828,13 @@ func (model *CombatModel) canMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit,
     }
 
     containsWall := func(x int, y int) bool {
-        tile := &model.Tiles[y][x]
-        return tile.Wall != nil && !tile.WallDestroyed && !tile.Wall.Contains(WallKindGate)
+        tile := model.GetTile(x, y)
+        return tile != nil && tile.Wall != nil && !tile.WallDestroyed && !tile.Wall.Contains(WallKindGate)
     }
 
     containsGate := func(x int, y int) bool {
-        tile := &model.Tiles[y][x]
-        return tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Contains(WallKindGate)
+        tile := model.GetTile(x, y)
+        return tile != nil && tile.Wall != nil && !tile.WallDestroyed && tile.Wall.Contains(WallKindGate)
     }
 
     // cannot attack through a wall
@@ -4210,7 +4254,7 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
         model.AttackingArmy.KillUnit(unit)
     }
 
-    model.Tiles[unit.Y][unit.X].Unit = nil
+    model.setTileUnit(unit.X, unit.Y, nil)
 
     if unit == model.SelectedUnit {
         model.NextUnit()
@@ -4226,7 +4270,7 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
         model.AttackingArmy.RemoveUnit(unit)
     }
 
-    model.Tiles[unit.Y][unit.X].Unit = nil
+    model.setTileUnit(unit.X, unit.Y, nil)
 
     if unit == model.SelectedUnit {
         model.NextUnit()
@@ -5319,7 +5363,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     // shouldn't really be necessary because the model should already be set, but just in case
                     killedUnit.Model = model
                     army.RaiseDeadUnit(killedUnit, x, y)
-                    model.Tiles[y][x].Unit = killedUnit
+                    model.setTileUnit(x, y, killedUnit)
                     castedCallback(true)
                 })
 
@@ -5408,7 +5452,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 killedUnit.Enchantments = nil
                 killedUnit.Curses = nil
                 killedUnit.WebHealth = 0
-                model.Tiles[y][x].Unit = killedUnit
+                model.setTileUnit(x, y, killedUnit)
             }
 
             if len(allKilledUnits) > 0 {
@@ -6824,8 +6868,8 @@ func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
 
 // true if a wall was destroyed
 func (model *CombatModel) DestroyWall(x int, y int) bool {
-    tile := &model.Tiles[y][x]
-    if tile.Wall != nil && !tile.WallDestroyed {
+    tile := model.GetTile(x, y)
+    if tile != nil && tile.Wall != nil && !tile.WallDestroyed {
         tile.WallDestroyed = true
         return true
     } else {
@@ -6945,9 +6989,12 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
 
 // returns true if the unit dies while moving (through a wall of fire)
 func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bool {
+    if !model.IsInsideMap(targetX, targetY) {
+        return false
+    }
 
     // tile where the unit came from is now empty
-    model.Tiles[mover.Y][mover.X].Unit = nil
+    model.setTileUnit(mover.X, mover.Y, nil)
 
     mover.MovesLeft = mover.MovesLeft.Subtract(pathCost(image.Pt(mover.X, mover.Y), image.Pt(targetX, targetY)))
     if mover.MovesLeft.LessThan(fraction.FromInt(0)) {
@@ -6968,7 +7015,7 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     mover.X = targetX
     mover.Y = targetY
     // new tile the unit landed on is now occupied
-    model.Tiles[mover.Y][mover.X].Unit = mover
+    model.setTileUnit(mover.X, mover.Y, mover)
     return false
 }
 
@@ -7034,11 +7081,14 @@ func (model *CombatModel) CreateRangeAttackWallEffect(attacker *ArmyUnit, x int,
 }
 
 func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
-    model.Tiles[mover.Y][mover.X].Unit = nil
+    if !model.IsInsideMap(x, y) {
+        return
+    }
+    model.setTileUnit(mover.X, mover.Y, nil)
     mover.X = x
     mover.Y = y
     mover.MovesLeft = mover.MovesLeft.Subtract(fraction.FromInt(1))
-    model.Tiles[mover.Y][mover.X].Unit = mover
+    model.setTileUnit(mover.X, mover.Y, mover)
 }
 
 type RangeAttackActions interface {
