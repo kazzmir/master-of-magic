@@ -244,43 +244,23 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
 
     neighbors := func (x int, y int) []image.Point {
         out := make([]image.Point, 0, 8)
+        x = useMap.WrapX(x)
 
-        // cardinals first, followed by diagonals
-        // left
-        out = append(out, image.Pt(x - 1, y))
-
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
+        add := func(nx int, ny int) {
+            if ny < 0 || ny >= useMap.Height() {
+                return
+            }
+            out = append(out, image.Pt(useMap.WrapX(nx), ny))
         }
 
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
-        }
-
-        // up left
-        if y > 0 {
-            out = append(out, image.Pt(x - 1, y - 1))
-        }
-
-        // down left
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x - 1, y + 1))
-        }
-
-        // up right
-        if y > 0 {
-            out = append(out, image.Pt(x + 1, y - 1))
-        }
-
-        // down right
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x + 1, y + 1))
-        }
+        add(x - 1, y)
+        add(x, y - 1)
+        add(x + 1, y)
+        add(x, y + 1)
+        add(x - 1, y - 1)
+        add(x - 1, y + 1)
+        add(x + 1, y - 1)
+        add(x + 1, y + 1)
 
         return out
     }

@@ -168,6 +168,55 @@ XXXX
     }
 }
 
+func TestFindPathWrapsX(test *testing.T) {
+    const width = 8
+    const height = 3
+
+    wrapX := func(x int) int {
+        x = x % width
+        if x < 0 {
+            x += width
+        }
+        return x
+    }
+
+    samePoint := func(a image.Point, b image.Point) bool {
+        return wrapX(a.X) == wrapX(b.X) && a.Y == b.Y
+    }
+
+    neighbors := func(x int, y int) []image.Point {
+        var out []image.Point
+        x = wrapX(x)
+        for dx := -1; dx <= 1; dx++ {
+            for dy := -1; dy <= 1; dy++ {
+                if dx == 0 && dy == 0 {
+                    continue
+                }
+                ny := y + dy
+                if ny < 0 || ny >= height {
+                    continue
+                }
+                out = append(out, image.Pt(wrapX(x + dx), ny))
+            }
+        }
+        return out
+    }
+
+    tileCost := func(x1 int, y1 int, x2 int, y2 int) float64 {
+        return 1
+    }
+
+    // from the west edge to the east edge, wrapping is one step
+    path, ok := FindPath(image.Pt(0, 1), image.Pt(width - 1, 1), 100, tileCost, neighbors, samePoint)
+    if !ok {
+        test.Errorf("expected a wrapping path from x=0 to x=%d", width - 1)
+        return
+    }
+    if len(path) != 2 {
+        test.Errorf("wrapping path should be one step (start+end), got %v", path)
+    }
+}
+
 func makeRandomMap(rows int, columns int, value int) [][]float64 {
     var out [][]float64
 
