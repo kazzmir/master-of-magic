@@ -356,29 +356,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
     }
 
     neighbors := func (x int, y int) []image.Point {
-        out := make([]image.Point, 0, 8)
-        x = useMap.WrapX(x)
-
-        // wrap X so Dijkstra does not treat x=-1 / x=width as new tiles.
-        // unwrapped neighbors made late-game AI pathfinding take minutes
-        // (samePoint wraps, but the node map key does not).
-        add := func(nx int, ny int) {
-            if ny < 0 || ny >= useMap.Height() {
-                return
-            }
-            out = append(out, image.Pt(useMap.WrapX(nx), ny))
-        }
-
-        add(x - 1, y)
-        add(x, y - 1)
-        add(x + 1, y)
-        add(x, y + 1)
-        add(x - 1, y - 1)
-        add(x - 1, y + 1)
-        add(x + 1, y - 1)
-        add(x + 1, y + 1)
-
-        return out
+        return pathfinding.NeighborsWrapX(x, y, useMap.Height(), useMap.WrapX)
     }
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)

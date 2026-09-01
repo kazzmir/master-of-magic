@@ -5,6 +5,7 @@ import (
     "strings"
     "image"
     "slices"
+    "time"
     "math/rand/v2"
 )
 
@@ -185,21 +186,7 @@ func TestFindPathWrapsX(test *testing.T) {
     }
 
     neighbors := func(x int, y int) []image.Point {
-        var out []image.Point
-        x = wrapX(x)
-        for dx := -1; dx <= 1; dx++ {
-            for dy := -1; dy <= 1; dy++ {
-                if dx == 0 && dy == 0 {
-                    continue
-                }
-                ny := y + dy
-                if ny < 0 || ny >= height {
-                    continue
-                }
-                out = append(out, image.Pt(wrapX(x + dx), ny))
-            }
-        }
-        return out
+        return NeighborsWrapX(x, y, height, wrapX)
     }
 
     tileCost := func(x1 int, y1 int, x2 int, y2 int) float64 {
@@ -214,6 +201,86 @@ func TestFindPathWrapsX(test *testing.T) {
     }
     if len(path) != 2 {
         test.Errorf("wrapping path should be one step (start+end), got %v", path)
+    }
+}
+
+func TestNeighborsWrapX(test *testing.T) {
+    const width = 8
+    const height = 3
+
+    wrapX := func(x int) int {
+        x = x % width
+        if x < 0 {
+            x += width
+        }
+        return x
+    }
+
+    neighbors := NeighborsWrapX(0, 0, height, wrapX)
+
+    has := func(x int, y int) bool {
+        return slices.Contains(neighbors, image.Pt(x, y))
+    }
+
+    if has(-1, 0) || has(width, 0) {
+        test.Errorf("neighbors must wrap X, got %v", neighbors)
+    }
+    if has(0, -1) {
+        test.Errorf("neighbors must not include off-map Y, got %v", neighbors)
+    }
+    if !has(width - 1, 0) {
+        test.Errorf("west edge should wrap to x=%d, got %v", width - 1, neighbors)
+    }
+    if !has(1, 0) || !has(0, 1) {
+        test.Errorf("expected in-map neighbors, got %v", neighbors)
+    }
+}
+
+func TestFindPathUnreachableDoesNotWalkOffMap(test *testing.T) {
+    const width = 8
+    const height = 3
+
+    wrapX := func(x int) int {
+        x = x % width
+        if x < 0 {
+            x += width
+        }
+        return x
+    }
+
+    samePoint := func(a image.Point, b image.Point) bool {
+        return wrapX(a.X) == wrapX(b.X) && a.Y == b.Y
+    }
+
+    // water along y=0, land (impassable) on y=1. Destination is inland.
+    tileCost := func(x1 int, y1 int, x2 int, y2 int) float64 {
+        x2 = wrapX(x2)
+        if y2 < 0 || y2 >= height {
+            return Infinity
+        }
+        if y2 != 0 {
+            return Infinity
+        }
+        return 1
+    }
+
+    neighbors := func(x int, y int) []image.Point {
+        return NeighborsWrapX(x, y, height, wrapX)
+    }
+
+    done := make(chan bool, 1)
+    go func() {
+        _, ok := FindPath(image.Pt(0, 0), image.Pt(4, 2), 10000, tileCost, neighbors, samePoint)
+        done <- ok
+    }()
+
+    select {
+        case ok := <-done:
+            if ok {
+                test.Errorf("expected no path from polar water to inland")
+            }
+        case <-time.After(2 * time.Second):
+            test.Fatal("FindPath hung; neighbors are probably not wrapping X")
     }
 }
 

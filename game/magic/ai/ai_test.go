@@ -58,6 +58,40 @@ func TestBuyItem(test *testing.T) {
     }
 }
 
+func TestNavalExploreIgnoresOffMapEdge(test *testing.T) {
+    const width = 8
+    const height = 3
+
+    wrapX := func(x int) int {
+        x = x % width
+        if x < 0 {
+            x += width
+        }
+        return x
+    }
+
+    player := playerlib.MakePlayer(setup.WizardCustom{}, false, width, height, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{})
+    player.LiftFogAll(data.PlaneArcanus)
+
+    // fully charted polar ocean must not look like a fog frontier just because
+    // y=-1 is off the map
+    if navalTileIsExploreTarget(player, wrapX, height, 3, 0, data.PlaneArcanus) {
+        test.Errorf("explored polar water should not be an explore target")
+    }
+
+    // still-fogged water to the south is a real frontier
+    player.ArcanusFog[3][1] = data.FogTypeUnexplored
+    if !navalTileIsExploreTarget(player, wrapX, height, 3, 0, data.PlaneArcanus) {
+        test.Errorf("water next to unexplored land/sea should be an explore target")
+    }
+
+    // unexplored water itself is a target
+    player.ArcanusFog[4][0] = data.FogTypeUnexplored
+    if !navalTileIsExploreTarget(player, wrapX, height, 4, 0, data.PlaneArcanus) {
+        test.Errorf("unexplored water should be an explore target")
+    }
+}
+
 // stubAIServices is a no-LBX stand-in for GameModel so Enemy2 gates can be tested.
 type stubAIServices struct {
     difficulty data.DifficultySetting

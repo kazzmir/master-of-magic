@@ -1485,26 +1485,15 @@ func (ai *Enemy2AI) findNavalExplorePath(self *playerlib.Player, aiServices play
             }
             nx := useMap.WrapX(sx + dx)
             ny := sy + dy
+            if ny < 0 || ny >= useMap.Height() {
+                continue
+            }
             tile := useMap.GetTile(nx, ny)
             if !tile.Valid() || !useMap.IsWater(nx, ny) {
                 continue
             }
 
-            // target unexplored water directly, or explored water sitting next
-            // to a fogged tile (the edge of what we've seen) so the ship keeps
-            // pushing into the unknown even once its home waters are charted
-            target := !self.IsExplored(nx, ny, plane)
-            if !target {
-                for ddy := -1; ddy <= 1 && !target; ddy++ {
-                    for ddx := -1; ddx <= 1; ddx++ {
-                        if !self.IsExplored(useMap.WrapX(nx+ddx), ny+ddy, plane) {
-                            target = true
-                            break
-                        }
-                    }
-                }
-            }
-            if !target {
+            if !navalTileIsExploreTarget(self, useMap.WrapX, useMap.Height(), nx, ny, plane) {
                 continue
             }
 
@@ -1529,6 +1518,34 @@ func (ai *Enemy2AI) findNavalExplorePath(self *playerlib.Player, aiServices play
     }
 
     return nil
+}
+
+// navalTileIsExploreTarget is true for unexplored water, or explored water that
+// sits next to a still-fogged tile. Off-map Y is not fog: IsExplored(x, -1)
+// returns false, so treating it as unexplored made every polar water tile look
+// like a frontier. Ships then parked on y=0 / y=height-1 and pathfinding
+// exploded along that strip.
+func navalTileIsExploreTarget(self *playerlib.Player, wrapX func(int) int, height int, x int, y int, plane data.Plane) bool {
+    if !self.IsExplored(x, y, plane) {
+        return true
+    }
+
+    for ddy := -1; ddy <= 1; ddy++ {
+        neighborY := y + ddy
+        if neighborY < 0 || neighborY >= height {
+            continue
+        }
+        for ddx := -1; ddx <= 1; ddx++ {
+            if ddx == 0 && ddy == 0 {
+                continue
+            }
+            if !self.IsExplored(wrapX(x + ddx), neighborY, plane) {
+                return true
+            }
+        }
+    }
+
+    return false
 }
 
 // return a subset of moveUnits that can move while still leaving minimumAttackPower behind
