@@ -36,6 +36,10 @@ type GameModel struct {
 
     Settings setup.NewGameSettings
 
+    // live read of the session-only Aggressive AI checkbox (not serialized).
+    // Set by MakeGameWithModel from game Settings. Nil means Classic.
+    IsAggressiveAI func() bool
+
     heroNames map[int]map[herolib.HeroType]string
     allSpells spellbook.Spells
 
@@ -209,6 +213,9 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
         return nil, false
     }
 
+    oldX = useMap.WrapX(oldX)
+    newX = useMap.WrapX(newX)
+
     if oldX == newX && oldY == newY {
         return nil, true
     }
@@ -349,46 +356,7 @@ func (model *GameModel) FindPath(oldX int, oldY int, newX int, newY int, player 
     }
 
     neighbors := func (x int, y int) []image.Point {
-        out := make([]image.Point, 0, 8)
-
-        // cardinals first, followed by diagonals
-        // left
-        out = append(out, image.Pt(x - 1, y))
-
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
-        }
-
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
-        }
-
-        // up left
-        if y > 0 {
-            out = append(out, image.Pt(x - 1, y - 1))
-        }
-
-        // down left
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x - 1, y + 1))
-        }
-
-        // up right
-        if y > 0 {
-            out = append(out, image.Pt(x + 1, y - 1))
-        }
-
-        // down right
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x + 1, y + 1))
-        }
-
-        return out
+        return pathfinding.NeighborsWrapX(x, y, useMap.Height(), useMap.WrapX)
     }
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)
@@ -664,6 +632,13 @@ func (model *GameModel) FindStack(x int, y int, plane data.Plane) (*playerlib.Un
 
 func (model *GameModel) GetDifficulty() data.DifficultySetting {
     return model.Settings.Difficulty
+}
+
+func (model *GameModel) GetAggressiveAI() bool {
+    if model.IsAggressiveAI == nil {
+        return false
+    }
+    return model.IsAggressiveAI()
 }
 
 func (model *GameModel) GetTurnNumber() uint64 {

@@ -3,6 +3,7 @@ package game
 import (
     "testing"
     "image"
+    "time"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
@@ -220,4 +221,60 @@ func TestPathBasic(test *testing.T) {
             test.Errorf("stack with an inactive ship must not path from water onto land")
         }
     }()
+}
+
+func TestFindPathUnreachableAcrossOceanDoesNotHang(test *testing.T) {
+    var model GameModel
+
+    terrainData := terrain.MakeTerrainData([]image.Image{nil, nil}, []terrain.TerrainTile{
+        terrain.TerrainTile{TileIndex: 0, Tile: terrain.TileLand},
+        terrain.TerrainTile{TileIndex: 1, Tile: terrain.TileOcean},
+    })
+
+    const width = 40
+    const height = 3
+
+    xmap := maplib.Map{
+        Map: terrain.MakeMap(height, width),
+        Data: terrainData,
+        Plane: data.PlaneArcanus,
+    }
+
+    // two land strips separated by explored ocean. A land walker cannot cross,
+    // so Dijkstra must exhaust the graph. Unwrapped X neighbors made that
+    // search walk off the map until the cost cap (~seconds per call).
+    for x := 0; x < width; x++ {
+        xmap.Map.Terrain[x][0] = 0
+        xmap.Map.Terrain[x][1] = 1
+        xmap.Map.Terrain[x][2] = 0
+    }
+
+    model.ArcanusMap = &xmap
+
+    fog := make(data.FogMap, width)
+    for x := 0; x < width; x++ {
+        fog[x] = make([]data.FogType, height)
+        for y := 0; y < height; y++ {
+            fog[x][y] = data.FogTypeVisible
+        }
+    }
+
+    player1 := playerlib.MakePlayer(setup.WizardCustom{}, true, width, height, map[herolib.HeroType]string{}, &model)
+    player1.AddUnit(units.MakeOverworldUnit(units.HighMenSwordsmen, 0, 0, data.PlaneArcanus))
+    stack := player1.FindStack(0, 0, data.PlaneArcanus)
+
+    done := make(chan bool, 1)
+    go func() {
+        _, ok := model.FindPath(0, 0, width / 2, 2, player1, stack, fog)
+        done <- ok
+    }()
+
+    select {
+        case ok := <-done:
+            if ok {
+                test.Errorf("land walker should not path across explored ocean")
+            }
+        case <-time.After(2 * time.Second):
+            test.Fatal("FindPath hung; overland neighbors are probably not wrapping X")
+    }
 }

@@ -628,6 +628,12 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettin
 
     // game.Model = MakeGameModel(terrainData, settings, data.PlaneArcanus, game.Events, heroNames, game.AllSpells(), createArtifactPool(lbxCache), buildingInfo)
     game.Model = makeModel(lbxCache, game.Events)
+    game.Model.IsAggressiveAI = func() bool {
+        if gameSettings == nil {
+            return false
+        }
+        return gameSettings.AggressiveAI
+    }
 
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){
@@ -4145,9 +4151,17 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
     if player.AIBehavior != nil {
         decisionResult := make(chan []playerlib.AIDecision)
+        thinkStart := time.Now()
+        thinkYear := game.Model.TurnNumber
+        thinkName := player.Wizard.Name
+        thinkBanner := player.GetBanner()
         go func() {
             // run AI in background so the UI doesn't totally freeze
             out := player.AIBehavior.Update(player, game.Model)
+            elapsed := time.Since(thinkStart)
+            if elapsed >= time.Second {
+                log.Printf("Year=%v AI %v(%v) thought for %v (%d decisions)", thinkYear, thinkName, thinkBanner, elapsed, len(out))
+            }
             decisionResult <- out
             close(decisionResult)
         }()

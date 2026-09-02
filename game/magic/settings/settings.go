@@ -186,7 +186,13 @@ func MakeSettingsUI(yield coroutine.YieldFunc, parentUI *uilib.UI, cache *lbx.Lb
     addCheckbox(group, fonts, &getAlpha, 30, 150, "Random Events",
         func() bool { return settings.RandomEvents },
         func(value bool) { settings.RandomEvents = value },
-     )
+    )
+
+    // session-only, same as Random Events. Enemy2 reads this via AIServices.
+    addCheckbox(group, fonts, &getAlpha, 175, 150, "Aggressive AI",
+        func() bool { return settings.AggressiveAI },
+        func(value bool) { settings.AggressiveAI = value },
+    )
 
     return group, quit
 }
