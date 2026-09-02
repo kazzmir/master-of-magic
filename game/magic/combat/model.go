@@ -2179,7 +2179,7 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
         mapHeight = 1
     }
 
-    occupied := make(map[[2]int]bool)
+    occupied := make(map[image.Point]bool)
 
     for _, unit := range army.units {
         accept := false
@@ -2187,11 +2187,11 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
             newX := x + offsetX
             newY := cy
 
-            if !occupied[[2]int{newX, newY}] && legalLocation.IsLegalLocation(newX, newY) {
+            if !occupied[image.Pt(newX, newY)] && legalLocation.IsLegalLocation(newX, newY) {
                 unit.X = newX
                 unit.Y = newY
                 unit.Facing = facing
-                occupied[[2]int{newX, newY}] = true
+                occupied[image.Pt(newX, newY)] = true
                 accept = true
             }
 
@@ -2212,15 +2212,15 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
             if !accept && (cy < 0 || cy >= mapHeight) {
                 found := false
                 for ty := 0; ty < mapHeight && !found; ty++ {
-                    for tx := 0; tx < mapWidth; tx++ {
-                        if occupied[[2]int{tx, ty}] {
+                    for tx := range mapWidth {
+                        if occupied[image.Pt(tx, ty)] {
                             continue
                         }
                         if legalLocation.IsLegalLocation(tx, ty) {
                             unit.X = tx
                             unit.Y = ty
                             unit.Facing = facing
-                            occupied[[2]int{tx, ty}] = true
+                            occupied[image.Pt(tx, ty)] = true
                             found = true
                             accept = true
                             break
