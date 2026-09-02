@@ -145,6 +145,8 @@ type AIServices interface {
     FindSettlableLocations(x int, y int, plane data.Plane, fog data.FogMap) []image.Point
     IsSettlableLocation(x int, y int, plane data.Plane) bool
     GetDifficulty() data.DifficultySetting
+    // session-only settings checkbox; false is Classic Enemy2 pacing
+    GetAggressiveAI() bool
     GetMap(data.Plane) *maplib.Map
 
     // get friendly cities on the same continent as the given point

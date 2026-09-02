@@ -3297,7 +3297,10 @@ func (combat *CombatScreen) DrawHealthBar(screen *ebiten.Image, x int, y int, al
 }
 
 func (combat *CombatScreen) DrawWall(screen *ebiten.Image, x int, y int, tilePosition func(float64, float64) (float64, float64), animationIndex uint64){
-    tile := &combat.Model.Tiles[y][x]
+    tile := combat.Model.GetTile(x, y)
+    if tile == nil {
+        return
+    }
     if tile.Fire == nil && tile.Darkness == nil && tile.Wall == nil {
         return
     }

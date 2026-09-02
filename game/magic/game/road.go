@@ -151,6 +151,9 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
         return nil
     }
 
+    oldX = useMap.WrapX(oldX)
+    newX = useMap.WrapX(newX)
+
     normalized := func (a image.Point) image.Point {
         return image.Pt(useMap.WrapX(a.X), a.Y)
     }
@@ -243,46 +246,7 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
     }
 
     neighbors := func (x int, y int) []image.Point {
-        out := make([]image.Point, 0, 8)
-
-        // cardinals first, followed by diagonals
-        // left
-        out = append(out, image.Pt(x - 1, y))
-
-        // up
-        if y > 0 {
-            out = append(out, image.Pt(x, y - 1))
-        }
-
-        // right
-        out = append(out, image.Pt(x + 1, y))
-
-        // down
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x, y + 1))
-        }
-
-        // up left
-        if y > 0 {
-            out = append(out, image.Pt(x - 1, y - 1))
-        }
-
-        // down left
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x - 1, y + 1))
-        }
-
-        // up right
-        if y > 0 {
-            out = append(out, image.Pt(x + 1, y - 1))
-        }
-
-        // down right
-        if y < useMap.Height() - 1 {
-            out = append(out, image.Pt(x + 1, y + 1))
-        }
-
-        return out
+        return pathfinding.NeighborsWrapX(x, y, useMap.Height(), useMap.WrapX)
     }
 
     path, ok := pathfinding.FindPath(image.Pt(oldX, oldY), image.Pt(newX, newY), 10000, tileCost, neighbors, tileEqual)

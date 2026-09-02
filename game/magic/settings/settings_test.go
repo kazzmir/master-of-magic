@@ -19,4 +19,8 @@ func TestMakeSettingsDefaults(test *testing.T) {
     if !s.RandomEvents {
         test.Errorf("RandomEvents should default to true")
      }
+
+    if s.AggressiveAI {
+        test.Errorf("AggressiveAI should default to false (Classic)")
+    }
 }

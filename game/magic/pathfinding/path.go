@@ -28,6 +28,33 @@ func PointEqual(a image.Point, b image.Point) bool {
     return a == b
 }
 
+// NeighborsWrapX returns the 8 adjacent tiles of (x,y) with X wrapped onto the
+// map and Y clamped. Emitting raw x-1/x+1 as distinct nodes makes Dijkstra
+// walk off a cylindrical map until maxPath, which hung late-game AI — especially
+// ships stuck on the north/south edge, where Y cannot expand.
+func NeighborsWrapX(x int, y int, height int, wrapX func(int) int) []image.Point {
+    out := make([]image.Point, 0, 8)
+    x = wrapX(x)
+
+    add := func(nx int, ny int) {
+        if ny < 0 || ny >= height {
+            return
+        }
+        out = append(out, image.Pt(wrapX(nx), ny))
+    }
+
+    add(x - 1, y)
+    add(x, y - 1)
+    add(x + 1, y)
+    add(x, y + 1)
+    add(x - 1, y - 1)
+    add(x - 1, y + 1)
+    add(x + 1, y - 1)
+    add(x + 1, y + 1)
+
+    return out
+}
+
 /* returns an array of points that is the shortest/cheapest path from start->end and true, or false if no such path exists
  * basically djikstra's shortest path algorithm
  */
