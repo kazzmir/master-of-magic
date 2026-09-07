@@ -97,6 +97,7 @@ type EnemyNetAI struct {
     // current state of the player, used for reward calculation
     currentGold int
     currentMana int
+    armyStrength int
     banished bool
     defeated bool
 }
@@ -214,6 +215,16 @@ func countVisibleEnemyUnits(player *playerlib.Player, services playerlib.AIServi
 func countMagicNodes(player *playerlib.Player, services playerlib.AIServices, plane data.Plane) int {
     map_ := services.GetMap(plane)
     return len(map_.GetMeldedNodes(player))
+}
+
+func computeArmyStrength(player *playerlib.Player) int {
+    var total = 0
+
+    for _, stack := range player.Stacks {
+        total += stackAttackPower(stack)
+    }
+
+    return total
 }
 
 type FeatureFunction func() float64
@@ -1309,6 +1320,7 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
 
     ai.stats.goldDelta = player.Gold - ai.currentGold
     ai.stats.manaDelta = player.Mana - ai.currentMana
+    ai.stats.armyStrengthDelta = computeArmyStrength(player) - ai.armyStrength
 
     if !ai.banished && player.Banished {
         ai.stats.wasBanished = 1
@@ -1379,6 +1391,8 @@ func (ai *EnemyNetAI) PreTurn(player *playerlib.Player) {
 
     ai.banished = player.Banished
     ai.defeated = player.Defeated
+
+    ai.armyStrength = computeArmyStrength(player)
 }
 
 func (ai *EnemyNetAI) NewTurn(player *playerlib.Player) {
