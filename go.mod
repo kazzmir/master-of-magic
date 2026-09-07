@@ -1,6 +1,6 @@
 module github.com/kazzmir/master-of-magic
 
-go 1.25.0
+go 1.27.0
 
 require (
 	github.com/ebitenui/ebitenui v0.7.3

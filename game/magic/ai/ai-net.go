@@ -2,11 +2,13 @@ package ai
 
 import (
     // "math"
+    "io"
     "iter"
     "cmp"
     "log"
     "image"
     "slices"
+    "encoding/json/v2"
     "math/rand/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
@@ -1234,22 +1236,28 @@ func (ai *EnemyNetAI) ApplyTraining() {
         baseline = beta * baseline + (1-beta) * float64(step.Return)
         advantage := float64(step.Return) - baseline
 
+        for i := range losses {
+            losses[i] = 0
+        }
+
         // compute losses for each strategy, which either encourages or discourages the strategy based on whether the advantage is positive or negative,
         // and whether the strategy was selected or not
-        for i := range losses {
-            base := 0
-            for _, strategy := range step.Strategies {
-                if strategy.Index == i {
-                    base = 1
-                }
-            }
-
-            losses[i] = -advantage * (float64(base) - step.Strategies[i].Value)
+        for _, strategy := range step.Strategies {
+            losses[strategy.Index] = -advantage * (1 - strategy.Value)
         }
 
         // back propagate the losses to update the neural network weights, using the turn number as the index for the training step
         trainer.Train(ai.NeuralNet, losses, int(step.Turn))
     }
+}
+
+// serialize neural net so it can be saved into a file
+func (ai *EnemyNetAI) SaveNeuralNet(output io.Writer) error {
+    return json.MarshalWrite(output, ai.NeuralNet)
+}
+
+func (ai *EnemyNetAI) LoadNeuralNet(input io.Reader) error {
+    return json.UnmarshalRead(input, &ai.NeuralNet)
 }
 
 func (ai *EnemyNetAI) DidBanish(self *playerlib.Player, other *playerlib.Player) {
