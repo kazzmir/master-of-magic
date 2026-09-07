@@ -178,6 +178,7 @@ type AIEvents interface {
     SpellOfMasteryProgress(relative float64)
     DidBuildRoad(x int, y int, plane data.Plane)
     DidExplore(x int, y int, plane data.Plane)
+    DidDiscoverEnemy(player *Player)
 }
 
 type AIBehavior interface {
@@ -590,6 +591,10 @@ func (player *Player) AwarePlayer(other *Player) {
             TreatyInterest: 100,
             TradeInterest: 100,
             PeaceInterest: 100,
+        }
+
+        if player.AIBehavior != nil {
+            player.AIBehavior.DidDiscoverEnemy(other)
         }
     }
 }

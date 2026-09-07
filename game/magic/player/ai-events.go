@@ -49,4 +49,7 @@ func (*DefaultAIEvents) DidBuildRoad(x int, y int, plane data.Plane) {
 func (*DefaultAIEvents) DidExplore(x int, y int, plane data.Plane) {
 }
 
+func (*DefaultAIEvents) DidDiscoverEnemy(other *Player) {
+}
+
 var _ AIEvents = (*DefaultAIEvents)(nil)
