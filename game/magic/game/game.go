@@ -994,6 +994,21 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) FocusPlayerCity(playerIndex int) {
+    if playerIndex < len(game.Model.Players) {
+        player := game.Model.Players[playerIndex]
+
+        cities := player.GetCities()
+        if len(cities) > 0 {
+            firstCity := cities[0]
+            select {
+                case game.Events <- &GameEventMoveCamera{Plane: firstCity.Plane, X: firstCity.X, Y: firstCity.Y, Instant: true}:
+                default:
+            }
+        }
+    }
+}
+
 // enemy wizards, but not including the raider ai
 func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player

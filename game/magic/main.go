@@ -725,6 +725,9 @@ func startAITrainMode(yield coroutine.YieldFunc, game *MagicGame) error {
             }
         }
 
+        // focus on the ai player
+        realGame.FocusPlayerCity(1)
+
         // FIXME: we shouldn't need this
         gameLoader := &OriginalGameLoader{
             Cache: game.Cache,
