@@ -569,6 +569,35 @@ func (player *Player) AwarePlayer(other *Player) {
     }
 }
 
+func (player *Player) IsAwareOf(other *Player) bool {
+    if player == nil || other == nil {
+        return false
+    }
+    _, ok := player.PlayerRelations[other]
+    return ok
+}
+
+// true if this player currently sees a city or unit belonging to the other wizard
+func (player *Player) CanSeePlayer(other *Player) bool {
+    if player == nil || other == nil || player == other {
+        return false
+    }
+
+    for _, city := range other.GetCities() {
+        if player.IsVisible(city.X, city.Y, city.Plane) {
+            return true
+        }
+    }
+
+    for _, stack := range other.Stacks {
+        if player.IsVisible(stack.X(), stack.Y(), stack.Plane()) {
+            return true
+        }
+    }
+
+    return false
+}
+
 func (player *Player) WarWithPlayer(other *Player) {
     player.AwarePlayer(other)
     player.PlayerRelations[other].Treaty = data.TreatyWar
