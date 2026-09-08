@@ -634,6 +634,9 @@ func MakeGameWithModel(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettin
         }
         return gameSettings.AggressiveAI
     }
+    if game.Model != nil && game.Model.CurrentMap() != nil {
+        game.Camera.SetMapHeight(game.Model.CurrentMap().Height())
+    }
 
     game.HudUI = game.MakeHudUI()
     game.PushDrawer(func(screen *ebiten.Image){
@@ -3431,28 +3434,12 @@ func (game *Game) doInputZoom(yield coroutine.YieldFunc) bool {
 }
 
 func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
-    camera := game.Camera
-
-    camera.Center(x, y)
-    minY := math.Floor(-1 / camera.GetZoom())
-    for camera.GetZoomedY() < minY {
-        y += 1
-        camera.Center(x, y)
-    }
-
-    for camera.GetZoomedMaxY() >= float64(game.Model.CurrentMap().Height()) && camera.Y > 0 {
-        y -= 1
-        camera.Center(x, y)
-    }
-
-    /*
+    height := game.Model.CurrentMap().Height()
     if y < 0 {
         y = 0
     }
-    */
-
-    if y > game.Model.CurrentMap().Height() {
-        y = game.Model.CurrentMap().Height()
+    if y >= height {
+        y = height - 1
     }
 
     dx := game.Model.CurrentMap().XDistance(game.Camera.GetX(), x)

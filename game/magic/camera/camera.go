@@ -23,6 +23,10 @@ type Camera struct {
 
     SizeX int
     SizeY int
+
+    // overland map height in tiles. 0 means "unknown" and skips Y clamping
+    // (city-preview cameras, tests). X wraps, so it is never clamped.
+    MapHeight int
 }
 
 func (camera *Camera) SetOffset(x float64, y float64) {
@@ -51,14 +55,39 @@ func (camera *Camera) GetZoomedX() float64 {
     return camera.GetOffsetX() - float64(camera.SizeX) / 2 / camera.GetAnimatedZoom()
 }
 
-func (camera *Camera) GetZoomedY() float64 {
+// visibleTilesY is how many tiles fit in the 200px-tall overland window.
+// GetTileBounds uses the same 18px tile height.
+func (camera *Camera) visibleTilesY() float64 {
+    return data.ScreenHeight / (18.0 * camera.GetAnimatedZoom())
+}
+
+func (camera *Camera) unclampedZoomedY() float64 {
     return camera.GetOffsetY() - float64(camera.SizeY) / 2 / camera.GetAnimatedZoom()
 }
 
+func (camera *Camera) GetZoomedY() float64 {
+    y := camera.unclampedZoomedY()
+    if camera.MapHeight <= 0 {
+        return y
+    }
+
+    if y < 0 {
+        y = 0
+    }
+
+    maxY := float64(camera.MapHeight) - camera.visibleTilesY()
+    if maxY < 0 {
+        maxY = 0
+    }
+    if y > maxY {
+        y = maxY
+    }
+
+    return y
+}
+
 func (camera *Camera) GetZoomedMaxY() float64 {
-    // FIXME: not sure why +1 is needed here. it doesn't fully solve the problem of there being
-    // a gap at the bottom of the map sometimes
-    return camera.GetOffsetY() + float64(camera.SizeY+1) / 2 / camera.GetAnimatedZoom()
+    return camera.GetZoomedY() + camera.visibleTilesY()
 }
 
 func (camera *Camera) GetX() int {
@@ -76,7 +105,17 @@ func (camera *Camera) Move(dx int, dy int) {
 
 func (camera *Camera) Center(x int, y int) {
     camera.X = x
-    camera.Y = max(0, y)
+    if y < 0 {
+        y = 0
+    }
+    if camera.MapHeight > 0 && y >= camera.MapHeight {
+        y = camera.MapHeight - 1
+    }
+    camera.Y = y
+}
+
+func (camera *Camera) SetMapHeight(height int) {
+    camera.MapHeight = height
 }
 
 func (camera *Camera) GetTileBounds() (int, int, int, int) {
