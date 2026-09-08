@@ -723,6 +723,8 @@ func startAITrainMode(yield coroutine.YieldFunc, game *MagicGame) error {
                 }
                 log.Printf("AI last 10 step reward: %v", rewards)
 
+                // log.Printf("Layer 0 weights: %v", netAI.NeuralNet.Layers[0])
+
                 output, err := os.Create("ai.json")
                 if err == nil {
                     defer output.Close()

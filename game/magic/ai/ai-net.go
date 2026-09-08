@@ -10,6 +10,7 @@ import (
     "slices"
     "encoding/json/v2"
     "math/rand/v2"
+    "math"
 
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/units"
@@ -1247,7 +1248,7 @@ func (ai *EnemyNetAI) ApplyTraining() {
         }
 
         // back propagate the losses to update the neural network weights, using the turn number as the index for the training step
-        trainer.Train(ai.NeuralNet, losses, int(step.Turn))
+        trainer.Train(ai.NeuralNet, losses, int(step.Turn) + 1)
     }
 }
 
@@ -1360,6 +1361,16 @@ func (ai *EnemyNetAI) PostUpdate(player *playerlib.Player, services playerlib.AI
     reward += float64(ai.stats.armyStrengthDelta) * 0.5
     reward += float64(ai.stats.roadsBuilt) * 0.2
     reward += float64(ai.stats.enemiesDiscovered) * 1.3
+
+    turn := services.GetTurnNumber()
+    if turn > 50 {
+        // population should increase with turn number
+        expectedPopulation := math.Pow(float64(turn), 0.5)
+        actualPopulation := float64(totalPopulation(player)) / 1000
+        reward += actualPopulation - expectedPopulation
+        // log.Printf("reward: expected=%v actual=%v population: %v", expectedPopulation, actualPopulation, actualPopulation - expectedPopulation)
+    }
+
     reward += ai.stats.spellOfMasteryProgress * 50
 
     ai.Steps[len(ai.Steps)-1].Reward = reward
