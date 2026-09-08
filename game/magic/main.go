@@ -642,101 +642,126 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 func startAITrainMode(yield coroutine.YieldFunc, game *MagicGame) error {
     game.Config.AIMode = "net"
 
-    settings := setup.NewGameSettings{
-        // Opponents: rand.N(4) + 1,
-        Opponents: game.Config.Opponents,
-        Difficulty: data.DifficultyAverage,
-        Magic: data.MagicSettingNormal,
-        LandSize: rand.N(3),
-        DisableRaiders: !game.Config.Raiders,
-    }
+    trainingRuns := 5
 
-    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
-    if err != nil {
-        return err
-    }
+    for range trainingRuns {
 
-    wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
-    if !ok {
-        return fmt.Errorf("Could not choose a wizard")
-    }
-
-    log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
-
-    realGame := initializeGame(game, settings, wizard)
-
-    realGame.SetWatchMode(500)
-
-    human := realGame.Model.GetHumanPlayer()
-    if human != nil {
-        // make the human player an AI
-        human.Admin = true
-        human.Banished = true
-
-        for _, city := range human.GetCities() {
-            human.RemoveCity(city)
+        settings := setup.NewGameSettings{
+            // Opponents: rand.N(4) + 1,
+            Opponents: game.Config.Opponents,
+            Difficulty: data.DifficultyAverage,
+            Magic: data.MagicSettingNormal,
+            LandSize: rand.N(3),
+            DisableRaiders: !game.Config.Raiders,
         }
 
-        human.Stacks = nil
-        human.SelectedStack = nil
-        human.Skip = true
+        spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+        if err != nil {
+            return err
+        }
 
-        // make sure all fog is visible
-        human.UpdateFogVisibility()
+        wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
+        if !ok {
+            return fmt.Errorf("Could not choose a wizard")
+        }
 
-        // consume initial events
-        for range 10 {
-            select {
+        log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
+
+        realGame := initializeGame(game, settings, wizard)
+
+        var netAI *ai.EnemyNetAI
+
+        if len(realGame.Model.Players) >= 2 {
+            aiPlayer := realGame.Model.Players[1]
+            if aiPlayer.AIBehavior != nil {
+                var ok bool
+                netAI, ok = aiPlayer.AIBehavior.(*ai.EnemyNetAI)
+                if !ok {
+                    return fmt.Errorf("AI player is not a net AI, cannot train")
+                }
+            }
+        }
+
+        if netAI == nil {
+            return fmt.Errorf("No AI player found, cannot train")
+        }
+
+        (func (){
+            weights, err := os.Create("ai.json")
+            if err == nil {
+                defer weights.Close()
+                err = netAI.LoadNeuralNet(weights)
+                if err != nil {
+                    log.Printf("Unable to load neural net: %v", err)
+                }
+            }
+        })()
+
+        realGame.SetWatchMode(500)
+
+        human := realGame.Model.GetHumanPlayer()
+        if human != nil {
+            // make the human player an AI
+            human.Admin = true
+            human.Banished = true
+
+            for _, city := range human.GetCities() {
+                human.RemoveCity(city)
+            }
+
+            human.Stacks = nil
+            human.SelectedStack = nil
+            human.Skip = true
+
+            // make sure all fog is visible
+            human.UpdateFogVisibility()
+
+            // consume initial events
+            for range 10 {
+                select {
                 case <-realGame.Events:
                 default:
+                }
             }
         }
-    }
 
-    // FIXME: we shouldn't need this
-    gameLoader := &OriginalGameLoader{
-        Cache: game.Cache,
-        NewGame: make(chan *gamelib.Game, 1),
-        FS: system.MakeFS(),
-        Music: game.Music,
-        Settings: game.Settings,
-    }
+        // FIXME: we shouldn't need this
+        gameLoader := &OriginalGameLoader{
+            Cache: game.Cache,
+            NewGame: make(chan *gamelib.Game, 1),
+            FS: system.MakeFS(),
+            Music: game.Music,
+            Settings: game.Settings,
+        }
 
-    err = runGameInstance(realGame, yield, game, gameLoader, 500)
-    if err != nil {
-        return err
-    }
+        err = runGameInstance(realGame, yield, game, gameLoader, 500)
+        if err != nil {
+            return err
+        }
 
-    if len(realGame.Model.Players) >= 2 {
-        aiPlayer := realGame.Model.Players[1]
-        if aiPlayer.AIBehavior != nil {
-            netAI, ok := aiPlayer.AIBehavior.(*ai.EnemyNetAI)
-            if !ok {
-                log.Printf("Warning: AI player is not a net AI, cannot train")
+        netAI.ApplyTraining()
+        steps := netAI.Steps
+        steps = steps[len(steps) - 10:]
+        var rewards []float64
+        for _, step := range steps {
+            rewards = append(rewards, step.Reward)
+        }
+        log.Printf("AI last 10 step reward: %v", rewards)
+
+        // log.Printf("Layer 0 weights: %v", netAI.NeuralNet.Layers[0])
+
+        (func (){
+            output, err := os.Create("ai.json")
+            if err == nil {
+                defer output.Close()
+                err = netAI.SaveNeuralNet(output)
+                if err != nil {
+                    log.Printf("Unable to save neural net: %v", err)
+                }
             } else {
-                netAI.ApplyTraining()
-                steps := netAI.Steps
-                steps = steps[len(steps) - 10:]
-                var rewards []float64
-                for _, step := range steps {
-                    rewards = append(rewards, step.Reward)
-                }
-                log.Printf("AI last 10 step reward: %v", rewards)
-
-                // log.Printf("Layer 0 weights: %v", netAI.NeuralNet.Layers[0])
-
-                output, err := os.Create("ai.json")
-                if err == nil {
-                    defer output.Close()
-                    err = netAI.SaveNeuralNet(output)
-                    if err != nil {
-                        log.Printf("Unable to save neural net: %v", err)
-                    }
-                } else {
-                    log.Printf("Unable to create ai.json: %v", err)
-                }
+                log.Printf("Unable to create ai.json: %v", err)
             }
-        }
+        })()
     }
 
     return nil
