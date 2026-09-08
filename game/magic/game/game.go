@@ -563,6 +563,9 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
 }
 
 func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
+    if serializedGame != nil {
+        serializedGame.Preferences.Apply(gameSettings)
+    }
 
     heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
@@ -1715,7 +1718,7 @@ func (saver *GameSaver) SaveToPath(path string, saveName string) error {
 }
 
 func (saver *GameSaver) Save(writer io.Writer, saveName string) error {
-    data := SerializeModel(saver.Game.Model, saveName)
+    data := SerializeModel(saver.Game.Model, saveName, saver.Game.Settings)
     marshaler := json.NewEncoder(writer)
     return marshaler.Encode(data)
 }
