@@ -68,6 +68,7 @@ type GameConfig struct {
     EnableMusic bool `yaml:"enablemusic"`
     LoadSave string `yaml:"loadsave"`
     WatchMode bool `yaml:"watchmode"`
+    TrainMode bool `yaml:"trainmode"`
     AIMode string `yaml:"aimode"`
     Opponents int `yaml:"opponents"`
     Raiders bool `yaml:"raiders"`
@@ -501,7 +502,7 @@ func centerOnCity(game *gamelib.Game) {
     }
 }
 
-func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *MagicGame, gameLoader *OriginalGameLoader) error {
+func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *MagicGame, gameLoader *OriginalGameLoader, maxTurns uint64) error {
     defer func() {
         // wrap the game variable so that only the remaining reference is shutdown
         game.Shutdown()
@@ -524,6 +525,11 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
     for game.Update(yield) != gamelib.GameStateQuit {
         if inputmanager.IsQuitPressed() {
             return ebiten.Termination
+        }
+
+        if maxTurns > 0 && game.Model.TurnNumber >= maxTurns {
+            log.Printf("Max turns reached: %v", maxTurns)
+            return nil
         }
 
         select {
@@ -633,6 +639,107 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
     return nil
 }
 
+func startAITrainMode(yield coroutine.YieldFunc, game *MagicGame) error {
+    game.Config.AIMode = "net"
+
+    settings := setup.NewGameSettings{
+        // Opponents: rand.N(4) + 1,
+        Opponents: game.Config.Opponents,
+        Difficulty: data.DifficultyAverage,
+        Magic: data.MagicSettingNormal,
+        LandSize: rand.N(3),
+        DisableRaiders: !game.Config.Raiders,
+    }
+
+    spells, err := spellbook.ReadSpellsFromCache(game.Cache)
+    if err != nil {
+        return err
+    }
+
+    wizard, ok := gamelib.ChooseUniqueWizard(nil, spells)
+    if !ok {
+        return fmt.Errorf("Could not choose a wizard")
+    }
+
+    log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
+
+    realGame := initializeGame(game, settings, wizard)
+
+    realGame.SetWatchMode(500)
+
+    human := realGame.Model.GetHumanPlayer()
+    if human != nil {
+        // make the human player an AI
+        human.Admin = true
+        human.Banished = true
+
+        for _, city := range human.GetCities() {
+            human.RemoveCity(city)
+        }
+
+        human.Stacks = nil
+        human.SelectedStack = nil
+        human.Skip = true
+
+        // make sure all fog is visible
+        human.UpdateFogVisibility()
+
+        // consume initial events
+        for range 10 {
+            select {
+                case <-realGame.Events:
+                default:
+            }
+        }
+    }
+
+    // FIXME: we shouldn't need this
+    gameLoader := &OriginalGameLoader{
+        Cache: game.Cache,
+        NewGame: make(chan *gamelib.Game, 1),
+        FS: system.MakeFS(),
+        Music: game.Music,
+        Settings: game.Settings,
+    }
+
+    err = runGameInstance(realGame, yield, game, gameLoader, 500)
+    if err != nil {
+        return err
+    }
+
+    if len(realGame.Model.Players) >= 2 {
+        aiPlayer := realGame.Model.Players[1]
+        if aiPlayer.AIBehavior != nil {
+            netAI, ok := aiPlayer.AIBehavior.(*ai.EnemyNetAI)
+            if !ok {
+                log.Printf("Warning: AI player is not a net AI, cannot train")
+            } else {
+                netAI.ApplyTraining()
+                steps := netAI.Steps
+                steps = steps[len(steps) - 10:]
+                var rewards []float64
+                for _, step := range steps {
+                    rewards = append(rewards, step.Reward)
+                }
+                log.Printf("AI last 10 step reward: %v", rewards)
+
+                output, err := os.Create("ai.json")
+                if err == nil {
+                    defer output.Close()
+                    err = netAI.SaveNeuralNet(output)
+                    if err != nil {
+                        log.Printf("Unable to save neural net: %v", err)
+                    }
+                } else {
+                    log.Printf("Unable to create ai.json: %v", err)
+                }
+            }
+        }
+    }
+
+    return nil
+}
+
 // run a game with only AI players
 func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
     settings := setup.NewGameSettings{
@@ -641,7 +748,7 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
         Difficulty: data.DifficultyAverage,
         Magic: data.MagicSettingNormal,
         LandSize: rand.N(3),
-        DisableRaiders: false,
+        DisableRaiders: !game.Config.Raiders,
     }
 
     spells, err := spellbook.ReadSpellsFromCache(game.Cache)
@@ -695,7 +802,7 @@ func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
         Settings: game.Settings,
     }
 
-    return runGameInstance(realGame, yield, game, gameLoader)
+    return runGameInstance(realGame, yield, game, gameLoader, 0)
 }
 
 func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *OriginalGameLoader) error {
@@ -719,7 +826,7 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *Orig
     log.Printf("Starting game with settings=%+v wizard=%v race=%v", settings, wizard.Name, wizard.Race)
 
     realGame := initializeGame(game, settings, wizard)
-    return runGameInstance(realGame, yield, game, gameLoader)
+    return runGameInstance(realGame, yield, game, gameLoader, 0)
 }
 
 func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) error {
@@ -741,6 +848,10 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) erro
 
     if config.WatchMode {
         return startWatchMode(yield, game)
+    }
+
+    if config.TrainMode {
+        return startAITrainMode(yield, game)
     }
 
     gameLoader := &OriginalGameLoader{
@@ -792,7 +903,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) erro
                         newGame.DoNextUnit(humanPlayer)
                     }
 
-                    err := runGameInstance(newGame, yield, game, gameLoader)
+                    err := runGameInstance(newGame, yield, game, gameLoader, 0)
                     if err != nil {
                         game.Drawer = shutdown
                         yield()
@@ -834,7 +945,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) erro
                 game.Music.Stop()
 
                 realGame := initializeGame(game, settings, wizard)
-                err := runGameInstance(realGame, yield, game, gameLoader)
+                err := runGameInstance(realGame, yield, game, gameLoader, 0)
 
                 if err != nil {
                     game.Drawer = shutdown
@@ -930,6 +1041,7 @@ func loadGameConfig() GameConfig {
     var enableMusic bool
     var loadSave string
     var watchMode bool
+    var trainMode bool
     var aiMode string
     var config string
 
@@ -939,6 +1051,7 @@ func loadGameConfig() GameConfig {
     flag.BoolVar(&trace, "trace", false, "enable profiling (pprof)")
     flag.StringVar(&loadSave, "load", "", "load a saved game from the given file and start immediately")
     flag.BoolVar(&watchMode, "watch", false, "run in watch mode, where you can watch the AI play against itself (no human players)")
+    flag.BoolVar(&trainMode, "train", false, "train the AI in watch mode. model weights are saved as ai.json")
     flag.StringVar(&aiMode, "ai", "", "select ai mode. 'default', 'enemy2', 'net'")
     flag.StringVar(&config, "config", "", "path to config file (yaml or ini)")
     flag.Parse()
@@ -958,6 +1071,7 @@ func loadGameConfig() GameConfig {
             case f.Name == "load": out.LoadSave = loadSave
             case f.Name == "watch": out.WatchMode = watchMode
             case f.Name == "ai" && aiMode != "": out.AIMode = aiMode
+            case f.Name == "train": out.TrainMode = trainMode
         }
     })
 
