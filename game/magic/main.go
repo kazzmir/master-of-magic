@@ -737,7 +737,7 @@ func startAITrainMode(yield coroutine.YieldFunc, game *MagicGame) error {
             Settings: game.Settings,
         }
 
-        err = runGameInstance(realGame, yield, game, gameLoader, 500)
+        err = runGameInstance(realGame, yield, game, gameLoader, 800)
         if err != nil {
             return err
         }

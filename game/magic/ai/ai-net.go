@@ -82,6 +82,19 @@ const (
     StrategyCount
 )
 
+func (strategy Strategy) String() string {
+    switch strategy {
+        case StrategyAttackEnemies: return "AttackEnemies"
+        case StrategyBuildArmy: return "BuildArmy"
+        case StrategyAcquireMagicNode: return "AcquireMagicNode"
+        case StrategyBuildCities: return "BuildCities"
+        case StrategyDefendCities: return "DefendCities"
+        case StrategyIncreasePopulation: return "IncreasePopulation"
+        case StrategyIncreasePower: return "IncreasePower"
+        default: return "UnknownStrategy"
+    }
+}
+
 type Step struct {
     Turn uint64
     Strategies []Probability
@@ -421,6 +434,9 @@ func (ai *EnemyNetAI) Update(player *playerlib.Player, services playerlib.AIServ
         Turn: services.GetTurnNumber(),
         Strategies: top2,
     })
+
+    log.Printf("Raw strategy probabilities: %v", strategies)
+    log.Printf("AI Strategies: %v (%v), %v (%v)", Strategy(top2[0].Index), top2[0].Value, Strategy(top2[1].Index), top2[1].Value)
 
     return ai.OperationalManager(player, services, top2)
 }
