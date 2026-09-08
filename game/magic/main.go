@@ -8,6 +8,7 @@ import (
     "errors"
     "math"
     "math/rand/v2"
+    "os"
     "slices"
     "cmp"
     "bufio"
@@ -54,9 +55,32 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/ebitenutil"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
+
+    "gopkg.in/yaml.v3"
 )
 
 type DrawFunc func(*ebiten.Image)
+
+type GameConfig struct {
+    DataPath string `yaml:"datapath"`
+    StartGame bool `yaml:"startgame"`
+    Trace bool `yaml:"trace"`
+    EnableMusic bool `yaml:"enablemusic"`
+    LoadSave string `yaml:"loadsave"`
+    WatchMode bool `yaml:"watchmode"`
+    AIMode string `yaml:"aimode"`
+    Opponents int `yaml:"opponents"`
+    Raiders bool `yaml:"raiders"`
+}
+
+func DefaultGameConfig() GameConfig {
+    // set default values that are different from the zero values of the struct
+    return GameConfig{
+        EnableMusic: true,
+        Opponents: 4,
+        Raiders: true,
+    }
+}
 
 type MagicGame struct {
     Cache *lbx.LbxCache
@@ -67,7 +91,7 @@ type MagicGame struct {
     Settings *settingslib.Settings
     Music *musiclib.Music
 
-    AIMode string
+    Config GameConfig
 }
 
 func randomChoose[T any](choices... T) T {
@@ -534,11 +558,11 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
 func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizard setup.WizardCustom) *gamelib.Game {
     game := gamelib.MakeGame(magic.Cache, magic.Music, magic.Settings, settings)
 
-    switch magic.AIMode {
-        case "enemy2": game.Model.AIMode = ai.AIEnemy2
+    switch magic.Config.AIMode {
+        case "", "enemy2": game.Model.AIMode = ai.AIEnemy2
         case "net": game.Model.AIMode = ai.AINet
         default:
-            log.Printf("Warning: unknown ai mode '%v', using default", magic.AIMode)
+            log.Printf("Warning: unknown ai mode '%v', using default", magic.Config.AIMode)
     }
 
     game.RefreshUI()
@@ -557,9 +581,11 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
         }
     }
 
-    log.Printf("Create neutral player")
-    neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
-    log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+    if magic.Config.Raiders {
+        log.Printf("Create neutral player")
+        neutral := initializeNeutralPlayer(game, arcanusCityArea, myrrorCityArea)
+        log.Printf("done create neutral player with %v cities", len(neutral.Cities))
+    }
 
     // hack
     // human.Admin = true
@@ -611,10 +637,11 @@ func loadData(yield coroutine.YieldFunc, game *MagicGame, dataPath string) error
 func startWatchMode(yield coroutine.YieldFunc, game *MagicGame) error {
     settings := setup.NewGameSettings{
         // Opponents: rand.N(4) + 1,
-        Opponents: 4,
+        Opponents: game.Config.Opponents,
         Difficulty: data.DifficultyAverage,
         Magic: data.MagicSettingNormal,
         LandSize: rand.N(3),
+        DisableRaiders: false,
     }
 
     spells, err := spellbook.ReadSpellsFromCache(game.Cache)
@@ -695,9 +722,9 @@ func startQuickGame(yield coroutine.YieldFunc, game *MagicGame, gameLoader *Orig
     return runGameInstance(realGame, yield, game, gameLoader)
 }
 
-func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startGame bool, loadSave string, enableMusic bool, watchMode bool) error {
+func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) error {
 
-    err := loadData(yield, game, dataPath)
+    err := loadData(yield, game, config.DataPath)
     if err != nil {
         return err
     }
@@ -705,14 +732,14 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     game.Music = musiclib.MakeMusic(game.Cache)
 
     game.Settings = settingslib.MakeSettings(game.Cache)
-    game.Music.Enabled = enableMusic
+    game.Music.Enabled = config.EnableMusic
     defer game.Music.Stop()
 
     shutdown := func (screen *ebiten.Image){
         ebitenutil.DebugPrintAt(screen, "Shutting down", 10, 10)
     }
 
-    if watchMode {
+    if config.WatchMode {
         return startWatchMode(yield, game)
     }
 
@@ -725,11 +752,11 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 
     // start a game immediately
-    if startGame {
+    if config.StartGame {
         return startQuickGame(yield, game, gameLoader)
     }
 
-    if loadSave == "" {
+    if config.LoadSave == "" {
         game.Music.PlaySong(musiclib.SongIntro)
         runIntro(yield, game)
 
@@ -738,8 +765,8 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
         game.Music.PlaySong(musiclib.SongTitle)
     }
 
-    if loadSave != "" {
-        err := gameLoader.LoadNew(loadSave)
+    if config.LoadSave != "" {
+        err := gameLoader.LoadNew(config.LoadSave)
         // couldn't load game, just play title music
         if err != nil {
             game.Music.PlaySong(musiclib.SongTitle)
@@ -820,17 +847,17 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, dataPath string, startG
     }
 }
 
-func NewMagicGame(dataPath string, startGame bool, loadSave string, enableMusic bool, watchMode bool, aiMode string) (*MagicGame, error) {
+func NewMagicGame(config GameConfig) (*MagicGame, error) {
     var game *MagicGame
 
     run := func(yield coroutine.YieldFunc) error {
-        return runGame(yield, game, dataPath, startGame, loadSave, enableMusic, watchMode)
+        return runGame(yield, game, config)
     }
 
     game = &MagicGame{
         MainCoroutine: coroutine.MakeCoroutine(run),
         Drawer: nil,
-        AIMode: aiMode,
+        Config: config,
     }
 
     return game, nil
@@ -869,9 +896,34 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     mouse.Mouse.Draw(screen)
 }
 
-func main() {
-    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+func loadGameConfigFromFile(path string) GameConfig {
+    // try to load as yaml file, if not then try to load as ini file (x=y format)
 
+    out := DefaultGameConfig()
+
+    file, err := os.Open(path)
+    if err != nil {
+        log.Printf("Warning: unable to open config file '%v': %v", path, err)
+        return out
+    }
+
+    defer file.Close()
+
+    decoder := yaml.NewDecoder(file)
+
+    err = decoder.Decode(&out)
+    if err != nil {
+        log.Printf("Warning: unable to decode config file '%v': %v", path, err)
+        return out
+    }
+
+    return out
+}
+
+// load cli arguments and return a GameConfig struct
+// if -config "path" is given then load the config from the given file
+// but cli arguments override the config file settings
+func loadGameConfig() GameConfig {
     var dataPath string
     var startGame bool
     var trace bool
@@ -879,6 +931,8 @@ func main() {
     var loadSave string
     var watchMode bool
     var aiMode string
+    var config string
+
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
     flag.BoolVar(&enableMusic, "music", true, "enable music playback")
     flag.BoolVar(&startGame, "start", false, "start the game immediately with a random wizard")
@@ -886,9 +940,36 @@ func main() {
     flag.StringVar(&loadSave, "load", "", "load a saved game from the given file and start immediately")
     flag.BoolVar(&watchMode, "watch", false, "run in watch mode, where you can watch the AI play against itself (no human players)")
     flag.StringVar(&aiMode, "ai", "", "select ai mode. 'default', 'enemy2', 'net'")
+    flag.StringVar(&config, "config", "", "path to config file (yaml or ini)")
     flag.Parse()
 
-    if trace {
+    out := DefaultGameConfig()
+
+    if config != "" {
+        out = loadGameConfigFromFile(config)
+    }
+
+    flag.Visit(func (f *flag.Flag) {
+        switch {
+            case f.Name == "data" && dataPath != "": out.DataPath = dataPath
+            case f.Name == "music": out.EnableMusic = enableMusic
+            case f.Name == "start": out.StartGame = startGame
+            case f.Name == "trace": out.Trace = trace
+            case f.Name == "load": out.LoadSave = loadSave
+            case f.Name == "watch": out.WatchMode = watchMode
+            case f.Name == "ai" && aiMode != "": out.AIMode = aiMode
+        }
+    })
+
+    return out
+}
+
+func main() {
+    log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
+    config := loadGameConfig()
+
+    if config.Trace {
         go func() {
             log.Printf("Starting pprof server on localhost:8000")
             log.Println(http.ListenAndServe("localhost:8000", nil))
@@ -905,7 +986,7 @@ func main() {
 
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 
-    game, err := NewMagicGame(dataPath, startGame, loadSave, enableMusic, watchMode, aiMode)
+    game, err := NewMagicGame(config)
 
     if err != nil {
         log.Printf("Error: unable to load game: %v", err)
