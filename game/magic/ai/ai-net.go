@@ -776,7 +776,7 @@ func (ai *EnemyNetAI) DoBuildCities(self *playerlib.Player, aiServices playerlib
     for _, city := range self.Cities {
         if !isMakingSomething(city) && chance(int(strength * 100)) {
             locations := aiServices.FindSettlableLocations(city.X, city.Y, city.Plane, self.GetFog(city.Plane))
-            if len(locations) > 0 && self.FoodPerTurn() > 0 && chance(len(locations) * 5) {
+            if len(locations) > 0 && self.FoodPerTurn() > 0 && chance(len(locations) * 10) {
                 decisions = append(decisions, &playerlib.AIProduceDecision{
                     City: city,
                     Building: buildinglib.BuildingNone,
