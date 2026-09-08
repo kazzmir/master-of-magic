@@ -40,6 +40,8 @@ type GameModel struct {
     // Set by MakeGameWithModel from game Settings. Nil means Classic.
     IsAggressiveAI func() bool
 
+    AIMode ai.Mode
+
     heroNames map[int]map[herolib.HeroType]string
     allSpells spellbook.Spells
 
@@ -136,6 +138,12 @@ func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *player
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemy2AI()
+
+        switch model.AIMode {
+            case ai.AIEnemy2: newPlayer.AIBehavior = ai.MakeEnemy2AI()
+            case ai.AINet: newPlayer.AIBehavior = ai.MakeEnemyNetAI()
+        }
+
         newPlayer.StrategicCombat = true
     }
 
