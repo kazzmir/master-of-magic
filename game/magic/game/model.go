@@ -1738,6 +1738,7 @@ type MovementHandler interface {
     DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState
     DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
     DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
+    DiscoverWizards()
 }
 
 // FIXME: can this just use doMoveSelectedUnit?
@@ -1800,6 +1801,7 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
         path = player.AIBehavior.MovedStack(stack, path)
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
+        handlers.DiscoverWizards()
 
         if encounter != nil {
             // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
