@@ -83,6 +83,48 @@ func (action Action) Name() string {
     return "Unknown"
 }
 
+// ID is the stable save-file name for this action. Display names in Name() can
+// change; these IDs should not, so old saves keep resolving after a rename.
+func (action Action) ID() string {
+    switch action {
+        case ActionGameScreen: return "game-screen"
+        case ActionOpenSpellbook: return "open-spellbook"
+        case ActionArmiesScreen: return "armies-screen"
+        case ActionCitiesScreen: return "cities-screen"
+        case ActionMagicScreen: return "magic-screen"
+        case ActionAdvisors: return "advisors"
+        case ActionSwitchPlanes: return "switch-planes"
+        case ActionSurveyor: return "surveyor"
+        case ActionCartographer: return "cartographer"
+        case ActionApprentice: return "apprentice"
+        case ActionHistorian: return "historian"
+        case ActionAstrologer: return "astrologer"
+        case ActionChancellor: return "chancellor"
+        case ActionTaxCollector: return "tax-collector"
+        case ActionGrandVizier: return "grand-vizier"
+        case ActionMirror: return "mirror"
+        case ActionNextTurn: return "next-turn"
+        case ActionQuitWithoutSaving: return "quit-without-saving"
+        case ActionDefaultItemEditor: return "default-item-editor"
+    }
+
+    return ""
+}
+
+func ActionByID(id string) (Action, bool) {
+    if id == "" {
+        return ActionGameScreen, false
+    }
+
+    for _, action := range AllActions {
+        if action.ID() == id {
+            return action, true
+        }
+    }
+
+    return ActionGameScreen, false
+}
+
 // Default returns the original game's default key binding for this action,
 // or Unbound if the original game leaves it unbound by default.
 func (action Action) Default() ebiten.Key {
@@ -112,9 +154,9 @@ func (action Action) Default() ebiten.Key {
     return Unbound
 }
 
-// Keybindings holds the current key bound to each action. Session-only,
-// like every other setting in this codebase (e.g. music volume) - nothing
-// here is persisted to disk.
+// Keybindings holds the current key bound to each action. Bindings are written
+// into remake save files with the rest of Settings; music volume is still
+// session-only.
 type Keybindings struct {
     bindings map[Action]ebiten.Key
 }

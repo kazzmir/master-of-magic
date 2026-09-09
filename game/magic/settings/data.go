@@ -7,9 +7,8 @@ import (
 
 // Settings is the single top-level holder for every user preference that
 // needs to be readable/settable from both the main menu and an in-progress
-// game (the same set of screens that already share Music). Everything here
-// is session-only, matching how Music's own volume already behaves -
-// nothing is persisted to disk.
+// game (the same set of screens that already share Music). Bools and
+// keybindings are stored in remake save files; music volume stays session-only.
 type Settings struct {
     EndOfTurnWait bool
     StrategicCombatOnly bool

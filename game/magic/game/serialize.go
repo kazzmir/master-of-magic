@@ -10,6 +10,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -77,6 +78,10 @@ type SerializedGame struct {
     ArtifactCatalog []artifact.SerializedArtifact `json:"artifact-catalog,omitempty"`
     ArtifactAvailable []bool `json:"artifact-available,omitempty"`
     Settings setup.NewGameSettings `json:"settings"`
+    // remake UI prefs (end-of-turn wait, keybindings, ...). Omitted in
+    // saves written before this field existed; json "settings" is the
+    // new-game difficulty/land/magic struct, not this.
+    Preferences *settingslib.SerializedSettings `json:"preferences,omitempty"`
     CurrentPlayer int `json:"current-player"`
     Turn uint64 `json:"turn"`
     LastEventTurn uint64 `json:"last-event-turn"`
@@ -84,7 +89,7 @@ type SerializedGame struct {
     Events []SerializedRandomEvent `json:"events"`
 }
 
-func SerializeModel(model *GameModel, saveName string) SerializedGame {
+func SerializeModel(model *GameModel, saveName string, prefs *settingslib.Settings) SerializedGame {
     var players []playerlib.SerializedPlayer
     for _, player := range model.Players {
         players = append(players, playerlib.SerializePlayer(player))
@@ -103,6 +108,7 @@ func SerializeModel(model *GameModel, saveName string) SerializedGame {
         ArtifactAvailable: model.ArtifactPool.AvailableMask(),
         Plane:  model.Plane,
         Settings: model.Settings,
+        Preferences: settingslib.SerializeSettings(prefs),
         CurrentPlayer: model.CurrentPlayer,
         Turn: model.TurnNumber,
         LastEventTurn: model.LastEventTurn,
