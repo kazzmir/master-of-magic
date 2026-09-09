@@ -36,6 +36,14 @@ type Spell struct {
     Rarity SpellRarity
 }
 
+var SpellOfMastery = Spell{
+    Name: "Spell of Mastery",
+}
+
+func (spell Spell) IsSpellOfMastery() bool {
+    return spell.Name == SpellOfMastery.Name
+}
+
 // all spells can be looked up in the spellbook by their name
 func (spell Spell) MarshalJSON() ([]byte, error) {
     return []byte(fmt.Sprintf(`"%s"`, spell.Name)), nil

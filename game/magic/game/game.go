@@ -1000,6 +1000,21 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
     yield()
 }
 
+func (game *Game) FocusPlayerCity(playerIndex int) {
+    if playerIndex < len(game.Model.Players) {
+        player := game.Model.Players[playerIndex]
+
+        cities := player.GetCities()
+        if len(cities) > 0 {
+            firstCity := cities[0]
+            select {
+                case game.Events <- &GameEventMoveCamera{Plane: firstCity.Plane, X: firstCity.X, Y: firstCity.Y, Instant: true}:
+                default:
+            }
+        }
+    }
+}
+
 // enemy wizards, but not including the raider ai
 func (game *Game) GetEnemyWizards() []*playerlib.Player {
     var out []*playerlib.Player
@@ -3558,14 +3573,29 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
+    attacker.DidConquerCity(city, raze)
+    defender.DidLoseCity(city)
+
+    // player is defeated if they have no cities left
+    defeated := len(defender.Cities) == 0
+
+    if defeated {
+        defender.Defeated = true
+        attacker.DidDefeat(defender)
+    }
+
     if containedFortress {
         defender.Banished = true
+
+        attacker.DidBanish(defender)
 
         if attacker.IsHuman() || defender.IsHuman() {
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
 
-        // FIXME: automatically start casting spell of return if possible
+        if !defeated {
+            defender.CastSpellOfReturn()
+        }
     }
 
     return raze, gold
@@ -3669,6 +3699,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.Model.GetNormalizeCoordinateFunc())
                     game.showMovement(yield, oldX, oldY, stack, true)
                     player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
+                    game.discoverWizards(yield)
 
                     stack.ExhaustMoves()
                     state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
@@ -3692,6 +3723,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
             stack.Move(step.X - stack.X(), step.Y - stack.Y(), terrainCost, game.Model.GetNormalizeCoordinateFunc())
             game.showMovement(yield, oldX, oldY, stack, true)
             player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
+            metWizard := game.discoverWizards(yield)
 
             if entityInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane(), player) {
                 // FIXME: this should get all stacks at the given location and merge them into a single stack for combat
@@ -3739,6 +3771,11 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     break quitMoving
 
                 }
+            }
+
+            if metWizard {
+                stopMoving = true
+                break quitMoving
             }
 
             // have to force the ui to refresh because we are not processing events here
@@ -3810,6 +3847,7 @@ func (game *Game) InOverworldArea(x int, y int) bool {
 
 func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Player) {
     // log.Printf("Game.Update")
+    game.discoverWizards(yield)
     keys := make([]ebiten.Key, 0)
     keys = inpututil.AppendJustPressedKeys(keys)
 
@@ -4119,6 +4157,10 @@ func (handlers *GameMoveHandlers) DefeatCity(player *playerlib.Player, stack *pl
     return handlers.Game.defeatCity(handlers.Yield, player, stack, enemy, city)
 }
 
+func (handlers *GameMoveHandlers) DiscoverWizards() {
+    handlers.Game.discoverWizards(handlers.Yield)
+}
+
 func MakeMoveHandlers(game *Game, yield coroutine.YieldFunc) MovementHandler {
     return &GameMoveHandlers{
         Game: game,
@@ -4209,7 +4251,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if create.Patrol {
                         overworldUnit.SetBusy(units.BusyStatusPatrol)
                     }
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIUpdateCityDecision:
                     update := decision.(*playerlib.AIUpdateCityDecision)
@@ -4221,14 +4263,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
-                    var stack units.StackUnit
-                    for _, unit := range build.Stack.Units() {
-                        if unit.HasAbility(data.AbilityCreateOutpost) {
-                            stack = unit
-                            break
-                        }
-                    }
-
+                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
@@ -4303,6 +4338,8 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         player.AIBehavior.PostUpdate(player, game.Model)
     }
+
+    game.discoverWizards(yield)
 
     // if len(decisions) == 0 {
         game.DoNextTurn()
@@ -4881,6 +4918,8 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
+    game.meetWizards(yield, attacker, defender)
+
     landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
 
     // do graphic combat only if a human is involved
@@ -5181,7 +5220,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         // first remove sailing units
         for _, unit := range stack.Units() {
             if unit.IsSailing() && unit.GetHealth() <= 0 {
-                player.RemoveUnit(unit)
+                player.LoseUnit(unit)
             }
         }
 
@@ -5975,6 +6014,7 @@ func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Playe
             player.MergeStacks(stack, mergeStack)
         }
         player.UpdateFogVisibility()
+        game.discoverWizards(nil)
     }
 
     return nil
@@ -6023,6 +6063,7 @@ func (game *Game) doPlanarTraval() {
                     moved = true
                     player.SelectedStack = stack
                     player.UpdateFogVisibility()
+                    game.discoverWizards(nil)
                 }
             }
 
@@ -7376,8 +7417,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             manaSpent = remainingMana
         }
 
-        player.CastingSpellProgress += manaSpent
-        player.Mana -= manaSpent
+        player.IncreaseCastingSkillProgress(manaSpent)
 
         if spellCost <= player.CastingSpellProgress {
             game.doCastSpell(player, player.CastingSpell)
@@ -7501,7 +7541,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     }
 
                     overworldUnit.AddExperience(newUnit.Experience)
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(city.X, city.Y, city.Plane)
 
                     if player.AIBehavior != nil {
@@ -7579,6 +7619,8 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
         game.doExploreFogForAwareness(player)
     }
 
+    game.discoverWizards(nil)
+
     // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
     game.DoNextUnit(player)
     if player.IsHuman() {
@@ -7607,6 +7649,10 @@ func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
             continue // No need, those cities do already provide vision
         }
         awarenessOwner.ExploreFogSquare(city.X, city.Y, 1, city.Plane)
+        _, owner := game.Model.FindCity(city.X, city.Y, city.Plane)
+        if owner != nil {
+            game.meetWizards(nil, awarenessOwner, owner)
+        }
     }
 }
 
@@ -7961,6 +8007,12 @@ func (game *Game) DoNextTurn(){
     if len(game.Model.Players) > 0 {
         player := game.Model.Players[game.Model.CurrentPlayer]
 
+        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
+
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.PreTurn(aiPlayer)
+        }
+
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
         } else {
@@ -7972,7 +8024,6 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }

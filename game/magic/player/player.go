@@ -133,6 +133,10 @@ type AIResearchSpellDecision struct {
     Spell spellbook.Spell
 }
 
+type AIMeldDecision struct {
+    Stack *UnitStack
+}
+
 // implemented by the Game object
 type AIServices interface {
     CityEnchantmentsProvider
@@ -160,7 +164,26 @@ type AIServices interface {
     GetBuildingInfos() buildinglib.BuildingInfos
 }
 
+type AIEvents interface {
+    DidBanish(self *Player, player *Player)
+    DidDefeat(self *Player, player *Player)
+    DidSummonUnit(self *Player, unit *units.OverworldUnit)
+    DidConquerCity(city *citylib.City, raze bool)
+    DidLoseCity(city *citylib.City)
+    DidLoseUnit(unit units.StackUnit)
+    DidCreateUnit(unit units.StackUnit)
+    DidLearnSpell(spellbook.Spell)
+    DidGainHero(hero *herolib.Hero)
+    DidLoseHero(hero *herolib.Hero)
+    SpellOfMasteryProgress(relative float64)
+    DidBuildRoad(x int, y int, plane data.Plane)
+    DidExplore(x int, y int, plane data.Plane)
+    DidDiscoverEnemy(player *Player)
+}
+
 type AIBehavior interface {
+    AIEvents
+
     // return a list of decisions to make for the current turn
     Update(*Player, AIServices) []AIDecision
 
@@ -169,6 +192,9 @@ type AIBehavior interface {
 
     // reset any state that needs to be reset at the start of a new turn
     NewTurn(*Player)
+
+    // any initialization that needs to be done before any turn data is computed
+    PreTurn(*Player)
 
     // called when a new unit is produced in the city
     ProducedUnit(*citylib.City, *Player)
@@ -566,7 +592,40 @@ func (player *Player) AwarePlayer(other *Player) {
             TradeInterest: 100,
             PeaceInterest: 100,
         }
+
+        if player.AIBehavior != nil {
+            player.AIBehavior.DidDiscoverEnemy(other)
+        }
     }
+}
+
+func (player *Player) IsAwareOf(other *Player) bool {
+    if player == nil || other == nil {
+        return false
+    }
+    _, ok := player.PlayerRelations[other]
+    return ok
+}
+
+// true if this player currently sees a city or unit belonging to the other wizard
+func (player *Player) CanSeePlayer(other *Player) bool {
+    if player == nil || other == nil || player == other {
+        return false
+    }
+
+    for _, city := range other.GetCities() {
+        if player.IsVisible(city.X, city.Y, city.Plane) {
+            return true
+        }
+    }
+
+    for _, stack := range other.Stacks {
+        if player.IsVisible(stack.X(), stack.Y(), stack.Plane()) {
+            return true
+        }
+    }
+
+    return false
 }
 
 func (player *Player) WarWithPlayer(other *Player) {
@@ -589,6 +648,36 @@ func (player *Player) GetDiplomaticRelation(other *Player) (*Relationship, bool)
     return relation, ok
 }
 
+func (player *Player) DidDefeat(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidDefeat(player, other)
+    }
+}
+
+func (player *Player) DidBanish(other *Player) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidBanish(player, other)
+    }
+}
+
+func (player *Player) DidSummonUnit(unit *units.OverworldUnit) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidSummonUnit(player, unit)
+    }
+}
+
+func (player *Player) DidConquerCity(city *citylib.City, raze bool) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidConquerCity(city, raze)
+    }
+}
+
+func (player *Player) DidLoseCity(city *citylib.City) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseCity(city)
+    }
+}
+
 func (player *Player) IsAI() bool {
     return !player.Human
 }
@@ -604,6 +693,12 @@ func (player *Player) IsNeutral() bool {
 
 func (player *Player) GetBanner() data.BannerType {
     return player.Wizard.Banner
+}
+
+func (player *Player) BuiltRoad(x int, y int, plane data.Plane) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidBuildRoad(x, y, plane)
+    }
 }
 
 // true if this player has the given global enchantment enabled
@@ -685,6 +780,11 @@ func (player *Player) AddHero(hero *herolib.Hero, x int, y int, plane data.Plane
             hero.AddExperience(level.ExperienceRequired(experienceInfo.HasWarlord(), experienceInfo.Crusade()))
 
             player.AddUnit(hero)
+
+            if player.AIBehavior != nil {
+                player.AIBehavior.DidGainHero(hero)
+            }
+
             return true
         }
     }
@@ -859,6 +959,16 @@ func (player *Player) TotalUnitUpkeepMana() int {
     return total
 }
 
+func (player *Player) IncreaseCastingSkillProgress(amount int) {
+    player.CastingSpellProgress += amount
+    player.Mana -= amount
+
+    if player.AIBehavior != nil && player.CastingSpell.IsSpellOfMastery() {
+        relative := float64(amount) / float64(player.SpellOfMasteryCost)
+        player.AIBehavior.SpellOfMasteryProgress(relative)
+    }
+}
+
 func (player *Player) LearnSpell(spell spellbook.Spell) {
     player.ResearchCandidateSpells.RemoveSpell(spell)
     player.KnownSpells.AddSpell(spell)
@@ -876,6 +986,10 @@ func (player *Player) LearnSpell(spell spellbook.Spell) {
     if spell.Name == player.ResearchingSpell.Name {
         player.ResearchingSpell = spellbook.Spell{}
         player.ResearchProgress = 0
+    }
+
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLearnSpell(spell)
     }
 }
 
@@ -1018,6 +1132,14 @@ func (player *Player) InitializeResearchableSpells(spells *spellbook.Spells) {
                 }
             }
         }
+    }
+}
+
+func (player *Player) CastSpellOfReturn() {
+    spellOfReturn := player.KnownSpells.FindByName("Spell of Return")
+    if spellOfReturn.Valid() {
+        player.CastingSpellProgress = 0
+        player.CastingSpell = spellOfReturn
     }
 }
 
@@ -1349,6 +1471,10 @@ func (player *Player) LiftFogAll(plane data.Plane){
 
     for x := 0; x < len(fog); x++ {
         for y := 0; y < len(fog[0]); y++ {
+            if fog[x][y] == data.FogTypeUnexplored {
+                player.IncrementExplored(x, y, plane)
+            }
+
             fog[x][y] = data.FogTypeVisible
         }
     }
@@ -1374,6 +1500,12 @@ func (player *Player) IsVisible(x int, y int, plane data.Plane) bool {
     return fog[x][y] == data.FogTypeVisible
 }
 
+func (player *Player) IncrementExplored(x int, y int, plane data.Plane) {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidExplore(x, y, plane)
+    }
+}
+
 func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane){
     fog := player.GetFog(plane)
 
@@ -1384,6 +1516,10 @@ func (player *Player) LiftFogSquare(x int, y int, squares int, plane data.Plane)
 
             if mx < 0 || mx >= len(fog) || my < 0 || my >= len(fog[0]) {
                 continue
+            }
+
+            if fog[mx][my] == data.FogTypeUnexplored {
+                player.IncrementExplored(mx, my, plane)
             }
 
             fog[mx][my] = data.FogTypeVisible
@@ -1406,6 +1542,8 @@ func (player *Player) ExploreFogSquare(x int, y int, squares int, plane data.Pla
 
             if fog[mx][my] == data.FogTypeUnexplored {
                 fog[mx][my] = data.FogTypeExplored
+
+                player.IncrementExplored(mx, my, plane)
             }
         }
     }
@@ -1426,6 +1564,11 @@ func (player *Player) LiftFog(x int, y int, radius int, plane data.Plane){
 
             // dx^2 + dy^2 <= (radius + 0.5)^2
             if 4 * (dx * dx + dy * dy) <= 4 * radius * radius + 4 * radius + 1 {
+
+                if fog[mx][my] == data.FogTypeUnexplored {
+                    player.IncrementExplored(mx, my, plane)
+                }
+
                 fog[mx][my] = data.FogTypeVisible
             }
         }
@@ -1564,6 +1707,23 @@ func (player *Player) UpdateUnitLocation(unit units.StackUnit, x int, y int, pla
     newStack.AddUnit(unit)
 }
 
+// similar to RemoveUnit but the reason is due to the unit being lost as a direct
+// consequence of a battle
+func (player *Player) LoseUnit(unit units.StackUnit) {
+    player.RemoveUnit(unit)
+
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidLoseUnit(unit)
+
+        // also count lost heroes
+        for _, hero := range player.Heroes {
+            if hero == unit {
+                player.AIBehavior.DidLoseHero(hero)
+            }
+        }
+    }
+}
+
 func (player *Player) RemoveUnit(unit units.StackUnit) {
 
     for i := 0; i < len(player.Heroes); i++ {
@@ -1616,6 +1776,15 @@ func (player *Player) UpdateUnit(unit units.StackUnit) units.StackUnit {
     unit.SetGlobalEnchantmentProvider(player.MakeUnitEnchantmentProvider())
     unit.SetExperienceInfo(player.MakeExperienceInfo())
     return unit
+}
+
+// similar to AddUnit but specifically due to producing a unit in a city
+func (player *Player) CreateUnit(unit units.StackUnit) units.StackUnit {
+    if player.AIBehavior != nil {
+        player.AIBehavior.DidCreateUnit(unit)
+    }
+
+    return player.AddUnit(unit)
 }
 
 func (player *Player) AddUnit(unit units.StackUnit) units.StackUnit {

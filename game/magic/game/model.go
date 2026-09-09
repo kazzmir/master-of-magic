@@ -40,6 +40,8 @@ type GameModel struct {
     // Set by MakeGameWithModel from game Settings. Nil means Classic.
     IsAggressiveAI func() bool
 
+    AIMode ai.Mode
+
     heroNames map[int]map[herolib.HeroType]string
     allSpells spellbook.Spells
 
@@ -136,6 +138,12 @@ func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *player
 
     if !human {
         newPlayer.AIBehavior = ai.MakeEnemy2AI()
+
+        switch model.AIMode {
+            case ai.AIEnemy2: newPlayer.AIBehavior = ai.MakeEnemy2AI()
+            case ai.AINet: newPlayer.AIBehavior = ai.MakeEnemyNetAI()
+        }
+
         newPlayer.StrategicCombat = true
     }
 
@@ -716,6 +724,8 @@ func (model *GameModel) DoBuildRoads(player *playerlib.Player) {
             amount += math.Pow(tileWork.WorkPerEngineer, float64(engineerCount))
             if amount >= tileWork.TotalWork {
                 model.GetMap(plane).SetRoad(x, y, plane == data.PlaneMyrror)
+
+                player.BuiltRoad(x, y, plane)
 
                 for _, unit := range stack.Units() {
                     if unit.GetBusy() == units.BusyStatusBuildRoad {
@@ -1728,6 +1738,7 @@ type MovementHandler interface {
     DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState
     DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState
     DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int)
+    DiscoverWizards()
 }
 
 // FIXME: can this just use doMoveSelectedUnit?
@@ -1790,6 +1801,7 @@ func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib
         path = player.AIBehavior.MovedStack(stack, path)
 
         player.LiftFogSquare(stack.X(), stack.Y(), stack.GetSightRange(), stack.Plane())
+        handlers.DiscoverWizards()
 
         if encounter != nil {
             // game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())

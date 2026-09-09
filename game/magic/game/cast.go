@@ -306,6 +306,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
         case "Nature's Eye":
             after := func (city *citylib.City) bool {
                 player.UpdateFogVisibility()
+                game.discoverWizards(nil)
                 return true
             }
             game.doCastCityEnchantmentFull(spell, player, LocationTypeFriendlyCity, data.CityEnchantmentNaturesEye, noCityCallback, after)
@@ -895,6 +896,7 @@ func (game *Game) ApplyGlobalEnchantment(enchantment data.Enchantment, player *p
         case data.EnchantmentNatureAwareness:
             player.LiftFogAll(data.PlaneArcanus)
             player.LiftFogAll(data.PlaneMyrror)
+            game.discoverWizards(nil)
         case data.EnchantmentGreatWasting:
             for _, player := range game.Model.Players {
                 player.UpdateUnrest()
@@ -1807,6 +1809,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
     summonCity := player.FindSummoningCity()
     if summonCity != nil {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+        player.DidSummonUnit(overworldUnit)
         newUnit := player.AddUnit(overworldUnit)
         game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
 
@@ -2401,6 +2404,7 @@ func (game *Game) doCastEarthLore(yield coroutine.YieldFunc, tileX int, tileY in
     game.doCastOnMap(yield, tileX, tileY, 45, soundIndex, update)
 
     player.LiftFogSquare(tileX, tileY, 5, game.Model.Plane)
+    game.discoverWizards(yield)
 }
 
 func (game *Game) doCastChangeTerrain(yield coroutine.YieldFunc, tileX int, tileY int) {
@@ -2765,6 +2769,7 @@ func (game *Game) doCastFloatingIsland(yield coroutine.YieldFunc, player *player
             overworldUnit := units.MakeOverworldUnitFromUnit(units.FloatingIsland, tileX, tileY, game.Model.CurrentMap().Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
             player.AddUnit(overworldUnit)
             player.LiftFog(tileX, tileY, 1, game.Model.Plane)
+            game.discoverWizards(nil)
         }
     }
 
