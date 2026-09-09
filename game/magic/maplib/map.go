@@ -881,6 +881,10 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
 
     canPlaceEncounter := func (x int, y int) bool {
         // an encounter can be placed if the specified tile is plain land, and is not near some other node/encounter
+        // original MoM never put lairs on the polar ice row
+        if terrain.IsPolarIceRow(y, landHeight) {
+            return false
+        }
 
         tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
         if !tile.IsLand() || tile.IsMagic() {

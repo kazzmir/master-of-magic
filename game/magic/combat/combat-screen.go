@@ -3094,6 +3094,30 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
         selectTileY = combat.MouseTileY
     }
 
+    // original MoM moved the selected unit with the numeric keypad. Arrow keys
+    // still pan the camera (ProcessInput), so only numpad keys issue a move.
+    if !leftClick &&
+       combat.UI.GetHighestLayerValue() == 0 &&
+       combat.Model.SelectedUnit != nil &&
+       !combat.Model.IsAIControlled(combat.Model.SelectedUnit) &&
+       !combat.Model.SelectedUnit.Moving {
+
+        var justKeys []ebiten.Key
+        justKeys = inpututil.AppendJustPressedKeys(justKeys)
+        var numpadKeys []ebiten.Key
+        for _, key := range justKeys {
+            if inputmanager.IsNumpadMoveKey(key) {
+                numpadKeys = append(numpadKeys, key)
+            }
+        }
+        dx, dy := inputmanager.CombineMoveDeltas(numpadKeys)
+        if dx != 0 || dy != 0 {
+            leftClick = true
+            selectTileX = combat.Model.SelectedUnit.X + dx
+            selectTileY = combat.Model.SelectedUnit.Y + dy
+        }
+    }
+
     combatActions := &CombatActions{
         AIUnitActions: &actions,
         yield: yield,
