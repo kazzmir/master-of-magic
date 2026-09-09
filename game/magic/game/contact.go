@@ -76,7 +76,10 @@ func (game *Game) playFirstMeeting(yield coroutine.YieldFunc, event *GameEventDi
     }
 
     if game.Events != nil {
-        game.Events <- event
+        select {
+            case game.Events <- event:
+            default:
+        }
     }
 }
 
