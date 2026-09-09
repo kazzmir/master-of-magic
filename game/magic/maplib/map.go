@@ -881,6 +881,10 @@ func MakeMap(terrainData *terrain.TerrainData, landSize int, magicSetting data.M
 
     canPlaceEncounter := func (x int, y int) bool {
         // an encounter can be placed if the specified tile is plain land, and is not near some other node/encounter
+        // original MoM never put lairs on the polar ice row
+        if terrain.IsPolarIceRow(y, landHeight) {
+            return false
+        }
 
         tile := terrainData.Tiles[map_.Terrain[x][y]].Tile
         if !tile.IsLand() || tile.IsMagic() {
@@ -1383,6 +1387,19 @@ func (mapObject *Map) HasMagicNode(x int, y int) bool {
 
 func (mapObject *Map) GetMagicNode(x int, y int) *ExtraMagicNode {
     return getExtra[*ExtraMagicNode](mapObject.ExtraMap[image.Pt(x, y)], ExtraKindMagicNode)
+}
+
+func (mapObject *Map) GetAllMagicNodeLocations() []image.Point {
+    var points []image.Point
+
+    for point, extras := range mapObject.ExtraMap {
+        _, exists := extras[ExtraKindMagicNode]
+        if exists {
+            points = append(points, point)
+        }
+    }
+
+    return points
 }
 
 // return the node that contains x/y in its influence zone

@@ -19,6 +19,8 @@ import (
 )
 
 type RaiderAI struct {
+    playerlib.DefaultAIEvents
+
     MonsterAccumulator int
     // MovedStacks map[*playerlib.UnitStack]bool
 }
@@ -28,6 +30,9 @@ func MakeRaiderAI() *RaiderAI {
         MonsterAccumulator: 0,
         // MovedStacks: make(map[*playerlib.UnitStack]bool),
     }
+}
+
+func (raider *RaiderAI) PreTurn(player *playerlib.Player) {
 }
 
 func (raider *RaiderAI) NewTurn(player *playerlib.Player) {

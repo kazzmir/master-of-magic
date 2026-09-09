@@ -563,6 +563,9 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
 }
 
 func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
+    if serializedGame != nil {
+        serializedGame.Preferences.Apply(gameSettings)
+    }
 
     heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
@@ -992,6 +995,21 @@ func (game *Game) doArmyView(yield coroutine.YieldFunc) {
 
     // absorb most recent left click
     yield()
+}
+
+func (game *Game) FocusPlayerCity(playerIndex int) {
+    if playerIndex < len(game.Model.Players) {
+        player := game.Model.Players[playerIndex]
+
+        cities := player.GetCities()
+        if len(cities) > 0 {
+            firstCity := cities[0]
+            select {
+                case game.Events <- &GameEventMoveCamera{Plane: firstCity.Plane, X: firstCity.X, Y: firstCity.Y, Instant: true}:
+                default:
+            }
+        }
+    }
 }
 
 // enemy wizards, but not including the raider ai
@@ -1715,7 +1733,7 @@ func (saver *GameSaver) SaveToPath(path string, saveName string) error {
 }
 
 func (saver *GameSaver) Save(writer io.Writer, saveName string) error {
-    data := SerializeModel(saver.Game.Model, saveName)
+    data := SerializeModel(saver.Game.Model, saveName, saver.Game.Settings)
     marshaler := json.NewEncoder(writer)
     return marshaler.Encode(data)
 }
@@ -3568,14 +3586,29 @@ func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Play
         ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
     }
 
+    attacker.DidConquerCity(city, raze)
+    defender.DidLoseCity(city)
+
+    // player is defeated if they have no cities left
+    defeated := len(defender.Cities) == 0
+
+    if defeated {
+        defender.Defeated = true
+        attacker.DidDefeat(defender)
+    }
+
     if containedFortress {
         defender.Banished = true
+
+        attacker.DidBanish(defender)
 
         if attacker.IsHuman() || defender.IsHuman() {
             game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
         }
 
-        // FIXME: automatically start casting spell of return if possible
+        if !defeated {
+            defender.CastSpellOfReturn()
+        }
     }
 
     return raze, gold
@@ -3846,17 +3879,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
         if true || len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
 
-            dx := 0
-            dy := 0
-
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeyUp: dy = -1
-                    case ebiten.KeyDown: dy = 1
-                    case ebiten.KeyLeft: dx = -1
-                    case ebiten.KeyRight: dx = 1
-                }
-            }
+            dx, dy := inputmanager.CombineMoveDeltas(keys)
 
             newX := game.Model.CurrentMap().WrapX(stack.X() + dx)
             newY := stack.Y() + dy
@@ -4241,7 +4264,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                     if create.Patrol {
                         overworldUnit.SetBusy(units.BusyStatusPatrol)
                     }
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(create.X, create.Y, create.Plane)
                 case *playerlib.AIUpdateCityDecision:
                     update := decision.(*playerlib.AIUpdateCityDecision)
@@ -4253,14 +4276,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
                 case *playerlib.AIBuildOutpostDecision:
                     build := decision.(*playerlib.AIBuildOutpostDecision)
 
-                    var stack units.StackUnit
-                    for _, unit := range build.Stack.Units() {
-                        if unit.HasAbility(data.AbilityCreateOutpost) {
-                            stack = unit
-                            break
-                        }
-                    }
-
+                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
                     if stack != nil {
                         game.CreateOutpost(stack, player)
                     }
@@ -5217,7 +5233,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         // first remove sailing units
         for _, unit := range stack.Units() {
             if unit.IsSailing() && unit.GetHealth() <= 0 {
-                player.RemoveUnit(unit)
+                player.LoseUnit(unit)
             }
         }
 
@@ -7414,8 +7430,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
             manaSpent = remainingMana
         }
 
-        player.CastingSpellProgress += manaSpent
-        player.Mana -= manaSpent
+        player.IncreaseCastingSkillProgress(manaSpent)
 
         if spellCost <= player.CastingSpellProgress {
             game.doCastSpell(player, player.CastingSpell)
@@ -7539,7 +7554,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
                     }
 
                     overworldUnit.AddExperience(newUnit.Experience)
-                    player.AddUnit(overworldUnit)
+                    player.CreateUnit(overworldUnit)
                     game.ResolveStackAt(city.X, city.Y, city.Plane)
 
                     if player.AIBehavior != nil {
@@ -8005,6 +8020,12 @@ func (game *Game) DoNextTurn(){
     if len(game.Model.Players) > 0 {
         player := game.Model.Players[game.Model.CurrentPlayer]
 
+        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
+
+        if aiPlayer.AIBehavior != nil {
+            aiPlayer.AIBehavior.PreTurn(aiPlayer)
+        }
+
         if player.Wizard.Banner != data.BannerBrown {
             game.StartPlayerTurn(player)
         } else {
@@ -8016,7 +8037,6 @@ func (game *Game) DoNextTurn(){
             }
         }
 
-        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
         if aiPlayer.AIBehavior != nil {
             aiPlayer.AIBehavior.NewTurn(aiPlayer)
         }

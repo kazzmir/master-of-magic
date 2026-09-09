@@ -352,6 +352,9 @@ func (map_ *Map) placeRandomTerrainTiles(plane data.Plane, continents []Continen
             }
 
             point := points[index]
+            if IsPolarIceRow(point.Y, map_.Rows()) {
+                continue
+            }
             if magicNodeOk(point) {
                 map_.Terrain[point.X][point.Y] = algorithm.ChooseRandomElement(magicTiles)
                 maxNodes -= 1
@@ -654,6 +657,41 @@ func (map_ *Map) SetTerrainAt(x int, y int, terrainType TerrainType, data *Terra
 }
 
 
+func PolarIceRows(rows int) int {
+    // original MoM had a single full-width tundra row at each pole. tiny
+    // maps skip it so 3x3 tile tests do not become all ice.
+    if rows < 6 {
+        return 0
+    }
+
+    return 1
+}
+
+func IsPolarIceRow(y int, rows int) bool {
+    ice := PolarIceRows(rows)
+    if ice == 0 {
+        return false
+    }
+
+    return y < ice || y >= rows-ice
+}
+
+func (map_ *Map) placePolarIce(plane data.Plane) {
+    rows := map_.Rows()
+    ice := PolarIceRows(rows)
+    if ice == 0 {
+        return
+    }
+
+    tundra := TileTundra.Index(plane)
+    for x := 0; x < map_.Columns(); x++ {
+        for y := 0; y < ice; y++ {
+            map_.Terrain[x][y] = tundra
+            map_.Terrain[x][rows - 1 - y] = tundra
+        }
+    }
+}
+
 func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plane data.Plane) *Map {
     // run a cellular automata simulation for a few rounds to generate
     // land and ocean tiles. then call ResolveTiles() to clean up the edges
@@ -664,6 +702,7 @@ func GenerateLandCellularAutomata(columns int, rows int, data *TerrainData, plan
     continents := map_.FindContinents()
     map_.placeRandomTerrainTiles(plane, continents)
     map_.placeRivers(100, data, plane, continents)
+    map_.placePolarIce(plane)
     map_.ResolveTiles(data, plane)
     end := time.Now()
     log.Printf("Generated %vx%v %v map in %v", columns, rows, plane, end.Sub(start))

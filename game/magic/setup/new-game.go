@@ -24,6 +24,8 @@ type NewGameSettings struct {
     Opponents int
     LandSize int
     Magic data.MagicSetting
+    // set to true to disable raiders from appearing in the game
+    DisableRaiders bool
 }
 
 func (settings *NewGameSettings) DifficultyNext() {

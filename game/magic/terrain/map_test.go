@@ -184,6 +184,67 @@ func TestContinents(test *testing.T) {
 
 }
 
+func TestPolarIceRowsSkippedOnTinyMaps(test *testing.T) {
+    if PolarIceRows(3) != 0 {
+        test.Errorf("3-row maps should not be painted as ice")
+    }
+    if PolarIceRows(50) != 1 {
+        test.Errorf("standard maps should have a 1-row ice cap")
+    }
+    if IsPolarIceRow(0, 50) != true || IsPolarIceRow(49, 50) != true {
+        test.Errorf("y=0 and y=height-1 should be the ice cap")
+    }
+    if IsPolarIceRow(1, 50) || IsPolarIceRow(48, 50) {
+        test.Errorf("tiles adjacent to the ice cap should not be the cap")
+    }
+}
+
+func TestPlacePolarIcePaintsFullWidthCaps(test *testing.T) {
+    rows := 10
+    columns := 12
+    map_ := MakeMap(rows, columns)
+    ocean := TileOcean.Index(data.PlaneArcanus)
+    for x := 0; x < columns; x++ {
+        for y := 0; y < rows; y++ {
+            map_.Terrain[x][y] = ocean
+        }
+    }
+
+    map_.placePolarIce(data.PlaneArcanus)
+
+    ice := PolarIceRows(rows)
+    tundra := TileTundra.Index(data.PlaneArcanus)
+    for x := 0; x < columns; x++ {
+        for y := 0; y < ice; y++ {
+            if map_.Terrain[x][y] != tundra {
+                test.Errorf("north cap %d,%d want tundra", x, y)
+            }
+            if map_.Terrain[x][rows-1-y] != tundra {
+                test.Errorf("south cap %d,%d want tundra", x, rows-1-y)
+            }
+        }
+        if map_.Terrain[x][ice] != ocean {
+            test.Errorf("row inside the north cap should stay ocean at x=%d", x)
+        }
+    }
+}
+
+func TestGenerateLandHasPolarIceCaps(test *testing.T) {
+    terrainData := createTerrainData()
+    map_ := GenerateLandCellularAutomata(20, 20, terrainData, data.PlaneArcanus)
+    ice := PolarIceRows(20)
+    for x := 0; x < 20; x++ {
+        for y := 0; y < ice; y++ {
+            if GetTile(map_.Terrain[x][y]).TerrainType() != Tundra {
+                test.Errorf("north cap %d,%d is %v", x, y, GetTile(map_.Terrain[x][y]).TerrainType())
+            }
+            if GetTile(map_.Terrain[x][19-y]).TerrainType() != Tundra {
+                test.Errorf("south cap %d,%d is %v", x, 19-y, GetTile(map_.Terrain[x][19-y]).TerrainType())
+            }
+        }
+    }
+}
+
 func BenchmarkGeneration(bench *testing.B){
     terrainData := createTerrainData()
     plane := data.PlaneArcanus

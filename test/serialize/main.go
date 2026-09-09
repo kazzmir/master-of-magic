@@ -147,7 +147,7 @@ func main() {
         Cost: 300,
     }
 
-    serialized := gamelib.SerializeModel(game.Model, "test")
+    serialized := gamelib.SerializeModel(game.Model, "test", useSettings)
 
     // log.Printf("Serialized model: %v", serialized)
     jsonData, err := json.Marshal(serialized)
