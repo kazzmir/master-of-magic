@@ -94,3 +94,12 @@ func Curry1[Arg1 any, Result any](f func(Arg1) Result) func(Arg1) func () Result
         }
     }
 }
+
+// (map f vs)
+func Map[In any, Out any](values []In, fn func(In) Out) []Out {
+    result := make([]Out, len(values))
+    for index, value := range values {
+        result[index] = fn(value)
+    }
+    return result
+}
