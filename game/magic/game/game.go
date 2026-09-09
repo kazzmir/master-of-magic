@@ -563,6 +563,9 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
 }
 
 func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *settingslib.Settings, serializedGame *SerializedGame) *Game {
+    if serializedGame != nil {
+        serializedGame.Preferences.Apply(gameSettings)
+    }
 
     heroNames := herolib.ReadNamesPerWizard(lbxCache)
 
@@ -1718,7 +1721,7 @@ func (saver *GameSaver) SaveToPath(path string, saveName string) error {
 }
 
 func (saver *GameSaver) Save(writer io.Writer, saveName string) error {
-    data := SerializeModel(saver.Game.Model, saveName)
+    data := SerializeModel(saver.Game.Model, saveName, saver.Game.Settings)
     marshaler := json.NewEncoder(writer)
     return marshaler.Encode(data)
 }
@@ -3825,17 +3828,7 @@ func (game *Game) doPlayerUpdate(yield coroutine.YieldFunc, player *playerlib.Pl
 
         if true || len(stack.CurrentPath) == 0 || stack.OutOfMoves() {
 
-            dx := 0
-            dy := 0
-
-            for _, key := range keys {
-                switch key {
-                    case ebiten.KeyUp: dy = -1
-                    case ebiten.KeyDown: dy = 1
-                    case ebiten.KeyLeft: dx = -1
-                    case ebiten.KeyRight: dx = 1
-                }
-            }
+            dx, dy := inputmanager.CombineMoveDeltas(keys)
 
             newX := game.Model.CurrentMap().WrapX(stack.X() + dx)
             newY := stack.Y() + dy
