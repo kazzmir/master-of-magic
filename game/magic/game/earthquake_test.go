@@ -42,6 +42,9 @@ func TestEarthquakeBuildingProtected(test *testing.T) {
     marketplaceBank := set.NewSet(buildinglib.BuildingMarketplace, buildinglib.BuildingBank)
     expect("marketplace under bank", buildinglib.BuildingMarketplace, marketplaceBank, true)
     expect("bank is top of line", buildinglib.BuildingBank, marketplaceBank, false)
+
+    // fortress is always protected no matter what the set of intact buildings is
+    expect("fortress is protected", buildinglib.BuildingFortress, shrineTempleParthenon, true)
 }
 
 func TestEarthquakeSparesLowerTierBuildings(test *testing.T) {
@@ -64,7 +67,7 @@ func TestEarthquakeSparesLowerTierBuildings(test *testing.T) {
             ),
         }
 
-        people, _, destroyed := model.doEarthquake(city, player)
+        people, _, destroyed := model.DoEarthquake(city, player)
         if people != 0 {
             test.Fatalf("trial %d: earthquake killed %d citizens, want 0", i, people)
         }

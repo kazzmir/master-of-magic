@@ -3,6 +3,7 @@ package game
 import (
     "image"
     "slices"
+    "sync"
     "math"
     "math/rand/v2"
     _ "log"
@@ -1139,7 +1140,7 @@ func (model *GameModel) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := model.doEarthquake(city, target)
+                        people, units, buildings := model.DoEarthquake(city, target)
 
                         return MakeEarthquakeEvent(model.TurnNumber, city.Name, people, units, len(buildings)), nil
 
@@ -1538,13 +1539,34 @@ func (model *GameModel) RefreshUI() {
     }
 }
 
+// only normal town buildings can be destroyed in an earthequake
 func earthquakeBuildingProtected(building buildinglib.Building, intact *set.Set[buildinglib.Building]) bool {
+    if !building.IsTownBuilding() {
+        return true
+    }
+
     replacement := building.ReplacedBy()
     return replacement != buildinglib.BuildingNone && intact.Contains(replacement)
 }
 
+// create a vault event for all items the hero owned, and return vault events for each item
+func (model *GameModel) distributeEquipment(player *playerlib.Player, hero *herolib.Hero) []*GameEventVault {
+    var events []*GameEventVault
+
+    for index, item := range hero.Equipment {
+        if item != nil {
+            events = append(events, &GameEventVault{CreatedArtifact: item, Player: player})
+        }
+
+        // no matter what the hero loses the item
+        hero.Equipment[index] = nil
+    }
+
+    return events
+}
+
 // returns the number of people, units, buildings that were lost
-func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
+func (model *GameModel) DoEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
     // https://masterofmagic.fandom.com/wiki/Earthquake
     // Spare a building if ReplacedBy() is still intact at the start of the quake
     // (only the top of a line, e.g. Parthenon when Shrine+Temple+Parthenon exist, can collapse).
@@ -1568,7 +1590,30 @@ func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Playe
         }
     }
 
+    var showNotice sync.Once
+
     for _, unit := range killedUnits {
+        if unit.IsHero() {
+            hero := unit.(*herolib.Hero)
+            vaultEvents := model.distributeEquipment(player, hero)
+            if player.IsHuman() {
+                showNotice.Do(func() {
+                    noticeEvent := &GameEventNotice{Message: "One or more heroes died in combat. You must redistribute their equipment."}
+                    select {
+                        case model.Events <- noticeEvent:
+                        default:
+                    }
+                })
+            }
+
+            for _, event := range vaultEvents {
+                select {
+                    case model.Events <- event:
+                    default:
+                }
+            }
+        }
+
         player.RemoveUnit(unit)
     }
 
