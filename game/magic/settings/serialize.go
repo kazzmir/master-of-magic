@@ -14,20 +14,16 @@ type SerializedSettings struct {
     Keybindings map[string]string `json:"keybindings,omitempty"`
 }
 
-func boolPtr(value bool) *bool {
-    return &value
-}
-
 func SerializeSettings(settings *Settings) *SerializedSettings {
     if settings == nil {
         return nil
     }
 
     out := &SerializedSettings{
-        EndOfTurnWait: boolPtr(settings.EndOfTurnWait),
-        StrategicCombatOnly: boolPtr(settings.StrategicCombatOnly),
-        RandomEvents: boolPtr(settings.RandomEvents),
-        AggressiveAI: boolPtr(settings.AggressiveAI),
+        EndOfTurnWait: new(settings.EndOfTurnWait),
+        StrategicCombatOnly: new(settings.StrategicCombatOnly),
+        RandomEvents: new(settings.RandomEvents),
+        AggressiveAI: new(settings.AggressiveAI),
     }
 
     if settings.Keybindings != nil {
