@@ -1549,7 +1549,7 @@ func earthquakeBuildingProtected(building buildinglib.Building, intact *set.Set[
     return replacement != buildinglib.BuildingNone && intact.Contains(replacement)
 }
 
-// create a vault event for all items the hero owned, and return true if the hero had any items
+// create a vault event for all items the hero owned, and return vault events for each item
 func (model *GameModel) distributeEquipment(player *playerlib.Player, hero *herolib.Hero) []*GameEventVault {
     var events []*GameEventVault
 
