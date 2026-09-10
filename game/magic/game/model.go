@@ -3,6 +3,7 @@ package game
 import (
     "image"
     "slices"
+    "sync"
     "math"
     "math/rand/v2"
     _ "log"
@@ -1543,6 +1544,22 @@ func earthquakeBuildingProtected(building buildinglib.Building, intact *set.Set[
     return replacement != buildinglib.BuildingNone && intact.Contains(replacement)
 }
 
+// create a vault event for all items the hero owned, and return true if the hero had any items
+func (model *GameModel) distributeEquipment(player *playerlib.Player, hero *herolib.Hero) []*GameEventVault {
+    var events []*GameEventVault
+
+    for index, item := range hero.Equipment {
+        if item != nil {
+            events = append(events, &GameEventVault{CreatedArtifact: item, Player: player})
+        }
+
+        // no matter what the hero loses the item
+        hero.Equipment[index] = nil
+    }
+
+    return events
+}
+
 // returns the number of people, units, buildings that were lost
 func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
     // https://masterofmagic.fandom.com/wiki/Earthquake
@@ -1568,7 +1585,30 @@ func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Playe
         }
     }
 
+    var showNotice sync.Once
+
     for _, unit := range killedUnits {
+        if unit.IsHero() {
+            hero := unit.(*herolib.Hero)
+            vaultEvents := model.distributeEquipment(player, hero)
+            if player.IsHuman() {
+                showNotice.Do(func() {
+                    noticeEvent := &GameEventNotice{Message: "One or more heroes died in combat. You must redistribute their equipment."}
+                    select {
+                        case model.Events <- noticeEvent:
+                        default:
+                    }
+                })
+            }
+
+            for _, event := range vaultEvents {
+                select {
+                    case model.Events <- event:
+                    default:
+                }
+            }
+        }
+
         player.RemoveUnit(unit)
     }
 

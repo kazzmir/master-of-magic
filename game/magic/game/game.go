@@ -5206,18 +5206,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     // Redistribute equipment of died heros
     showHeroNotice := false
 
-    distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
-        for _, item := range hero.Equipment {
-            if item != nil {
-                showHeroNotice = true
-                select {
-                    case game.Events <- &GameEventVault{CreatedArtifact: item, Player: player}:
-                    default:
-                }
-            }
-        }
-    }
-
     // recall units
     relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
         for _, unit := range units {
@@ -5253,13 +5241,18 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
                 if unit.IsHero() {
                     hero := unit.(*herolib.Hero)
+                    vaultEvents := game.Model.distributeEquipment(player, hero)
                     if player.IsHuman() {
-                        distributeEquipment(player, hero)
+                        showHeroNotice = showHeroNotice || len(vaultEvents) > 0
                     }
-                    // FIXME: what happens with the equipment in case of non-human players?
-                    for index := range hero.Equipment {
-                        hero.Equipment[index] = nil
+
+                    for _, event := range vaultEvents {
+                        select {
+                            case game.Events <- event:
+                            default:
+                        }
                     }
+
                 }
             }
         }
@@ -5329,6 +5322,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
+    // this notice has to appear before the vault events are processed
     if showHeroNotice {
         game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
     }
