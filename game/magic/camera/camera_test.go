@@ -71,3 +71,50 @@ func TestCenterClampsToMapRows(test *testing.T) {
         test.Errorf("Center past north: Y=%d, want 0", cam.GetY())
     }
 }
+
+// TestGetTileBoundsCoversSouthEdgeAfterOverscroll makes sure that when the
+// stored camera position is pinned at the south edge and the player keeps
+// trying to pan further down, GetTileBounds still returns a tile range that
+// covers the rendered (clamped) viewport. Otherwise the top of the screen is
+// left blank.
+func TestGetTileBoundsCoversSouthEdgeAfterOverscroll(test *testing.T) {
+    height := 50
+
+     // stored Y is pushed past the south edge and left un-clamped, just like
+     // the pan-then-re-clamp path does to the view formula.
+    cam := MakeCameraAt(10, height+20)
+    cam.SetMapHeight(height)
+
+    _, minY, _, maxY := cam.GetTileBounds()
+
+    top := int(cam.GetZoomedY())
+    bottom := int(math.Ceil(cam.GetZoomedMaxY()))
+
+    if minY > top {
+        test.Errorf("south overscroll: drawn minY=%d is past the rendered viewport top=%d, leaving a gap at the top of the screen", minY, top)
+     }
+    if maxY < bottom {
+        test.Errorf("south overscroll: drawn maxY=%d stops above the rendered viewport bottom=%d, leaving a gap at the bottom", maxY, bottom)
+     }
+}
+
+// TestGetTileBoundsCoversNorthEdgeAfterOverscroll is the mirror of the south
+// case: pinned at the north edge, the bottom of the screen must still be covered.
+func TestGetTileBoundsCoversNorthEdgeAfterOverscroll(test *testing.T) {
+    height := 50
+
+    cam := MakeCameraAt(10, -(height+20))
+    cam.SetMapHeight(height)
+
+    _, minY, _, maxY := cam.GetTileBounds()
+
+    top := int(cam.GetZoomedY())
+    bottom := int(math.Ceil(cam.GetZoomedMaxY()))
+
+    if minY > top {
+        test.Errorf("north overscroll: drawn minY=%d is past the rendered viewport top=%d, leaving a gap at the top of the screen", minY, top)
+     }
+    if maxY < bottom {
+        test.Errorf("north overscroll: drawn maxY=%d stops above the rendered viewport bottom=%d, leaving a gap at the bottom", maxY, bottom)
+     }
+}

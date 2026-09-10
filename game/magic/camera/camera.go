@@ -124,7 +124,12 @@ func (camera *Camera) GetTileBounds() (int, int, int, int) {
     minX := middleX - tilesHorizontal/2 - 0
 
     tilesVertical := data.ScreenHeight / (18.0 * float64(camera.GetAnimatedZoom()))
-    middleY := camera.GetOffsetY()
+    // Anchor the visible-tile window on the clamped viewport
+    // (GetZoomedY / GetZoomedMaxY), which the renderer positions the view
+    // on. Deriving the center from the raw offset let the drawn range drift
+    // off-screen when the camera is pinned at a map edge, leaving the
+    // opposite edge blank.
+    middleY := camera.GetZoomedY() + camera.visibleTilesY()/2
     minY := middleY - tilesVertical/2 - 0
 
     // minY := int(camera.GetZoomedY() - 1)
