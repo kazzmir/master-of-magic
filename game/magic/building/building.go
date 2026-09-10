@@ -142,6 +142,27 @@ func (building Building) Index() int {
     return -1
 }
 
+// any normal building
+func (building Building) IsTownBuilding() bool {
+    switch building {
+        case BuildingBarracks, BuildingArmory, BuildingFightersGuild,
+             BuildingArmorersGuild, BuildingWarCollege, BuildingSmithy,
+             BuildingStables, BuildingAnimistsGuild, BuildingFantasticStable,
+             BuildingShipwrightsGuild, BuildingShipYard, BuildingMaritimeGuild,
+             BuildingSawmill, BuildingLibrary, BuildingSagesGuild,
+             BuildingOracle, BuildingAlchemistsGuild, BuildingUniversity,
+             BuildingWizardsGuild, BuildingShrine, BuildingTemple,
+             BuildingParthenon, BuildingCathedral, BuildingMarketplace,
+             BuildingBank, BuildingMerchantsGuild, BuildingGranary,
+             BuildingFarmersMarket, BuildingForestersGuild, BuildingBuildersHall,
+             BuildingMechaniciansGuild, BuildingMinersGuild, BuildingCityWalls:
+
+            return true
+        default:
+            return false
+    }
+}
+
 // the building which is shown in the city scape instead
 func (building Building) ReplacedBy() Building {
     switch building {

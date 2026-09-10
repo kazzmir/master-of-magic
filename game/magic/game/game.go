@@ -410,6 +410,9 @@ type Game struct {
     Camera camera.Camera
     
     Drawers []func(screen *ebiten.Image)
+
+    // a function that is invoked at each new turn, useful for tests
+    TurnHook func()
 }
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -7999,6 +8002,10 @@ func (game *Game) EndOfTurn() {
 }
 
 func (game *Game) DoNextTurn(){
+    if game.TurnHook != nil {
+        game.TurnHook()
+    }
+
     // if time stop is enabled then don't move to the other players, just keep doing the current player
     if game.Model.CurrentPlayer >= 0 && game.Model.Players[game.Model.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
         game.EndOfTurn()

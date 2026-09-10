@@ -1848,7 +1848,7 @@ func (game *Game) showCityEarthquake(yield coroutine.YieldFunc, city *citylib.Ci
         }
     }
 
-    _, _, buildings := game.Model.doEarthquake(city, player)
+    _, _, buildings := game.Model.DoEarthquake(city, player)
     destroyed := set.NewSet(buildings...)
 
     updateDestroyed(destroyed)

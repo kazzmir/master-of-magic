@@ -1140,7 +1140,7 @@ func (model *GameModel) DoRandomEvents() {
 
                         city := choices[rand.N(len(choices))]
 
-                        people, units, buildings := model.doEarthquake(city, target)
+                        people, units, buildings := model.DoEarthquake(city, target)
 
                         return MakeEarthquakeEvent(model.TurnNumber, city.Name, people, units, len(buildings)), nil
 
@@ -1539,7 +1539,12 @@ func (model *GameModel) RefreshUI() {
     }
 }
 
+// only normal town buildings can be destroyed in an earthequake
 func earthquakeBuildingProtected(building buildinglib.Building, intact *set.Set[buildinglib.Building]) bool {
+    if !building.IsTownBuilding() {
+        return true
+    }
+
     replacement := building.ReplacedBy()
     return replacement != buildinglib.BuildingNone && intact.Contains(replacement)
 }
@@ -1561,7 +1566,7 @@ func (model *GameModel) distributeEquipment(player *playerlib.Player, hero *hero
 }
 
 // returns the number of people, units, buildings that were lost
-func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
+func (model *GameModel) DoEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
     // https://masterofmagic.fandom.com/wiki/Earthquake
     // Spare a building if ReplacedBy() is still intact at the start of the quake
     // (only the top of a line, e.g. Parthenon when Shrine+Temple+Parthenon exist, can collapse).

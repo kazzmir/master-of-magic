@@ -6423,6 +6423,105 @@ func createScenario68(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test a hero dying due to an earthquake
+func createScenario69(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 69")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), setup.NewGameSettings{})
+
+    game.Model.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Model.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    gunther.Status = hero.StatusEmployed
+    gunther.Equipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAttack,
+                Amount: 1,
+                Name: "+1 Attack",
+            },
+            {
+                Type: artifact.PowerTypeDefense,
+                Amount: 2,
+                Name: "+2 Defense",
+            },
+        },
+        Cost: 250,
+    }
+    player.AddHeroToFortress(gunther)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(gunther)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    game.TurnHook = func() {
+        game.Model.DoEarthquake(city, player)
+    }
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -6497,6 +6596,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 66: game = createScenario66(cache)
         case 67: game = createScenario67(cache)
         case 68: game = createScenario68(cache)
+        case 69: game = createScenario69(cache)
         default: game = createScenario1(cache)
     }
 
