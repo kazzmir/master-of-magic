@@ -4934,8 +4934,6 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    game.meetWizards(yield, attacker, defender)
-
     landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
 
     // do graphic combat only if a human is involved
