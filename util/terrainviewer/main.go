@@ -1,6 +1,7 @@
 package main
 
 import (
+    "os"
     "fmt"
     "image"
     "image/color"
@@ -280,12 +281,30 @@ func display(lbxData lbx.LbxFile) error {
 
 func main(){
 
-    cache := lbx.AutoCache()
+    var lbxFile *lbx.LbxFile
+    var err error
 
-    lbxFile, err := cache.GetLbxFile("terrain.lbx")
-    if err != nil {
-        fmt.Printf("Could not load terrain.lbx: %v\n", err)
-        return
+    if len(os.Args) > 1 {
+        file, err := os.Open(os.Args[1])
+        if err != nil {
+            fmt.Printf("Could not open lbx file: %v\n", err)
+            return
+        }
+        use, err := lbx.ReadLbx(file)
+        if err != nil {
+            fmt.Printf("Could not read lbx file: %v\n", err)
+            return
+        }
+        lbxFile = &use
+        file.Close()
+    } else {
+        cache := lbx.AutoCache()
+
+        lbxFile, err = cache.GetLbxFile("terrain.lbx")
+        if err != nil {
+            fmt.Printf("Could not load terrain.lbx: %v\n", err)
+            return
+        }
     }
 
     err = display(*lbxFile)
