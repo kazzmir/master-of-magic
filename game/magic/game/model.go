@@ -1538,10 +1538,16 @@ func (model *GameModel) RefreshUI() {
     }
 }
 
+func earthquakeBuildingProtected(building buildinglib.Building, intact *set.Set[buildinglib.Building]) bool {
+    replacement := building.ReplacedBy()
+    return replacement != buildinglib.BuildingNone && intact.Contains(replacement)
+}
+
 // returns the number of people, units, buildings that were lost
 func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Player) (int, int, []buildinglib.Building) {
-    // FIXME: destroy buildings with 15% chance and non-flying units with 25% chance
     // https://masterofmagic.fandom.com/wiki/Earthquake
+    // Spare a building if ReplacedBy() is still intact at the start of the quake
+    // (only the top of a line, e.g. Parthenon when Shrine+Temple+Parthenon exist, can collapse).
 
     // earthquake never kills any citizens
     people := 0
@@ -1566,8 +1572,13 @@ func (model *GameModel) doEarthquake(city *citylib.City, player *playerlib.Playe
         player.RemoveUnit(unit)
     }
 
+    intact := set.NewSet(city.Buildings.Values()...)
     var destroyedBuildings []buildinglib.Building
-    for _, building := range city.Buildings.Values() {
+    for _, building := range intact.Values() {
+        if earthquakeBuildingProtected(building, intact) {
+            continue
+        }
+
         roll := rand.N(100)
         if roll < 15 {
             destroyedBuildings = append(destroyedBuildings, building)
