@@ -19,6 +19,7 @@ import (
     citylib "github.com/kazzmir/master-of-magic/game/magic/city"
     uilib "github.com/kazzmir/master-of-magic/game/magic/ui"
     "github.com/kazzmir/master-of-magic/game/magic/cityview"
+
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/vector"
 )
@@ -140,14 +141,19 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         SortKindTime
     )
 
+    sortAscending := true
+
     const maxRows = 9
 
-    var cityRows []*uilib.UIElement
     makeCityRows := func(sortKind SortKind) []*uilib.UIElement {
-        ui.RemoveElements(cityRows)
-
+        var newRows []*uilib.UIElement
         cities := slices.Collect(maps.Values(view.Player.Cities))
         slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
+            // to swap sort direction simpler swap the values being sorted
+            if !sortAscending {
+                a, b = b, a
+            }
+
             switch sortKind {
                 case SortKindName: return strings.Compare(a.Name, b.Name)
                 case SortKindRace: return strings.Compare(a.Race.String(), b.Race.String())
@@ -176,7 +182,7 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             goldSurplus := city.GoldSurplus()
 
             elementY := float64(y)
-            cityRows = append(cityRows, &uilib.UIElement{
+            newRows = append(newRows, &uilib.UIElement{
                 Rect: image.Rect(28, int(elementY), 296, int(elementY) + 14),
                 LeftClickRelease: func(element *uilib.UIElement){
                     view.DoSelectCity(city)
@@ -224,14 +230,44 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
             }
         }
 
-        return cityRows
+        return newRows
+    }
+
+    currentSortKind := SortKindName
+    cityRows := makeCityRows(currentSortKind)
+
+    makeSortButton := func (x int, y int, width int, height int, sortKind SortKind) *uilib.UIElement {
+        rect := image.Rect(x, y, x + width, y + height)
+        return &uilib.UIElement{
+            Rect: rect,
+            LeftClick: func(element *uilib.UIElement){
+                if currentSortKind != sortKind {
+                    currentSortKind = sortKind
+                } else {
+                    sortAscending = !sortAscending
+                }
+
+                ui.RemoveElements(cityRows)
+                cityRows = makeCityRows(currentSortKind)
+                ui.AddElements(cityRows)
+            },
+            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, A: 255})
+            },
+        }
     }
 
     var elements []*uilib.UIElement
 
-    currentSortKind := SortKindName
+    elements = append(elements, makeSortButton(28, 15, 25, 8, SortKindName))
+    elements = append(elements, makeSortButton(85, 15, 25, 8, SortKindRace))
+    elements = append(elements, makeSortButton(132, 15, 18, 8, SortKindPopulation))
+    elements = append(elements, makeSortButton(152, 15, 20, 8, SortKindGold))
+    elements = append(elements, makeSortButton(174, 15, 17, 8, SortKindProduction))
+    elements = append(elements, makeSortButton(194, 15, 45, 8, SortKindProducing))
+    elements = append(elements, makeSortButton(268, 15, 22, 8, SortKindTime))
 
-    elements = append(elements, makeCityRows(currentSortKind)...)
+    elements = append(elements, cityRows...)
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
         clicked := false
