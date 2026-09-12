@@ -4810,6 +4810,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
 }
 
 func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure) {
+    // apply gold/mana first (#758)
     for _, item := range treasure.Treasures {
         switch item.(type) {
             case *TreasureGold:
@@ -4818,6 +4819,12 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
             case *TreasureMana:
                 mana := item.(*TreasureMana)
                 player.Mana += mana.Amount
+        }
+    }
+
+    // then items/spells
+    for _, item := range treasure.Treasures {
+        switch item.(type) {
             case *TreasureMagicalItem:
                 magicalItem := item.(*TreasureMagicalItem)
                 if player.IsHuman() {
