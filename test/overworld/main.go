@@ -2977,16 +2977,23 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(stack.X(), stack.Y())
 
+    // when the vault opens the amount of mana the player should have should be 2850, because
+    // base=2600 then +250 from treasure
+
     game.Events <- &gamelib.GameEventTreasure{
         Player: player,
         Treasure: gamelib.Treasure{
             Point: data.PlanePoint{X: x + 1, Y: y + 1, Plane: data.PlaneArcanus},
             Treasures: []gamelib.TreasureItem{
-                /*
+                &gamelib.TreasureMagicalItem{
+                    Artifact: game.Model.ArtifactPool.FindByName("Pummel Mace"),
+                },
                 &gamelib.TreasureGold{
                     Amount: 300,
                 },
-                */
+                &gamelib.TreasureMana{
+                    Amount: 250,
+                },
                 &gamelib.TreasurePrisonerHero{
                     Hero: player.HeroPool[hero.HeroRakir],
                 },
