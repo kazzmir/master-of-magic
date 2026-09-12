@@ -3,6 +3,7 @@ package citylistview
 import (
     "log"
     "fmt"
+    "cmp"
     "slices"
     "strings"
     "maps"
@@ -126,78 +127,111 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         },
     }
 
-    var elements []*uilib.UIElement
-
-    cities := slices.Collect(maps.Values(view.Player.Cities))
-    slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
-        return strings.Compare(a.Name, b.Name)
-    })
-
     highlightColor := util.PremultiplyAlpha(color.RGBA{R: 255, G: 255, B: 255, A: 90})
 
-    maxRows := 9
-    y := 28
-    rowCount := 0
-    for i, city := range cities {
+    type SortKind int
+    const (
+        SortKindName SortKind = iota
+        SortKindRace
+        SortKindPopulation
+        SortKindGold
+        SortKindProduction
+        SortKindProducing
+        SortKindTime
+    )
 
-        if i < view.FirstRow {
-            continue
-        }
+    const maxRows = 9
 
-        if highlightedCity == nil {
-            highlightedCity = city
-        }
+    var cityRows []*uilib.UIElement
+    makeCityRows := func(sortKind SortKind) []*uilib.UIElement {
+        ui.RemoveElements(cityRows)
 
-        goldSurplus := city.GoldSurplus()
-
-        elementY := float64(y)
-        elements = append(elements, &uilib.UIElement{
-            Rect: image.Rect(28, int(elementY), 296, int(elementY) + 14),
-            LeftClickRelease: func(element *uilib.UIElement){
-                view.DoSelectCity(city)
-                view.State = CityListScreenStateDone
-            },
-            RightClick: func(element *uilib.UIElement){
-                buildScreen := cityview.MakeBuildScreen(view.Cache, city)
-                view.CurrentBuildScreen = buildScreen
-                view.BuildScreenUpdate = func(){
-                    city.ProducingBuilding = buildScreen.ProducingBuilding
-                    city.ProducingUnit = buildScreen.ProducingUnit
-                }
-            },
-            Inside: func(element *uilib.UIElement, x int, y int){
-                highlightedCity = city
-            },
-            Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
-                x := float64(31)
-
-                if highlightedCity == city {
-                    vector.FillRect(screen, scale.Scale(float32((x-1))), scale.Scale(float32(elementY - 3)), scale.Scale(float32(52)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+57))), scale.Scale(float32(elementY-3)), scale.Scale(float32(44)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+119-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+139-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+159-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+165))), scale.Scale(float32(elementY-3)), scale.Scale(float32(76)), scale.Scale(float32(10)), highlightColor, false)
-                    vector.FillRect(screen, scale.Scale(float32((x-1+258-13))), scale.Scale(float32(elementY-3)), scale.Scale(float32(15)), scale.Scale(float32(10)), highlightColor, false)
-                }
-
-                normalFont.Print(screen, x, elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Name)
-                normalFont.Print(screen, (x + 57), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Race.String())
-                normalFont.PrintRight(screen, (x + 119), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
-                normalFont.PrintRight(screen, (x + 139), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", goldSurplus))
-                normalFont.PrintRight(screen, (x + 159), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
-                normalFont.Print(screen, (x + 165), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.ProducingString())
-                normalFont.PrintRight(screen, (x + 258), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))
-            },
+        cities := slices.Collect(maps.Values(view.Player.Cities))
+        slices.SortFunc(cities, func(a *citylib.City, b *citylib.City) int {
+            switch sortKind {
+                case SortKindName: return strings.Compare(a.Name, b.Name)
+                case SortKindRace: return strings.Compare(a.Race.String(), b.Race.String())
+                case SortKindPopulation: return cmp.Compare(a.Citizens(), b.Citizens())
+                case SortKindGold: return cmp.Compare(a.GoldSurplus(), b.GoldSurplus())
+                case SortKindProduction: return cmp.Compare(int(a.WorkProductionRate()), int(b.WorkProductionRate()))
+                case SortKindProducing: return strings.Compare(a.ProducingString(), b.ProducingString())
+                case SortKindTime: return cmp.Compare(a.ProducingTurnsLeft(), b.ProducingTurnsLeft())
+                default:
+                    return strings.Compare(a.Name, b.Name)
+            }
         })
 
-        y += 14
+        y := 28
+        rowCount := 0
+        for i, city := range cities {
 
-        rowCount += 1
-        if rowCount >= maxRows {
-            break
+            if i < view.FirstRow {
+                continue
+            }
+
+            if highlightedCity == nil {
+                highlightedCity = city
+            }
+
+            goldSurplus := city.GoldSurplus()
+
+            elementY := float64(y)
+            cityRows = append(cityRows, &uilib.UIElement{
+                Rect: image.Rect(28, int(elementY), 296, int(elementY) + 14),
+                LeftClickRelease: func(element *uilib.UIElement){
+                    view.DoSelectCity(city)
+                    view.State = CityListScreenStateDone
+                },
+                RightClick: func(element *uilib.UIElement){
+                    buildScreen := cityview.MakeBuildScreen(view.Cache, city)
+                    view.CurrentBuildScreen = buildScreen
+                    view.BuildScreenUpdate = func(){
+                        city.ProducingBuilding = buildScreen.ProducingBuilding
+                        city.ProducingUnit = buildScreen.ProducingUnit
+                    }
+                },
+                Inside: func(element *uilib.UIElement, x int, y int){
+                    highlightedCity = city
+                },
+                Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
+                    x := float64(31)
+
+                    if highlightedCity == city {
+                        vector.FillRect(screen, scale.Scale(float32((x-1))), scale.Scale(float32(elementY - 3)), scale.Scale(float32(52)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+57))), scale.Scale(float32(elementY-3)), scale.Scale(float32(44)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+119-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+139-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+159-14))), scale.Scale(float32(elementY-3)), scale.Scale(float32(16)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+165))), scale.Scale(float32(elementY-3)), scale.Scale(float32(76)), scale.Scale(float32(10)), highlightColor, false)
+                        vector.FillRect(screen, scale.Scale(float32((x-1+258-13))), scale.Scale(float32(elementY-3)), scale.Scale(float32(15)), scale.Scale(float32(10)), highlightColor, false)
+                    }
+
+                    normalFont.Print(screen, x, elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Name)
+                    normalFont.Print(screen, (x + 57), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.Race.String())
+                    normalFont.PrintRight(screen, (x + 119), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.Citizens()))
+                    normalFont.PrintRight(screen, (x + 139), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", goldSurplus))
+                    normalFont.PrintRight(screen, (x + 159), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", int(city.WorkProductionRate())))
+                    normalFont.Print(screen, (x + 165), elementY, scale.ScaleAmount, ebiten.ColorScale{}, city.ProducingString())
+                    normalFont.PrintRight(screen, (x + 258), elementY, scale.ScaleAmount, ebiten.ColorScale{}, fmt.Sprintf("%v", city.ProducingTurnsLeft()))
+                },
+            })
+
+            y += 14
+
+            rowCount += 1
+            if rowCount >= maxRows {
+                break
+            }
         }
+
+        return cityRows
     }
+
+    var elements []*uilib.UIElement
+
+    currentSortKind := SortKindName
+
+    elements = append(elements, makeCityRows(currentSortKind)...)
 
     makeButton := func (x int, y int, normal *ebiten.Image, clickImage *ebiten.Image, action func()) *uilib.UIElement {
         clicked := false
@@ -238,8 +272,10 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
         }
     }
 
+    totalCities := len(slices.Collect(maps.Values(view.Player.Cities)))
+
     scrollDownFunc := func(){
-        if view.FirstRow < len(cities) - maxRows {
+        if view.FirstRow < totalCities - maxRows {
             view.FirstRow += 1
             view.UI = view.MakeUI()
         }

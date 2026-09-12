@@ -5790,9 +5790,13 @@ func createScenario62(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     city2 := citylib.MakeCity("utah", x + 2, y + 1, data.RaceDarkElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
-    city2.Population = 7000
+    city2.Population = 13000
     city2.Plane = data.PlaneArcanus
-    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingBuilding = buildinglib.BuildingTradeGoods
+    city2.AddBuilding(buildinglib.BuildingBank)
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingTemple)
+    city2.AddBuilding(buildinglib.BuildingMarketplace)
     city2.ProducingUnit = units.UnitNone
 
     city2.ResetCitizens()
