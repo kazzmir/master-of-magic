@@ -4849,6 +4849,8 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 }
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
+                // add the spell to the research pool in case so it shows up in the spell book
+                player.ResearchPoolSpells.AddSpell(spell.Spell)
                 if player.IsHuman() {
                     game.doLearnSpell(yield, player, spell.Spell)
                 }
