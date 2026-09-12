@@ -71,7 +71,7 @@ func MakeMirrorFonts(cache *lbx.LbxCache) MirrorFonts {
     }
 }
 
-func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *uilib.UIElement {
+func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI, showResources bool) *uilib.UIElement {
     cornerX := 50
     cornerY := 1
 
@@ -121,8 +121,10 @@ func MakeMirrorUI(cache *lbx.LbxCache, player *playerlib.Player, ui *uilib.UI) *
 
             fonts.Name.PrintOptions(screen, float64(cornerX + 110), float64(cornerY + 10), centerOptions, player.Wizard.Name)
 
-            fonts.Small.PrintOptions(screen, float64(cornerX + 30), float64(cornerY + 75), centerOptions, fmt.Sprintf("%v GP", player.Gold))
-            fonts.Small.PrintOptions(screen, float64(cornerX + 170), float64(cornerY + 75), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v MP", player.Mana))
+            if showResources {
+                fonts.Small.PrintOptions(screen, float64(cornerX + 30), float64(cornerY + 75), centerOptions, fmt.Sprintf("%v GP", player.Gold))
+                fonts.Small.PrintOptions(screen, float64(cornerX + 170), float64(cornerY + 75), font.FontOptions{Justify: font.FontJustifyRight, Options: &options, Scale: scale.ScaleAmount, DropShadow: true}, fmt.Sprintf("%v MP", player.Mana))
+            }
 
             options.GeoM.Translate(float64(34), float64(55))
             newRand := rand.New(rand.NewPCG(player.BookOrderSeed1, player.BookOrderSeed2))

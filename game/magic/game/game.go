@@ -5614,7 +5614,7 @@ func (game *Game) DoChancellor(){
 
 func (game *Game) ShowMirror() {
     if len(game.Model.Players) > 0 {
-        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.GetHumanPlayer(), game.HudUI))
+        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.GetHumanPlayer(), game.HudUI, true))
     }
 }
 

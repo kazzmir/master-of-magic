@@ -445,7 +445,7 @@ func (magic *MagicScreen) MakeUI(player *playerlib.Player, enemies []*playerlib.
                 // show mirror ui with extra enemy info: relations, treaties, personality, objective
 
                 if i < len(knownPlayers) && !knownPlayers[i].Defeated {
-                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, knownPlayers[i], ui)
+                    mirrorElement := mirror.MakeMirrorUI(magic.Cache, knownPlayers[i], ui, false)
                     ui.AddElement(mirrorElement)
                 }
             },
