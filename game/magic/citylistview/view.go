@@ -306,7 +306,9 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     scrollUpFunc := func(){
         if view.FirstRow > 0 {
             view.FirstRow -= 1
-            view.UI = view.MakeUI()
+            ui.RemoveElements(cityRows)
+            cityRows = makeCityRows(currentSortKind)
+            ui.AddElements(cityRows)
         }
     }
 
@@ -315,7 +317,9 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
     scrollDownFunc := func(){
         if view.FirstRow < totalCities - maxRows {
             view.FirstRow += 1
-            view.UI = view.MakeUI()
+            ui.RemoveElements(cityRows)
+            cityRows = makeCityRows(currentSortKind)
+            ui.AddElements(cityRows)
         }
     }
 

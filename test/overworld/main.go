@@ -6552,6 +6552,66 @@ func createScenario69(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// add a lot of cities
+func createScenario70(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 70")
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), setup.NewGameSettings{})
+
+    game.Model.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    for i := range 20 {
+
+        x, y, ok := game.FindValidCityLocation(game.Model.Plane)
+        if !ok {
+            break
+        }
+
+        introCity := citylib.MakeCity(fmt.Sprintf("City %d", i), x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+        introCity.Population = (rand.N(20) + 1) * 1000
+        introCity.Plane = data.PlaneArcanus
+        introCity.ProducingBuilding = buildinglib.BuildingHousing
+        introCity.ProducingUnit = units.UnitNone
+        introCity.Farmers = min(introCity.Citizens(), rand.N(5))
+
+        introCity.AddBuilding(buildinglib.BuildingShrine)
+
+        introCity.ResetCitizens()
+
+        player.AddCity(introCity)
+        player.LiftFog(x, y, 3, data.PlaneArcanus)
+        game.Camera.Center(x, y)
+    }
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -6627,6 +6687,7 @@ func NewEngine(scenario int) (*Engine, error) {
         case 67: game = createScenario67(cache)
         case 68: game = createScenario68(cache)
         case 69: game = createScenario69(cache)
+        case 70: game = createScenario70(cache)
         default: game = createScenario1(cache)
     }
 
