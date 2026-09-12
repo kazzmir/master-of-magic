@@ -68,7 +68,7 @@ func NewEngine(scenario int) (*Engine, error) {
     }
     ui.SetElementsFromArray(nil)
 
-    ui.AddElement(mirror.MakeMirrorUI(cache, &player, ui))
+    ui.AddElement(mirror.MakeMirrorUI(cache, &player, ui, true))
 
     return &Engine{
         LbxCache: cache,
