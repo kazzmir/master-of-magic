@@ -1217,6 +1217,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
+        Base: data.WizardAriel,
         Banner: data.BannerGreen,
         Race: data.RaceDraconian,
     }
@@ -1250,12 +1251,14 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     enemyWizard2 := setup.WizardCustom{
         Name: "enemy2",
+        Base: data.WizardTauron,
         Banner: data.BannerPurple,
         Race: data.RaceBeastmen,
     }
 
     enemy2 := game.AddPlayer(enemyWizard2, false)
     enemy2.TaxRate = fraction.Make(1, 1)
+    enemy2.Gold = 1500
     enemy2.Mana = 3000
 
     x2, y2, _ := game.FindValidCityLocation(game.Model.Plane)
