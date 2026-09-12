@@ -251,9 +251,11 @@ func (view *CityListScreen) MakeUI() *uilib.UI {
                 cityRows = makeCityRows(currentSortKind)
                 ui.AddElements(cityRows)
             },
+            /* For debugging
             Draw: func(element *uilib.UIElement, screen *ebiten.Image) {
                 util.DrawRect(screen, scale.ScaleRect(rect), color.NRGBA{R: 255, A: 255})
             },
+            */
         }
     }
 
