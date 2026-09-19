@@ -2351,9 +2351,11 @@ type CombatModel struct {
 
     // cache of all spells so projectile effects that need spell data (like Dispel Magic) can access it
     AllSpells spellbook.Spells
+
+    Remote *Remote
 }
 
-func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent, remote *Remote) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -2367,6 +2369,7 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         Events: events,
         Zone: zone,
         Influence: influence,
+        Remote: remote,
     }
 
     model.AttackingArmy.LayoutUnits(TeamAttacker, model)

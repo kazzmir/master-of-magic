@@ -86,7 +86,7 @@ func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army
     return &army
 }
 
-func NewEngine() (*Engine, error) {
+func NewEngine(isServer bool, peer net.Conn) (*Engine, error) {
     cache := lbx.AutoCache()
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -94,15 +94,24 @@ func NewEngine() (*Engine, error) {
         return nil, err
     }
 
+    // remote player is always the defending player
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
         Name: "Lair",
         Banner: data.BannerBrown,
-    }, false, 0, 0, nil, &noGlobalEnchantments{})
+    }, !isServer, 0, 0, nil, &noGlobalEnchantments{})
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
     defendingArmy := createArmyN(defendingPlayer, units.Hydra, 1)
 
+    defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
+    defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    defendingPlayer.AddCity(defendingFortressCity)
+
+    defendingPlayer.CastingSkillPower = 1000
+    defendingPlayer.Mana = 1000
+
+    // server is attacker
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
             Name: "Merlin",
             Banner: data.BannerGreen,
@@ -112,7 +121,7 @@ func NewEngine() (*Engine, error) {
                     Count: 8,
                 },
             },
-        }, true, 0, 0, nil, &noGlobalEnchantments{})
+        }, isServer, 0, 0, nil, &noGlobalEnchantments{})
 
     fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
     fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
@@ -123,7 +132,7 @@ func NewEngine() (*Engine, error) {
 
     attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), combat.MakeRemote(isServer, peer))
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
     run := func(yield coroutine.YieldFunc) error {
@@ -189,6 +198,9 @@ func main() {
     listenAddress := flag.String("listen", "", "Listen address")
     flag.Parse()
 
+    var peerConnection net.Conn
+    isServer := false
+
     // connecting to a server
     if *serverAddress != "" {
         log.Printf("Connecting to server at %s", *serverAddress)
@@ -201,6 +213,7 @@ func main() {
             return
         }
         defer connection.Close()
+        peerConnection = connection
     }
 
     if listenAddress != nil && *listenAddress != "" {
@@ -220,6 +233,11 @@ func main() {
             return
         }
         defer clientConnection.Close()
+
+        server.Close()
+
+        peerConnection = clientConnection
+        isServer = true
     }
 
     log.Printf("Initializing")
@@ -235,7 +253,7 @@ func main() {
     audio.Initialize()
     mouse.Initialize()
 
-    engine, err := NewEngine()
+    engine, err := NewEngine(isServer, peerConnection)
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)
