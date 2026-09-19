@@ -2,21 +2,141 @@ package main
 
 import (
     "log"
+    "image"
+    "math"
 
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    "github.com/kazzmir/master-of-magic/game/magic/inputmanager"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/game/magic/player"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/scale"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/audio"
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+    "github.com/kazzmir/master-of-magic/lib/optional"
+    "github.com/kazzmir/master-of-magic/lib/coroutine"
 
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+type noGlobalEnchantments struct {
+}
+
+func (*noGlobalEnchantments) HasEnchantment(enchantment data.Enchantment) bool {
+    return false
+}
+
+func (*noGlobalEnchantments) HasRivalEnchantment(player *player.Player, enchantment data.Enchantment) bool {
+    return false
+}
+
+type BasicCatchment struct {
+}
+
+func (basic *BasicCatchment) GetCatchmentArea(x int, y int) map[image.Point]maplib.FullTile {
+    return map[image.Point]maplib.FullTile{}
+}
+
+func (basic *BasicCatchment) GetGoldBonus(x int, y int) int {
+    return 0
+}
+
+func (basic *BasicCatchment) OnShore(x int, y int) bool {
+    return false
+}
+
+func (basic *BasicCatchment) ByRiver(x int, y int) bool {
+    return false
+}
+
+func (basic *BasicCatchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
+    dx := x1 - x2
+    dy := y1 - y2
+    return int(math.Sqrt(float64(dx * dx + dy * dy)))
+}
+
+
 type Engine struct {
+    Cache *lbx.LbxCache
+    Model *combat.CombatModel
+    Combat *combat.CombatScreen
+    Coroutine *coroutine.Coroutine
+}
+
+func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army {
+    army := combat.Army{
+        Player: player,
+    }
+
+    for i := 0; i < count; i++ {
+        made := units.MakeOverworldUnitFromUnit(unit, 1, 1, data.PlaneArcanus, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
+        army.AddUnit(made)
+    }
+
+    return &army
 }
 
 func NewEngine() (*Engine, error) {
-    return &Engine{}, nil
+    cache := lbx.AutoCache()
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return nil, err
+    }
+
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+        Name: "Lair",
+        Banner: data.BannerBrown,
+    }, false, 0, 0, nil, &noGlobalEnchantments{})
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    defendingArmy := createArmyN(defendingPlayer, units.Hydra, 1)
+
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerGreen,
+            Books: []data.WizardBook{
+                data.WizardBook{
+                    Magic: data.ChaosMagic,
+                    Count: 8,
+                },
+            },
+        }, true, 0, 0, nil, &noGlobalEnchantments{})
+
+    fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
+    fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    attackingPlayer.AddCity(fortressCity)
+
+    attackingPlayer.CastingSkillPower = 1000
+    attackingPlayer.Mana = 1000
+
+    attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
+
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10))
+    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+
+    run := func(yield coroutine.YieldFunc) error {
+        for combatScreen.Update(yield) == combat.CombatStateRunning {
+            yield()
+        }
+
+        return ebiten.Termination
+    }
+
+    return &Engine{
+        Cache: cache,
+        Model: model,
+        Combat: combatScreen,
+        Coroutine: coroutine.MakeCoroutine(run),
+    }, nil
 }
 
 func (engine *Engine) Update() error {
@@ -30,10 +150,16 @@ func (engine *Engine) Update() error {
         }
     }
 
+    inputmanager.Update()
+
+    engine.Coroutine.Run()
+
     return nil
 }
 
 func (engine *Engine) Draw(screen *ebiten.Image) {
+    engine.Combat.Draw(screen)
+    mouse.Mouse.Draw(screen)
 }
 
 func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
