@@ -4,6 +4,9 @@ import (
     "log"
     "image"
     "math"
+    "flag"
+    "net"
+    "strconv"
 
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
@@ -166,8 +169,58 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
+func isPort(address string) bool {
+    n, err := strconv.Atoi(address)
+    return err == nil && n > 0 && n < 65536
+}
+
+func resolveAddress(address string) string {
+    if isPort(address) {
+        return net.JoinHostPort("localhost", address)
+    }
+
+    return address
+}
+
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
+
+    serverAddress := flag.String("server", "", "Server address")
+    listenAddress := flag.String("listen", "", "Listen address")
+    flag.Parse()
+
+    // connecting to a server
+    if *serverAddress != "" {
+        log.Printf("Connecting to server at %s", *serverAddress)
+
+        address := resolveAddress(*serverAddress)
+
+        connection, err := net.Dial("tcp", address)
+        if err != nil {
+            log.Printf("Error: unable to connect to server: %v", err)
+            return
+        }
+        defer connection.Close()
+    }
+
+    if listenAddress != nil && *listenAddress != "" {
+        address := resolveAddress(*listenAddress)
+        server, err := net.Listen("tcp", address)
+        if err != nil {
+            log.Printf("Error: unable to listen on %s: %v", address, err)
+            return
+        }
+
+        defer server.Close()
+
+        log.Printf("Listening on %s, waiting..", address)
+        clientConnection, err := server.Accept()
+        if err != nil {
+            log.Printf("Error: unable to accept connection: %v", err)
+            return
+        }
+        defer clientConnection.Close()
+    }
 
     log.Printf("Initializing")
 
