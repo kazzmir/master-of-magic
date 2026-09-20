@@ -1,6 +1,7 @@
 package main
 
 import (
+    "fmt"
     "log"
     "image"
     "math"
@@ -132,7 +133,7 @@ func NewEngine(isServer bool, peer net.Conn) (*Engine, error) {
 
     attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), combat.MakeRemote(isServer, peer))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), combat.MakeRemote(!isServer, !isServer, peer))
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
     run := func(yield coroutine.YieldFunc) error {
@@ -194,7 +195,7 @@ func resolveAddress(address string) string {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
-    serverAddress := flag.String("server", "", "Server address")
+    connectAddress := flag.String("connect", "", "Connect address")
     listenAddress := flag.String("listen", "", "Listen address")
     flag.Parse()
 
@@ -202,10 +203,10 @@ func main() {
     isServer := false
 
     // connecting to a server
-    if *serverAddress != "" {
-        log.Printf("Connecting to server at %s", *serverAddress)
+    if *connectAddress != "" {
+        log.Printf("Connecting to server at %s", *connectAddress)
 
-        address := resolveAddress(*serverAddress)
+        address := resolveAddress(*connectAddress)
 
         connection, err := net.Dial("tcp", address)
         if err != nil {
@@ -246,7 +247,11 @@ func main() {
     size := monitorWidth / 390
     ebiten.SetWindowSize(data.ScreenWidth * size, data.ScreenHeight * size)
 
-    ebiten.SetWindowTitle("combat screen")
+    name := "client"
+    if isServer {
+        name = "server"
+    }
+    ebiten.SetWindowTitle(fmt.Sprintf("combat screen (%s)", name))
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetCursorMode(ebiten.CursorModeHidden)
 

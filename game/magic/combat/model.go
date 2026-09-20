@@ -4289,12 +4289,29 @@ func (model *CombatModel) RecallUnit(unit *ArmyUnit) {
     model.RemoveUnit(unit)
 }
 
+func (model *CombatModel) IsRemoteUnit(unit *ArmyUnit) bool {
+    remoteDefender := (model.Remote != nil && !model.Remote.Attacker)
+    remoteAttacker := (model.Remote != nil && model.Remote.Attacker)
+
+    isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
+
+    if unit.Team == TeamDefender {
+        return (remoteDefender && !isConfused) || (remoteAttacker && isConfused)
+    } else {
+        return (remoteAttacker && !isConfused) || (remoteDefender && isConfused)
+    }
+}
+
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
+
+    remoteDefender := (model.Remote != nil && !model.Remote.Attacker)
+    remoteAttacker := (model.Remote != nil && model.Remote.Attacker)
+
     if unit.Team == TeamDefender {
-        return (model.DefendingArmy.IsAI() && !isConfused) || (model.AttackingArmy.IsAI() && isConfused)
+        return ((model.DefendingArmy.IsAI() || remoteDefender) && !isConfused) || ((model.AttackingArmy.IsAI() || remoteAttacker) && isConfused)
     } else {
-        return (model.AttackingArmy.IsAI() && !isConfused) || (model.DefendingArmy.IsAI() && isConfused)
+        return ((model.AttackingArmy.IsAI() || remoteAttacker) && !isConfused) || ((model.DefendingArmy.IsAI() || remoteDefender) && isConfused)
     }
 }
 
@@ -6217,6 +6234,11 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
         aiUnit := model.SelectedUnit
 
         aiArmy := model.GetArmy(aiUnit)
+
+        // remote side will send an update
+        if model.IsAIControlled(aiUnit) && model.IsRemoteUnit(aiUnit) {
+            return
+        }
 
         // don't let a single auto unit cast wizard spells
         if model.IsAIControlled(aiUnit) {
