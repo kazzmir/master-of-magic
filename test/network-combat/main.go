@@ -1,8 +1,10 @@
 package main
 
 import (
+    "io"
     "fmt"
     "log"
+    "time"
     "image"
     "math"
     "flag"
@@ -192,6 +194,54 @@ func resolveAddress(address string) string {
     return address
 }
 
+// send a string to the other side to ensure we are connecting to another network combat client
+func doHandshake(conn net.Conn, isClient bool) error {
+    start := time.Now()
+    defer func() {
+        log.Printf("Handshake took %v", time.Since(start))
+    }()
+
+    magicString := "network-combat-handshake"
+
+    success := true
+
+    done := make(chan struct{})
+    // read response asynchronously
+    go func() {
+        defer close(done)
+        buffer := make([]byte, len(magicString))
+        _, err := io.ReadFull(conn, buffer)
+        if err != nil {
+            success = false
+            return
+        }
+
+        if string(buffer) != magicString {
+            success = false
+            return
+        }
+    }()
+
+    _, err := io.WriteString(conn, magicString)
+    if err != nil {
+        success = false
+    } else {
+        conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+        select {
+            case <-time.After(5 * time.Second):
+                success = false
+            case <-done:
+        }
+        conn.SetReadDeadline(time.Time{})
+    }
+
+    if success {
+        return nil
+    }
+
+    return fmt.Errorf("handshake failed")
+}
+
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
@@ -215,6 +265,12 @@ func main() {
         }
         defer connection.Close()
         peerConnection = connection
+
+        err = doHandshake(peerConnection, true)
+        if err != nil {
+            log.Printf("Error: handshake failed: %v", err)
+            return
+        }
     }
 
     if listenAddress != nil && *listenAddress != "" {
@@ -236,6 +292,12 @@ func main() {
         defer clientConnection.Close()
 
         server.Close()
+
+        err = doHandshake(clientConnection, false)
+        if err != nil {
+            log.Printf("Error: handshake failed: %v", err)
+            return
+        }
 
         peerConnection = clientConnection
         isServer = true
