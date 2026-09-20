@@ -561,6 +561,9 @@ const (
 )
 
 type ArmyUnit struct {
+    // unique id to identify the unit, for use in networked combat
+    Id uint64
+
     Unit units.StackUnit
     Facing units.Facing
     Moving bool
@@ -2353,6 +2356,8 @@ type CombatModel struct {
     AllSpells spellbook.Spells
 
     Remote *Remote
+
+    LastUnitId uint64
 }
 
 func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent, remote *Remote) *CombatModel {
@@ -2510,6 +2515,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
 
     for _, unit := range model.DefendingArmy.units {
+        unit.Id = model.NextUnitId()
         unit.Model = model
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
@@ -2518,6 +2524,7 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     }
 
     for _, unit := range model.AttackingArmy.units {
+        unit.Id = model.NextUnitId()
         unit.Model = model
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
@@ -3111,6 +3118,7 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: model.CurrentTurn-1,
         Summoned: summoned,
+        Id: model.NextUnitId(),
     }
 
     newUnit.Model = model
@@ -3130,6 +3138,12 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
     }
 
     return &newUnit
+}
+
+func (model *CombatModel) NextUnitId() uint64 {
+    value := model.LastUnitId
+    model.LastUnitId += 1
+    return value
 }
 
 /* makes a 5x5 square of tiles have mud on them
@@ -6264,10 +6278,12 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
         if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
             if model.SelectedUnit.CanTeleport() {
                 actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
+                model.RemoteTeleport(model.SelectedUnit, actionTileX, actionTileY)
             } else {
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
                 actions.MoveUnit(model.SelectedUnit, path)
+                model.RemoteMove(model.SelectedUnit, actionTileX, actionTileY)
             }
         } else {
 
@@ -6294,6 +6310,33 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     // the unit died or is out of moves
     if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
         model.DoneTurn()
+    }
+}
+
+func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) {
+    // send teleport event to remote side
+    if model.Remote != nil {
+        event := RemoteTeleportEvent{
+            Id: unit.Id,
+            Type: RemoteTeleportType,
+            X: x,
+            Y: y,
+        }
+
+        model.Remote.SendEvent(&event)
+    }
+}
+
+func (model *CombatModel) RemoteMove(unit *ArmyUnit, x int, y int) {
+    if model.Remote != nil {
+        event := RemoteMoveEvent{
+            Id: unit.Id,
+            Type: RemoteMoveType,
+            X: x,
+            Y: y,
+        }
+
+        model.Remote.SendEvent(&event)
     }
 }
 
