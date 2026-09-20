@@ -133,6 +133,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
     // check type
     eventType, ok := m["type"].(string)
     if !ok {
+        log.Printf("Error: event type is not a string")
         return nil, err
     }
 
@@ -140,7 +141,11 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteTeleportType: return convert[*RemoteTeleportEvent](data)
         case RemoteRangeAttackType: return convert[*RemoteRangeAttackEvent](data)
         case RemoteMoveType: return convert[*RemoteMoveEvent](data)
+        case RemoteProjectileFinishedType: return convert[*RemoteProjectileFinishedEvent](data)
+        case RemoteDamageType: return convert[*RemoteDamageEvent](data)
+        case RemoteDamageIndicatorType: return convert[*RemoteDamageIndicatorEvent](data)
         default:
+            log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
     }
 }

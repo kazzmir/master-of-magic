@@ -1784,6 +1784,8 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) int {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
     unit.Unit.AdjustHealth(-damage)
 
+    log.Debug("Unit %v took %v damage of type %v. Health now %v/%v", unit.Unit.GetName(), damage, damageType, unit.GetHealth(), unit.GetMaxHealth())
+
     switch damageType {
         case DamageNormal: unit.NormalDamage += damage
         case DamageIrreversable: unit.IrreversableDamage += damage
@@ -3456,10 +3458,14 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
                             if unit != nil {
                                 damageIndicators.AddDamageIndicator(unit, event.Damage)
                             }
+                        default:
+                            log.Error("update projectiles: unknown remote event type %v", event.GetType())
                     }
                 default:
             }
         }
+
+        return model.RemoteProjectiles > 0 || alive
     }
 
     return alive
@@ -6323,6 +6329,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
                             if attacker != nil && defender != nil {
                                 actions.RangeAttack(attacker, defender)
+                                model.DoneTurn()
                             }
                         case RemoteTeleportType:
                             event := event.(*RemoteTeleportEvent)
@@ -6332,6 +6339,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
                                 model.DoneTurn()
                             }
+                        default:
+                            log.Error("Unhandled remote event type %v", event.GetType())
 
                     }
                 default:
@@ -6363,13 +6372,13 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     if actionSelect {
         if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
             if model.SelectedUnit.CanTeleport() {
-                actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
                 model.RemoteTeleport(model.SelectedUnit, actionTileX, actionTileY)
+                actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
             } else {
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
-                actions.MoveUnit(model.SelectedUnit, path)
                 model.RemoteMove(model.SelectedUnit, path)
+                actions.MoveUnit(model.SelectedUnit, path)
             }
         } else {
 
@@ -6379,8 +6388,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
            if defender != nil {
                // try a ranged attack first
                if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
-                   actions.RangeAttack(attacker, defender)
                    model.RemoteRangeAttack(attacker, defender)
+                   actions.RangeAttack(attacker, defender)
                // then fall back to melee
                } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
                    actions.MeleeAttack(attacker, defender)
@@ -7285,7 +7294,9 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), modifiers)
 
-        model.RemoteDamage(defender, modifiers.DamageType, appliedDamage)
+        if appliedDamage > 0 {
+            model.RemoteDamage(defender, modifiers.DamageType, appliedDamage)
+        }
 
         totalDamage := appliedDamage
 
@@ -7301,7 +7312,9 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
         immolationDamage := model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
         totalDamage += immolationDamage
 
-        model.RemoteDamage(defender, DamageNormal, immolationDamage)
+        if immolationDamage > 0 {
+            model.RemoteDamage(defender, DamageNormal, immolationDamage)
+        }
 
         damageIndicators.AddDamageIndicator(defender, totalDamage)
 
