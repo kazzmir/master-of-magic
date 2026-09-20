@@ -1937,7 +1937,7 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.Model.UpdateProjectiles(combat.Counter) {
+    for combat.Model.UpdateProjectiles(combat.Counter, combat) {
         combat.Counter += 1
         combat.ProcessInput()
         combat.UpdateDamageIndicators()
@@ -2328,7 +2328,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
     for unit.Height < 0 {
         // so that the summoning circle displays
-        combat.Model.UpdateProjectiles(combat.Counter)
+        combat.Model.UpdateProjectiles(combat.Counter, combat)
         combat.Counter += 1
 
         if combat.Counter % 3 == 0 {

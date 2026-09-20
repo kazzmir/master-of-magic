@@ -2357,6 +2357,8 @@ type CombatModel struct {
     AllSpells spellbook.Spells
 
     Remote *Remote
+    // a count of the number of projectiles waiting to be resolved
+    RemoteProjectiles int
 
     LastUnitId uint64
 }
@@ -3389,7 +3391,7 @@ func distance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
     return math.Sqrt(xDiff * xDiff + yDiff * yDiff)
 }
 
-func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
+func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators AddDamageIndicators) bool {
     animationSpeed := uint64(5)
 
     alive := len(model.Projectiles) > 0
@@ -3434,6 +3436,31 @@ func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
     }
 
     model.Projectiles = projectilesOut
+
+    if model.Remote != nil {
+        if model.RemoteProjectiles > 0 {
+            select {
+                case event := <-model.Remote.Events:
+                    switch event.GetType() {
+                        case RemoteProjectileFinishedType:
+                            model.RemoteProjectiles -= 1
+                        case RemoteDamageType:
+                            event := event.(*RemoteDamageEvent)
+                            unit := model.GetUnitById(event.Id)
+                            if unit != nil {
+                                unit.TakeDamage(event.Damage, event.DamageKind)
+                            }
+                        case RemoteDamageIndicatorType:
+                            event := event.(*RemoteDamageIndicatorEvent)
+                            unit := model.GetUnitById(event.Id)
+                            if unit != nil {
+                                damageIndicators.AddDamageIndicator(unit, event.Damage)
+                            }
+                    }
+                default:
+            }
+        }
+    }
 
     return alive
 }
@@ -6392,6 +6419,45 @@ func (model *CombatModel) RemoteRangeAttack(attacker *ArmyUnit, defender *ArmyUn
     return nil
 }
 
+func (model *CombatModel) RemoteDamageIndicator(unit *ArmyUnit, damage int) error {
+    if model.Remote != nil {
+        event := RemoteDamageIndicatorEvent{
+            Id: unit.Id,
+            Type: RemoteDamageIndicatorType,
+            Damage: damage,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage indicator event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteDamage(unit *ArmyUnit, kind DamageType, damage int) error {
+    if model.Remote != nil {
+        event := RemoteDamageEvent{
+            Id: unit.Id,
+            Type: RemoteDamageType,
+            DamageKind: kind,
+            Damage: damage,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) error {
     // send teleport event to remote side
     if model.Remote != nil {
@@ -7181,10 +7247,27 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
 
 func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
     return func (defender *ArmyUnit){
-        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+        if model.Remote != nil {
+            // the remote side will compute damage and apply it
+            if model.IsRemoteUnit(attacker) {
+                model.RemoteProjectiles += 1
+                return
+            }
+        }
+
+        defer func() {
+            if model.Remote != nil {
+                model.Remote.SendEvent(&RemoteProjectileFinishedEvent{
+                    Type: RemoteProjectileFinishedType,
+                })
+            }
+        }()
+
         if defender.GetHealth() <= 0 {
             return
         }
+
+        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
 
         damage := attacker.ComputeRangeDamage(defender, tileDistance)
 
@@ -7202,6 +7285,8 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), modifiers)
 
+        model.RemoteDamage(defender, modifiers.DamageType, appliedDamage)
+
         totalDamage := appliedDamage
 
         log.Info("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
@@ -7213,9 +7298,14 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
             }
         }
 
-        totalDamage += model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+        immolationDamage := model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+        totalDamage += immolationDamage
+
+        model.RemoteDamage(defender, DamageNormal, immolationDamage)
 
         damageIndicators.AddDamageIndicator(defender, totalDamage)
+
+        model.RemoteDamageIndicator(defender, totalDamage)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 

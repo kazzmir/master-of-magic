@@ -18,6 +18,9 @@ const (
     RemoteTeleportType = "teleport"
     RemoteMoveType     = "move"
     RemoteRangeAttackType = "range_attack"
+    RemoteProjectileFinishedType = "projectile_finished"
+    RemoteDamageType = "damage"
+    RemoteDamageIndicatorType = "damage_indicator"
 )
 
 type Remote struct {
@@ -163,6 +166,14 @@ func (remote *RemoteTeleportEvent) GetType() string {
     return remote.Type
 }
 
+type RemoteProjectileFinishedEvent struct {
+    Type string `json:"type"`
+}
+
+func (remote *RemoteProjectileFinishedEvent) GetType() string {
+    return remote.Type
+}
+
 type RemoteRangeAttackEvent struct {
     AttackerId uint64 `json:"attacker_id"`
     DefenderId uint64 `json:"defender_id"`
@@ -180,5 +191,26 @@ type RemoteMoveEvent struct {
 }
 
 func (remote *RemoteMoveEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDamageEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    DamageKind DamageType `json:"damage_kind"`
+    Damage int
+}
+
+func (remote *RemoteDamageEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDamageIndicatorEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Damage int `json:"damage"`
+}
+
+func (remote *RemoteDamageIndicatorEvent) GetType() string {
     return remote.Type
 }
