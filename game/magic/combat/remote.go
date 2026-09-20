@@ -21,6 +21,8 @@ const (
     RemoteProjectileFinishedType = "projectile_finished"
     RemoteDamageType = "damage"
     RemoteDamageIndicatorType = "damage_indicator"
+    RemoteMeleeAttackType = "melee_attack"
+    RemoteDoneTurnType = "done_turn"
 )
 
 type Remote struct {
@@ -144,6 +146,8 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteProjectileFinishedType: return convert[*RemoteProjectileFinishedEvent](data)
         case RemoteDamageType: return convert[*RemoteDamageEvent](data)
         case RemoteDamageIndicatorType: return convert[*RemoteDamageIndicatorEvent](data)
+        case RemoteMeleeAttackType: return convert[*RemoteMeleeAttackEvent](data)
+        case RemoteDoneTurnType: return convert[*RemoteDoneTurnEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -203,7 +207,7 @@ type RemoteDamageEvent struct {
     Id uint64 `json:"id"`
     Type string `json:"type"`
     DamageKind DamageType `json:"damage_kind"`
-    Damage int
+    Damage int `json:"damage"`
 }
 
 func (remote *RemoteDamageEvent) GetType() string {
@@ -217,5 +221,24 @@ type RemoteDamageIndicatorEvent struct {
 }
 
 func (remote *RemoteDamageIndicatorEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMeleeAttackEvent struct {
+    Type string `json:"type"`
+    AttackerId uint64 `json:"attacker_id"`
+    DefenderId uint64 `json:"defender_id"`
+}
+
+func (remote *RemoteMeleeAttackEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDoneTurnEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteDoneTurnEvent) GetType() string {
     return remote.Type
 }

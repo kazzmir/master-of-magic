@@ -70,7 +70,6 @@ func (basic *BasicCatchment) TileDistance(x1 int, y1 int, x2 int, y2 int) int {
 
 
 type Engine struct {
-    Cache *lbx.LbxCache
     Model *combat.CombatModel
     Combat *combat.CombatScreen
     Coroutine *coroutine.Coroutine
@@ -89,12 +88,12 @@ func createArmyN(player *player.Player, unit units.Unit, count int) *combat.Army
     return &army
 }
 
-func NewEngine(isServer bool, peer net.Conn) (*Engine, error) {
+func MakeScenario1(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
     cache := lbx.AutoCache()
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
     if err != nil {
-        return nil, err
+        return nil, nil, err
     }
 
     // remote player is always the defending player
@@ -135,8 +134,78 @@ func NewEngine(isServer bool, peer net.Conn) (*Engine, error) {
 
     attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), combat.MakeRemote(!isServer, !isServer, peer))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+
+    return model, combatScreen, nil
+}
+
+func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    cache := lbx.AutoCache()
+
+    allSpells, err := spellbook.ReadSpellsFromCache(cache)
+    if err != nil {
+        return nil, nil, err
+    }
+
+    // remote player is always the defending player
+    defendingPlayer := player.MakePlayer(setup.WizardCustom{
+        Name: "Lair",
+        Banner: data.BannerBrown,
+    }, !isServer, 0, 0, nil, &noGlobalEnchantments{})
+
+    // defendingArmy := createWarlockArmy(&defendingPlayer)
+    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
+    defendingArmy := createArmyN(defendingPlayer, units.ArchAngel, 1)
+
+    defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
+    defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    defendingPlayer.AddCity(defendingFortressCity)
+
+    defendingPlayer.CastingSkillPower = 1000
+    defendingPlayer.Mana = 1000
+
+    // server is attacker
+    attackingPlayer := player.MakePlayer(setup.WizardCustom{
+            Name: "Merlin",
+            Banner: data.BannerGreen,
+            Books: []data.WizardBook{
+                data.WizardBook{
+                    Magic: data.ChaosMagic,
+                    Count: 8,
+                },
+            },
+        }, isServer, 0, 0, nil, &noGlobalEnchantments{})
+
+    fortressCity := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, attackingPlayer)
+    fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    attackingPlayer.AddCity(fortressCity)
+
+    attackingPlayer.CastingSkillPower = 1000
+    attackingPlayer.Mana = 1000
+
+    attackingArmy := createArmyN(attackingPlayer, units.Griffin, 1)
+
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
+    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+
+    return model, combatScreen, nil
+}
+
+func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    switch scenario {
+        case 1: return MakeScenario1(isServer, remote)
+        case 2: return MakeScenario2(isServer, remote)
+        default: return MakeScenario1(isServer, remote)
+    }
+}
+
+func NewEngine(isServer bool, peer net.Conn, scenario int) (*Engine, error) {
+    model, combatScreen, err := MakeScenario(scenario, isServer, combat.MakeRemote(!isServer, !isServer, peer))
+
+    if err != nil {
+        return nil, err
+    }
 
     run := func(yield coroutine.YieldFunc) error {
         for combatScreen.Update(yield) == combat.CombatStateRunning {
@@ -147,7 +216,6 @@ func NewEngine(isServer bool, peer net.Conn) (*Engine, error) {
     }
 
     return &Engine{
-        Cache: cache,
         Model: model,
         Combat: combatScreen,
         Coroutine: coroutine.MakeCoroutine(run),
@@ -245,9 +313,20 @@ func doHandshake(conn net.Conn, isClient bool) error {
 func main() {
     log.SetFlags(log.Ldate | log.Lshortfile | log.Lmicroseconds)
 
+    scenario := 0
+
     connectAddress := flag.String("connect", "", "Connect address")
     listenAddress := flag.String("listen", "", "Listen address")
     flag.Parse()
+
+    for _, arg := range flag.Args() {
+        v, err := strconv.Atoi(arg)
+        if err == nil {
+            scenario = v
+        }
+    }
+
+    log.Printf("Starting combat screen, scenario %d", scenario)
 
     var peerConnection net.Conn
     isServer := false
@@ -320,7 +399,7 @@ func main() {
     audio.Initialize()
     mouse.Initialize()
 
-    engine, err := NewEngine(isServer, peerConnection)
+    engine, err := NewEngine(isServer, peerConnection, scenario)
 
     if err != nil {
         log.Printf("Error: unable to load engine: %v", err)

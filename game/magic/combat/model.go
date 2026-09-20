@@ -6318,7 +6318,6 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                             unit := model.GetUnitById(id)
                             if unit != nil {
                                 actions.MoveUnit(unit, path)
-                                model.DoneTurn()
                             }
                         case RemoteRangeAttackType:
                             event := event.(*RemoteRangeAttackEvent)
@@ -6329,7 +6328,15 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
                             if attacker != nil && defender != nil {
                                 actions.RangeAttack(attacker, defender)
-                                model.DoneTurn()
+                            }
+                        case RemoteMeleeAttackType:
+                            event := event.(*RemoteMeleeAttackEvent)
+                            attackerId := event.AttackerId
+                            defenderId := event.DefenderId
+                            attacker := model.GetUnitById(attackerId)
+                            defender := model.GetUnitById(defenderId)
+                            if attacker != nil && defender != nil {
+                                actions.MeleeAttack(attacker, defender)
                             }
                         case RemoteTeleportType:
                             event := event.(*RemoteTeleportEvent)
@@ -6337,6 +6344,12 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                             unit := model.GetUnitById(id)
                             if unit != nil {
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
+                            }
+                        case RemoteDoneTurnType:
+                            event := event.(*RemoteDoneTurnEvent)
+                            id := event.Id
+                            unit := model.GetUnitById(id)
+                            if unit != nil {
                                 model.DoneTurn()
                             }
                         default:
@@ -6392,6 +6405,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                    actions.RangeAttack(attacker, defender)
                // then fall back to melee
                } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
+                   model.RemoteMeleeAttack(attacker, defender)
                    actions.MeleeAttack(attacker, defender)
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
@@ -6406,7 +6420,45 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     // the unit died or is out of moves
     if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
         model.DoneTurn()
+        model.RemoteDoneTurn(model.SelectedUnit)
     }
+}
+
+func (model *CombatModel) RemoteDoneTurn(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteDoneTurnEvent{
+            Type: RemoteDoneTurnType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteMeleeAttackEvent{
+            Type: RemoteMeleeAttackType,
+            AttackerId: attacker.Id,
+            DefenderId: defender.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 func (model *CombatModel) RemoteRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) error {
