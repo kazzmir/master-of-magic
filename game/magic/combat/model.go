@@ -7,6 +7,7 @@ import (
     "math"
     "math/rand/v2"
     "time"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -2531,6 +2532,11 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         unit.InitializeSpells(allSpells, model.AttackingArmy.Player, false)
         model.setTileUnit(unit.X, unit.Y, unit)
     }
+
+    if model.Remote != nil {
+        // FIXME: pass in quit context from combat screen
+        go model.Remote.RunReceiveLoop(context.Background())
+    }
 }
 
 func (model *CombatModel) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
@@ -3138,6 +3144,24 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
     }
 
     return &newUnit
+}
+
+func (model *CombatModel) GetUnitById(id uint64) *ArmyUnit {
+    for _, unit := range model.DefendingArmy.units {
+        if unit.Id == id {
+            return unit
+        }
+    }
+
+    for _, unit := range model.AttackingArmy.units {
+        if unit.Id == id {
+            return unit
+        }
+    }
+
+    // FIXME: check killed units?
+
+    return nil
 }
 
 func (model *CombatModel) NextUnitId() uint64 {
@@ -6251,6 +6275,31 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
         // remote side will send an update
         if model.IsAIControlled(aiUnit) && model.IsRemoteUnit(aiUnit) {
+            select {
+                case event := <-model.Remote.Events:
+                    switch event.GetType() {
+                        case RemoteMoveType:
+                            event := event.(*RemoteMoveEvent)
+                            path := event.Path
+                            id := event.Id
+                            unit := model.GetUnitById(id)
+                            if unit != nil {
+                                actions.MoveUnit(unit, path)
+                                model.DoneTurn()
+                            }
+                        case RemoteTeleportType:
+                            event := event.(*RemoteTeleportEvent)
+                            id := event.Id
+                            unit := model.GetUnitById(id)
+                            if unit != nil {
+                                actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
+                                model.DoneTurn()
+                            }
+
+                    }
+                default:
+            }
+
             return
         }
 
@@ -6283,7 +6332,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
                 actions.MoveUnit(model.SelectedUnit, path)
-                model.RemoteMove(model.SelectedUnit, actionTileX, actionTileY)
+                model.RemoteMove(model.SelectedUnit, path)
             }
         } else {
 
@@ -6327,13 +6376,12 @@ func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) {
     }
 }
 
-func (model *CombatModel) RemoteMove(unit *ArmyUnit, x int, y int) {
+func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) {
     if model.Remote != nil {
         event := RemoteMoveEvent{
             Id: unit.Id,
             Type: RemoteMoveType,
-            X: x,
-            Y: y,
+            Path: path,
         }
 
         model.Remote.SendEvent(&event)
