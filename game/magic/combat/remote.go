@@ -5,6 +5,7 @@ import (
     "time"
     "net"
     "io"
+    "errors"
     "bytes"
     "context"
     "encoding/binary"
@@ -16,6 +17,7 @@ import (
 const (
     RemoteTeleportType = "teleport"
     RemoteMoveType     = "move"
+    RemoteRangeAttackType = "range_attack"
 )
 
 type Remote struct {
@@ -41,8 +43,15 @@ type RemoteEvent interface {
     GetType() string
 }
 
+var ErrorEmptyType = errors.New("event type is empty")
+
 // event should be some event type from below
 func (remote *Remote) SendEvent(event RemoteEvent) error {
+    if event.GetType() == "" {
+        log.Printf("Error: event type is empty")
+        return ErrorEmptyType
+    }
+
     var out bytes.Buffer
     err := json.MarshalWrite(&out, event)
     if err != nil {
@@ -84,6 +93,11 @@ func (remote *Remote) RunReceiveLoop(quit context.Context) {
             return
         }
 
+        if event == nil {
+            log.Printf("Received nil event")
+            return
+        }
+
         remote.Events <- event
     }
 }
@@ -120,23 +134,21 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
     }
 
     switch eventType {
-        case RemoteTeleportType:
-            var event RemoteTeleportEvent
-            err = json.Unmarshal(data, &event)
-            if err != nil {
-                return nil, err
-            }
-            return &event, nil
-        case RemoteMoveType:
-            var event RemoteMoveEvent
-            err = json.Unmarshal(data, &event)
-            if err != nil {
-                return nil, err
-            }
-            return &event, nil
+        case RemoteTeleportType: return convert[*RemoteTeleportEvent](data)
+        case RemoteRangeAttackType: return convert[*RemoteRangeAttackEvent](data)
+        case RemoteMoveType: return convert[*RemoteMoveEvent](data)
         default:
             return nil, err
     }
+}
+
+func convert[T RemoteEvent](data []byte) (RemoteEvent, error) {
+    var event T
+    err := json.Unmarshal(data, &event)
+    if err != nil {
+        return nil, err
+    }
+    return event, nil
 }
 
 // sent when a unit teleports to a location
@@ -148,6 +160,16 @@ type RemoteTeleportEvent struct {
 }
 
 func (remote *RemoteTeleportEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRangeAttackEvent struct {
+    AttackerId uint64 `json:"attacker_id"`
+    DefenderId uint64 `json:"defender_id"`
+    Type string `json:"type"`
+}
+
+func (remote *RemoteRangeAttackEvent) GetType() string {
     return remote.Type
 }
 

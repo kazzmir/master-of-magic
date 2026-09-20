@@ -6287,6 +6287,16 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                                 actions.MoveUnit(unit, path)
                                 model.DoneTurn()
                             }
+                        case RemoteRangeAttackType:
+                            event := event.(*RemoteRangeAttackEvent)
+                            attackerId := event.AttackerId
+                            defenderId := event.DefenderId
+                            attacker := model.GetUnitById(attackerId)
+                            defender := model.GetUnitById(defenderId)
+
+                            if attacker != nil && defender != nil {
+                                actions.RangeAttack(attacker, defender)
+                            }
                         case RemoteTeleportType:
                             event := event.(*RemoteTeleportEvent)
                             id := event.Id
@@ -6343,6 +6353,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                // try a ranged attack first
                if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
                    actions.RangeAttack(attacker, defender)
+                   model.RemoteRangeAttack(attacker, defender)
                // then fall back to melee
                } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
                    actions.MeleeAttack(attacker, defender)
@@ -6362,7 +6373,26 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     }
 }
 
-func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) {
+func (model *CombatModel) RemoteRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteRangeAttackEvent{
+            Type: RemoteRangeAttackType,
+            AttackerId: attacker.Id,
+            DefenderId: defender.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote range attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) error {
     // send teleport event to remote side
     if model.Remote != nil {
         event := RemoteTeleportEvent{
@@ -6372,11 +6402,18 @@ func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) {
             Y: y,
         }
 
-        model.Remote.SendEvent(&event)
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote teleport event: %v", err)
+        }
+
+        return err
     }
+
+    return nil
 }
 
-func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) {
+func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) error {
     if model.Remote != nil {
         event := RemoteMoveEvent{
             Id: unit.Id,
@@ -6384,8 +6421,15 @@ func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) {
             Path: path,
         }
 
-        model.Remote.SendEvent(&event)
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote move event: %v", err)
+        }
+
+        return err
     }
+
+    return nil
 }
 
 type AddDamageIndicators interface {
