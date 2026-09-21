@@ -1217,6 +1217,7 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     enemyWizard := setup.WizardCustom{
         Name: "enemy",
+        Base: data.WizardAriel,
         Banner: data.BannerGreen,
         Race: data.RaceDraconian,
     }
@@ -1250,12 +1251,22 @@ func createScenario13(cache *lbx.LbxCache) *gamelib.Game {
 
     enemyWizard2 := setup.WizardCustom{
         Name: "enemy2",
+        Base: data.WizardTauron,
         Banner: data.BannerPurple,
         Race: data.RaceBeastmen,
+
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.ChaosMagic,
+                Count: 8,
+            },
+        },
+
     }
 
     enemy2 := game.AddPlayer(enemyWizard2, false)
     enemy2.TaxRate = fraction.Make(1, 1)
+    enemy2.Gold = 1500
     enemy2.Mana = 3000
 
     x2, y2, _ := game.FindValidCityLocation(game.Model.Plane)
@@ -2966,16 +2977,31 @@ func createScenario31(cache *lbx.LbxCache) *gamelib.Game {
 
     game.Camera.Center(stack.X(), stack.Y())
 
+    allSpells, _ := spellbook.ReadSpellsFromCache(cache)
+
+    // when the vault opens the amount of mana the player should have should be 2850, because
+    // base=2600 then +250 from treasure
+
+    useSpell := allSpells.FindByName("Fireball")
+    player.ResearchPoolSpells.AddSpell(useSpell)
+
     game.Events <- &gamelib.GameEventTreasure{
         Player: player,
         Treasure: gamelib.Treasure{
             Point: data.PlanePoint{X: x + 1, Y: y + 1, Plane: data.PlaneArcanus},
             Treasures: []gamelib.TreasureItem{
-                /*
+                &gamelib.TreasureSpell{
+                    Spell: useSpell,
+                },
+                &gamelib.TreasureMagicalItem{
+                    Artifact: game.Model.ArtifactPool.FindByName("Pummel Mace"),
+                },
                 &gamelib.TreasureGold{
                     Amount: 300,
                 },
-                */
+                &gamelib.TreasureMana{
+                    Amount: 250,
+                },
                 &gamelib.TreasurePrisonerHero{
                     Hero: player.HeroPool[hero.HeroRakir],
                 },
@@ -5764,9 +5790,13 @@ func createScenario62(cache *lbx.LbxCache) *gamelib.Game {
     }
 
     city2 := citylib.MakeCity("utah", x + 2, y + 1, data.RaceDarkElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
-    city2.Population = 7000
+    city2.Population = 13000
     city2.Plane = data.PlaneArcanus
-    city2.ProducingBuilding = buildinglib.BuildingShrine
+    city2.ProducingBuilding = buildinglib.BuildingTradeGoods
+    city2.AddBuilding(buildinglib.BuildingBank)
+    city2.AddBuilding(buildinglib.BuildingShrine)
+    city2.AddBuilding(buildinglib.BuildingTemple)
+    city2.AddBuilding(buildinglib.BuildingMarketplace)
     city2.ProducingUnit = units.UnitNone
 
     city2.ResetCitizens()
@@ -6423,6 +6453,165 @@ func createScenario68(cache *lbx.LbxCache) *gamelib.Game {
     return game
 }
 
+// test a hero dying due to an earthquake
+func createScenario69(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 69")
+
+    wizard := setup.WizardCustom{
+        Name: "bob",
+        Banner: data.BannerBlue,
+        Race: data.RaceTroll,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), setup.NewGameSettings{})
+
+    game.Model.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+    player.TaxRate = fraction.Zero()
+
+    x, y, _ := game.FindValidCityLocation(game.Model.Plane)
+
+    /*
+    x = 20
+    y = 20
+    */
+
+    city := citylib.MakeCity("Test City", x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+    city.Population = 16190
+    city.Plane = data.PlaneArcanus
+    city.ProducingBuilding = buildinglib.BuildingGranary
+    city.ProducingUnit = units.UnitNone
+    city.Race = wizard.Race
+    city.Farmers = 3
+    city.Workers = 3
+    city.Buildings.Insert(buildinglib.BuildingFortress)
+
+    city.ResetCitizens()
+
+    player.AddCity(city)
+
+    player.Gold = 83
+    player.Mana = 2600
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    // log.Printf("City at %v, %v", x, y)
+
+    player.LiftFog(x, y, 30, data.PlaneArcanus)
+
+    gunther := hero.MakeHero(units.MakeOverworldUnit(units.HeroGunther, 0, 0, data.PlaneArcanus), hero.HeroGunther, "Gunther")
+    gunther.Status = hero.StatusEmployed
+    gunther.Equipment[0] = &artifact.Artifact{
+        Name: "Baloney",
+        Image: 7,
+        Type: artifact.ArtifactTypeSword,
+        Powers: []artifact.Power{
+            {
+                Type: artifact.PowerTypeAttack,
+                Amount: 1,
+                Name: "+1 Attack",
+            },
+            {
+                Type: artifact.PowerTypeDefense,
+                Amount: 2,
+                Name: "+2 Defense",
+            },
+        },
+        Cost: 250,
+    }
+    player.AddHeroToFortress(gunther)
+
+    // player.AddUnit(units.MakeOverworldUnitFromUnit(units.HighMenSpearmen, 30, 30, data.PlaneArcanus, wizard.Banner))
+
+    stack := player.FindStackByUnit(gunther)
+    player.SetSelectedStack(stack)
+
+    player.LiftFog(stack.X(), stack.Y(), 2, data.PlaneArcanus)
+
+    game.TurnHook = func() {
+        game.Model.DoEarthquake(city, player)
+    }
+
+    game.Camera.Center(stack.X(), stack.Y())
+
+    return game
+}
+
+// add a lot of cities
+func createScenario70(cache *lbx.LbxCache) *gamelib.Game {
+    log.Printf("Running scenario 70")
+    wizard := setup.WizardCustom{
+        Name: "player",
+        Banner: data.BannerBlue,
+        Race: data.RaceHighMen,
+        Retorts: []data.Retort{
+            data.RetortAlchemy,
+            data.RetortSageMaster,
+        },
+        Books: []data.WizardBook{
+            data.WizardBook{
+                Magic: data.LifeMagic,
+                Count: 3,
+            },
+            data.WizardBook{
+                Magic: data.SorceryMagic,
+                Count: 8,
+            },
+        },
+    }
+
+    game := gamelib.MakeGame(cache, musiclib.MakeMusic(cache), settings.MakeSettings(cache), setup.NewGameSettings{})
+
+    game.Model.Plane = data.PlaneArcanus
+
+    player := game.AddPlayer(wizard, true)
+
+    for i := range 20 {
+
+        x, y, ok := game.FindValidCityLocation(game.Model.Plane)
+        if !ok {
+            break
+        }
+
+        introCity := citylib.MakeCity(fmt.Sprintf("City %d", i), x, y, data.RaceHighElf, game.Model.BuildingInfo, game.Model.CurrentMap(), game.Model, player)
+        introCity.Population = (rand.N(20) + 1) * 1000
+        introCity.Plane = data.PlaneArcanus
+        introCity.ProducingBuilding = buildinglib.BuildingHousing
+        introCity.ProducingUnit = units.UnitNone
+        introCity.Farmers = min(introCity.Citizens(), rand.N(5))
+
+        introCity.AddBuilding(buildinglib.BuildingShrine)
+
+        introCity.ResetCitizens()
+
+        player.AddCity(introCity)
+        player.LiftFog(x, y, 3, data.PlaneArcanus)
+        game.Camera.Center(x, y)
+    }
+
+    player.Gold = 83
+    player.Mana = 26
+
+    // game.Map.Map.Terrain[3][6] = terrain.TileNatureForest.Index
+
+    return game
+}
+
 func NewEngine(scenario int) (*Engine, error) {
     cache := lbx.AutoCache()
 
@@ -6497,6 +6686,8 @@ func NewEngine(scenario int) (*Engine, error) {
         case 66: game = createScenario66(cache)
         case 67: game = createScenario67(cache)
         case 68: game = createScenario68(cache)
+        case 69: game = createScenario69(cache)
+        case 70: game = createScenario70(cache)
         default: game = createScenario1(cache)
     }
 

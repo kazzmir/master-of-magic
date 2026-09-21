@@ -166,17 +166,33 @@ func RenderUnitInfoBuild(screen *ebiten.Image, imageCache *util.ImageCache, unit
 
     unitMoves := unit.GetMovementSpeed(true)
 
-    // FIXME: show wings if flying or the water thing if water walking
-    smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
-    if err == nil {
+    renderMovement := func(icon *ebiten.Image) {
         var options ebiten.DrawImageOptions
         options = defaultOptions
         options.GeoM.Translate(smallFont.MeasureTextWidth("Upkeep ", 1), 9)
 
-        for i := 0; i < unitMoves.ToInt(); i++ {
-            screen.DrawImage(smallBoot, &options)
-            options.GeoM.Translate(float64(smallBoot.Bounds().Dx()), 0)
+        for range unitMoves.ToInt() {
+            scale.DrawScaled(screen, icon, &options)
+            options.GeoM.Translate(float64(icon.Bounds().Dx()), 0)
         }
+    }
+
+    switch {
+        case unit.IsFlying():
+            wings, err := imageCache.GetImage("unitview.lbx", 25, 0)
+            if err == nil {
+                renderMovement(wings)
+            }
+        case unit.IsSwimmer():
+            swim, err := imageCache.GetImage("unitview.lbx", 26, 0)
+            if err == nil {
+                renderMovement(swim)
+            }
+        default:
+            smallBoot, err := imageCache.GetImage("unitview.lbx", 24, 0)
+            if err == nil {
+                renderMovement(smallBoot)
+            }
     }
 
     smallFont.PrintOptions(screen, x, y + float64(19), font.FontOptions{DropShadow: true, Options: &defaultOptions, Scale: scale.ScaleAmount}, "Upkeep")

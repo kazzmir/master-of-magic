@@ -88,6 +88,7 @@ func NewEngine() (*Engine, error) {
             Retorts: []data.Retort{
                 data.RetortInfernalPower,
             },
+            Race: data.RaceOrc,
         },
         TaxRate: fraction.Make(3, 1),
         // TaxRate: fraction.Zero(),
@@ -122,6 +123,7 @@ func NewEngine() (*Engine, error) {
     city.Workers = 2
     city.Production = 18
     city.ProducingBuilding = buildinglib.BuildingNone
+    city.Race = player.Wizard.Race
 
     city.AddBuilding(buildinglib.BuildingFortress)
     city.AddBuilding(buildinglib.BuildingGranary)
@@ -140,6 +142,7 @@ func NewEngine() (*Engine, error) {
     // city.AddBuilding(buildinglib.BuildingTemple)
     // city.AddBuilding(buildinglib.BuildingParthenon)
     city.AddBuilding(buildinglib.BuildingCathedral)
+    city.AddBuilding(buildinglib.BuildingFantasticStable)
 
     // for _, building := range buildinglib.Buildings() {
     //     city.AddBuilding(building)

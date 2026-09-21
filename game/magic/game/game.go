@@ -410,6 +410,9 @@ type Game struct {
     Camera camera.Camera
     
     Drawers []func(screen *ebiten.Image)
+
+    // a function that is invoked at each new turn, useful for tests
+    TurnHook func()
 }
 
 func (game *Game) GetFogImage() *ebiten.Image {
@@ -4794,6 +4797,7 @@ func (game *Game) doTreasurePopup(yield coroutine.YieldFunc, player *playerlib.P
 }
 
 func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Player, treasure Treasure) {
+    // apply gold/mana first (#758)
     for _, item := range treasure.Treasures {
         switch item.(type) {
             case *TreasureGold:
@@ -4802,6 +4806,12 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
             case *TreasureMana:
                 mana := item.(*TreasureMana)
                 player.Mana += mana.Amount
+        }
+    }
+
+    // then items/spells
+    for _, item := range treasure.Treasures {
+        switch item.(type) {
             case *TreasureMagicalItem:
                 magicalItem := item.(*TreasureMagicalItem)
                 if player.IsHuman() {
@@ -4826,6 +4836,8 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
                 }
             case *TreasureSpell:
                 spell := item.(*TreasureSpell)
+                // add the spell to the research pool in case so it shows up in the spell book
+                player.ResearchPoolSpells.AddSpell(spell.Spell)
                 if player.IsHuman() {
                     game.doLearnSpell(yield, player, spell.Spell)
                 }
@@ -4918,8 +4930,6 @@ func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
 func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    game.meetWizards(yield, attacker, defender)
-
     landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
 
     // do graphic combat only if a human is involved
@@ -5193,18 +5203,6 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
     // Redistribute equipment of died heros
     showHeroNotice := false
 
-    distributeEquipment := func (player *playerlib.Player, hero *herolib.Hero){
-        for _, item := range hero.Equipment {
-            if item != nil {
-                showHeroNotice = true
-                select {
-                    case game.Events <- &GameEventVault{CreatedArtifact: item, Player: player}:
-                    default:
-                }
-            }
-        }
-    }
-
     // recall units
     relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
         for _, unit := range units {
@@ -5240,13 +5238,18 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
                 if unit.IsHero() {
                     hero := unit.(*herolib.Hero)
+                    vaultEvents := game.Model.distributeEquipment(player, hero)
                     if player.IsHuman() {
-                        distributeEquipment(player, hero)
+                        showHeroNotice = showHeroNotice || len(vaultEvents) > 0
                     }
-                    // FIXME: what happens with the equipment in case of non-human players?
-                    for index := range hero.Equipment {
-                        hero.Equipment[index] = nil
+
+                    for _, event := range vaultEvents {
+                        select {
+                            case game.Events <- event:
+                            default:
+                        }
                     }
+
                 }
             }
         }
@@ -5316,6 +5319,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
         }
     }
 
+    // this notice has to appear before the vault events are processed
     if showHeroNotice {
         game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
     }
@@ -5606,7 +5610,7 @@ func (game *Game) DoChancellor(){
 
 func (game *Game) ShowMirror() {
     if len(game.Model.Players) > 0 {
-        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.GetHumanPlayer(), game.HudUI))
+        game.HudUI.AddElement(mirror.MakeMirrorUI(game.Cache, game.Model.GetHumanPlayer(), game.HudUI, true))
     }
 }
 
@@ -7992,6 +7996,10 @@ func (game *Game) EndOfTurn() {
 }
 
 func (game *Game) DoNextTurn(){
+    if game.TurnHook != nil {
+        game.TurnHook()
+    }
+
     // if time stop is enabled then don't move to the other players, just keep doing the current player
     if game.Model.CurrentPlayer >= 0 && game.Model.Players[game.Model.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
         game.EndOfTurn()
