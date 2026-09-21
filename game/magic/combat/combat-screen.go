@@ -2727,6 +2727,7 @@ func (combat *CombatScreen) doMeleeWall(yield coroutine.YieldFunc, attacker *Arm
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    // this is what causes the attack animation to play
     attacker.Attacking = true
     defender.Defending = true
     defer func(){
@@ -2745,6 +2746,37 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
     combat.Model.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
+    if combat.Model.Remote != nil && combat.Model.IsRemoteUnit(attacker) {
+        done := false
+        for !done {
+            combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
+            combat.ProcessInput()
+            combat.ProcessEvents(yield) // ignore return
+            if yield() != nil {
+                break
+            }
+
+            select {
+                case event := <-combat.Model.Remote.Events:
+                    switch event.GetType() {
+                        case RemoteDamageIndicatorType:
+                            event := event.(*RemoteDamageIndicatorEvent)
+                            unit := combat.Model.GetUnitById(event.Id)
+                            if unit != nil {
+                                combat.AddDamageIndicator(unit, event.Damage)
+                            }
+                        case RemoteFinishMeleeAttackType:
+                            done = true
+                    }
+                default:
+            }
+        }
+
+        return
+    }
+
     for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
@@ -2758,12 +2790,17 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
             combat.AddDamageIndicator(defender, attackerDamage)
             combat.AddDamageIndicator(attacker, defenderDamage)
+
+            combat.Model.RemoteDamageIndicator(defender, attackerDamage)
+            combat.Model.RemoteDamageIndicator(attacker, defenderDamage)
         }
 
         if yield() != nil {
-            return
+            break
         }
     }
+
+    combat.Model.RemoteFinishMeleeAttack()
 }
 
 func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {

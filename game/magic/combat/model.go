@@ -6480,6 +6480,23 @@ func (model *CombatModel) RemoteRangeAttack(attacker *ArmyUnit, defender *ArmyUn
     return nil
 }
 
+func (model *CombatModel) RemoteFinishMeleeAttack() error {
+    if model.Remote != nil {
+        event := RemoteFinishMeleeAttackEvent{
+            Type: RemoteFinishMeleeAttackType,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee finish event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteDamageIndicator(unit *ArmyUnit, damage int) error {
     if model.Remote != nil {
         event := RemoteDamageIndicatorEvent{
