@@ -156,7 +156,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createArmyN(defendingPlayer, units.ArchAngel, 1)
+    defendingArmy := createArmyN(defendingPlayer, units.ArchAngel, 2)
 
     defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
     defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
@@ -184,7 +184,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
 
-    attackingArmy := createArmyN(attackingPlayer, units.Griffin, 1)
+    attackingArmy := createArmyN(attackingPlayer, units.Griffin, 2)
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)

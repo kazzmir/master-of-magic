@@ -3446,12 +3446,6 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
                     switch event.GetType() {
                         case RemoteProjectileFinishedType:
                             model.RemoteProjectiles -= 1
-                        case RemoteDamageType:
-                            event := event.(*RemoteDamageEvent)
-                            unit := model.GetUnitById(event.Id)
-                            if unit != nil {
-                                unit.TakeDamage(event.Damage, event.DamageKind)
-                            }
                         case RemoteDamageIndicatorType:
                             event := event.(*RemoteDamageIndicatorEvent)
                             unit := model.GetUnitById(event.Id)
@@ -3459,7 +3453,7 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
                                 damageIndicators.AddDamageIndicator(unit, event.Damage)
                             }
                         default:
-                            log.Error("update projectiles: unknown remote event type %v", event.GetType())
+                            model.HandleRemoteEvent(event)
                     }
                 default:
             }
@@ -4344,6 +4338,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 }
 
 func (model *CombatModel) KillUnit(unit *ArmyUnit){
+    if model.IsRemoteUnit(unit) {
+        model.RemoteKillUnit(unit)
+    }
+
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
         model.DefendingArmy.KillUnit(unit)
@@ -4356,6 +4354,7 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
     if unit == model.SelectedUnit {
         model.NextUnit()
+        model.RemoteDoneTurn(unit)
     }
 }
 
@@ -6369,15 +6368,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                             if unit != nil {
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
                             }
-                        case RemoteDoneTurnType:
-                            event := event.(*RemoteDoneTurnEvent)
-                            id := event.Id
-                            unit := model.GetUnitById(id)
-                            if unit != nil {
-                                model.DoneTurn()
-                            }
                         default:
-                            log.Error("Unhandled remote event type %v", event.GetType())
+                            model.HandleRemoteEvent(event)
 
                     }
                 default:
@@ -6446,6 +6438,55 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
         model.DoneTurn()
         model.RemoteDoneTurn(model.SelectedUnit)
     }
+}
+
+func (model *CombatModel) HandleRemoteEvent(event RemoteEvent) {
+    switch event.GetType() {
+        case RemoteDoneTurnType:
+            event := event.(*RemoteDoneTurnEvent)
+            id := event.Id
+            unit := model.GetUnitById(id)
+            if unit != nil {
+                model.DoneTurn()
+            }
+        case RemoteDamageType:
+            event := event.(*RemoteDamageEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.TakeDamage(event.Damage, event.DamageKind)
+            }
+        case RemoteHealType:
+            event := event.(*RemoteHealEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.Heal(event.Heal)
+            }
+        case RemoteKillUnitType:
+            event := event.(*RemoteKillUnitEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                model.KillUnit(unit)
+            }
+
+    }
+}
+
+func (model *CombatModel) RemoteKillUnit(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteKillUnitEvent{
+            Type: RemoteKillUnitType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 func (model *CombatModel) RemoteDoneTurn(unit *ArmyUnit) error {

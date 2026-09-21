@@ -25,6 +25,7 @@ const (
     RemoteDoneTurnType = "done_turn"
     RemoteFinishMeleeAttackType = "melee_finished"
     RemoteHealType = "heal"
+    RemoteKillUnitType = "kill_unit"
 )
 
 type Remote struct {
@@ -152,6 +153,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteDoneTurnType: return convert[*RemoteDoneTurnEvent](data)
         case RemoteFinishMeleeAttackType: return convert[*RemoteFinishMeleeAttackEvent](data)
         case RemoteHealType: return convert[*RemoteHealEvent](data)
+        case RemoteKillUnitType: return convert[*RemoteKillUnitEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -262,5 +264,14 @@ type RemoteHealEvent struct {
 }
 
 func (remote *RemoteHealEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteKillUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteKillUnitEvent) GetType() string {
     return remote.Type
 }

@@ -2770,18 +2770,8 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
                             }
                         case RemoteFinishMeleeAttackType:
                             done = true
-                        case RemoteDamageType:
-                            event := event.(*RemoteDamageEvent)
-                            unit := combat.Model.GetUnitById(event.Id)
-                            if unit != nil {
-                                unit.TakeDamage(event.Damage, event.DamageKind)
-                            }
-                        case RemoteHealType:
-                            event := event.(*RemoteHealEvent)
-                            unit := combat.Model.GetUnitById(event.Id)
-                            if unit != nil {
-                                unit.Heal(event.Heal)
-                            }
+                        default:
+                            combat.Model.HandleRemoteEvent(event)
 
                     }
                 default:
