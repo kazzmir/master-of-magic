@@ -6665,7 +6665,7 @@ type AddDamageIndicators interface {
 }
 
 func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
-    return func (unit *ArmyUnit){
+    return model.createRemoteProjectileEffect(func (unit *ArmyUnit){
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
         }
@@ -6684,7 +6684,7 @@ func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, dam
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 
 }
 
@@ -6697,7 +6697,9 @@ func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
 func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
@@ -6707,7 +6709,9 @@ func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndi
 func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        model.RemoteDamage(unit, DamageNormal, fireDamage)
         damageIndicator.AddDamageIndicator(unit, fireDamage)
+        model.RemoteDamageIndicator(unit, fireDamage)
 
         model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
@@ -6730,7 +6734,9 @@ func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageInd
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
@@ -6768,7 +6774,9 @@ func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damag
     return func(unit *ArmyUnit) {
         _ = strength // strength currently unused; damage is fixed by spell rules
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
@@ -6776,19 +6784,23 @@ func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damag
 }
 
 func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.TakeDamage(10, DamageNormal)
+        model.RemoteDamage(unit, DamageNormal, 10)
         damageIndicator.AddDamageIndicator(unit, 10)
+        model.RemoteDamageIndicator(unit, 10)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
@@ -6804,7 +6816,10 @@ func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator Ad
             damage += hurt
         }
 
+        model.RemoteDamage(unit, DamageNormal, damage)
+
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
@@ -6817,12 +6832,16 @@ func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, 
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
             unit.TakeDamage(damage, DamageUndead)
+            model.RemoteDamage(unit, DamageUndead, damage)
             damageIndicator.AddDamageIndicator(unit, damage)
+            model.RemoteDamageIndicator(unit, damage)
             if unitCaster != nil {
                 unitCaster.Heal(damage)
+                model.RemoteHeal(unitCaster, damage)
             } else {
                 army := model.GetArmyForPlayer(player)
                 army.ManaPool += damage * 3
+                // FIXME: send remote mana event
             }
 
             if unit.GetHealth() <= 0 {
@@ -7407,8 +7426,29 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     return false
 }
 
+func (model *CombatModel) createRemoteProjectileEffect(effect func(*ArmyUnit)) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if model.Remote != nil {
+            // the remote side will compute damage and apply it
+            if !model.IsRemoteUnit(unit) {
+                model.RemoteProjectiles += 1
+                return
+            }
+        }
+
+        effect(unit)
+
+        if model.Remote != nil {
+            model.Remote.SendEvent(&RemoteProjectileFinishedEvent{
+                Type: RemoteProjectileFinishedType,
+            })
+        }
+    }
+}
+
 func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
-    return func (defender *ArmyUnit){
+    return model.createRemoteProjectileEffect(func (defender *ArmyUnit){
+        /*
         if model.Remote != nil {
             // the remote side will compute damage and apply it
             if model.IsRemoteUnit(attacker) {
@@ -7424,6 +7464,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
                 })
             }
         }()
+        */
 
         if defender.GetHealth() <= 0 {
             return
@@ -7481,7 +7522,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateRangeAttackWallEffect(attacker *ArmyUnit, x int, y int) func(*ArmyUnit) {

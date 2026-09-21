@@ -1702,6 +1702,8 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
                             doCast := func(spell spellbook.Spell){
                                 combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
+                                    // FIXME: remote invoke spell
+
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
                                         caster.SpellCharges[spell] -= 1
