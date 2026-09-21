@@ -3491,6 +3491,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
                 fireDamage += moreDamage
                 lost += moreLost
             }
+            model.RemoteDamage(defender, DamageNormal, fireDamage)
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -3511,6 +3512,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
                 lightningDamage += moreLightningDamage
                 lost += mostLost
             }
+            model.RemoteDamage(defender, DamageNormal, lightningDamage)
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -3626,6 +3628,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
         damageFuncs = append(damageFuncs, func() int {
             defender.TakeDamage(damage, damageType)
+            model.RemoteDamage(defender, damageType, damage)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
             model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3653,7 +3656,9 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
                 damageFuncs = append(damageFuncs, func() int {
                     defender.TakeDamage(damage, DamageUndead)
+                    model.RemoteDamage(defender, DamageUndead, damage)
                     attacker.Heal(damage)
+                    model.RemoteHeal(attacker, damage)
                     model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
                     model.Observer.LifeStealTouchAttack(attacker, defender, damage)
@@ -3680,6 +3685,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
 
                 model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3720,6 +3726,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
                 model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
@@ -3742,6 +3749,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageNormal)
+                model.RemoteDamage(defender, DamageNormal, damage)
 
                 model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3764,6 +3772,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
                 model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
@@ -3799,6 +3808,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) int {
     if immolationDamage > 0 {
         hurt, _ := ApplyAreaDamage(defender, immolationDamage, units.DamageImmolation, 0)
+        model.RemoteDamage(defender, DamageNormal, hurt)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
         return hurt
     }
@@ -3821,6 +3831,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     }
 
     hurt, _ := ApplyDamage(defender, damageRolls, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
+    model.RemoteDamage(defender, modifiers.DamageType, hurt)
     model.AddLogEvent(fmt.Sprintf("%v damage rolls %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damageRolls, defender.Unit.GetName(), hurt, defender.GetHealth()))
     return hurt
 }
@@ -4094,11 +4105,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 if len(throwRolls) > 0 {
-                    damage, _ := ApplyDamage(defender, throwRolls, units.DamageThrown, attacker.GetDamageSource(), DamageModifiers{
+                    modifiers := DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
                         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
-                    })
+                    }
+
+                    damage, _ := ApplyDamage(defender, throwRolls, units.DamageThrown, attacker.GetDamageSource(), modifiers)
+                    model.RemoteDamage(defender, modifiers.DamageType, damage)
 
                     totalAttackerDamage += damage
 
@@ -4107,6 +4121,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
+
                 for _, f := range damageFuncs {
                     totalAttackerDamage += f()
                 }
@@ -4115,6 +4130,9 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                 defender.TakeDamage(gazeDamage, DamageNormal)
                 defender.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
+
+                model.RemoteDamage(defender, DamageNormal, gazeDamage)
+                model.RemoteDamage(defender, DamageIrreversable, gazeIrreversableDamage)
 
             case 1:
                 immolationDamage := 0
@@ -4137,6 +4155,9 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                 attacker.TakeDamage(gazeDamage, DamageNormal)
                 attacker.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
+
+                model.RemoteDamage(attacker, DamageNormal, gazeDamage)
+                model.RemoteDamage(attacker, DamageIrreversable, gazeIrreversableDamage)
 
             case 2:
 
@@ -4184,8 +4205,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                             damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
 
-                        totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
-                        totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
+                        meleeDamage := model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
+                        immolationDamage := model.ApplyImmolationDamage(defender, immolationDamage)
+
+                        totalAttackerDamage += meleeDamage
+                        totalAttackerDamage += immolationDamage
                         for _, f := range damageFuncs {
                             totalAttackerDamage += f()
                         }
@@ -6516,6 +6540,25 @@ func (model *CombatModel) RemoteDamageIndicator(unit *ArmyUnit, damage int) erro
     return nil
 }
 
+func (model *CombatModel) RemoteHeal(unit *ArmyUnit, heal int) error {
+    if model.Remote != nil {
+        event := RemoteHealEvent{
+            Id: unit.Id,
+            Type: RemoteHealType,
+            Heal: heal,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteDamage(unit *ArmyUnit, kind DamageType, damage int) error {
     if model.Remote != nil {
         event := RemoteDamageEvent{
@@ -7380,10 +7423,6 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         immolationDamage := model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
         totalDamage += immolationDamage
-
-        if immolationDamage > 0 {
-            model.RemoteDamage(defender, DamageNormal, immolationDamage)
-        }
 
         damageIndicators.AddDamageIndicator(defender, totalDamage)
 

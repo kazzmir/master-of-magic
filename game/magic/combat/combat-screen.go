@@ -2760,6 +2760,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
             select {
                 case event := <-combat.Model.Remote.Events:
+                    // FIXME: this is redundant with the event switch in model.UpdateProjectiles()
                     switch event.GetType() {
                         case RemoteDamageIndicatorType:
                             event := event.(*RemoteDamageIndicatorEvent)
@@ -2769,6 +2770,19 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
                             }
                         case RemoteFinishMeleeAttackType:
                             done = true
+                        case RemoteDamageType:
+                            event := event.(*RemoteDamageEvent)
+                            unit := combat.Model.GetUnitById(event.Id)
+                            if unit != nil {
+                                unit.TakeDamage(event.Damage, event.DamageKind)
+                            }
+                        case RemoteHealType:
+                            event := event.(*RemoteHealEvent)
+                            unit := combat.Model.GetUnitById(event.Id)
+                            if unit != nil {
+                                unit.Heal(event.Heal)
+                            }
+
                     }
                 default:
             }
