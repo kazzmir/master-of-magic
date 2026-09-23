@@ -6834,13 +6834,14 @@ func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageInd
 }
 
 func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt := model.ApplyImmolationDamage(unit, strength)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
