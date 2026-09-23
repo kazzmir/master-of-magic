@@ -1702,23 +1702,16 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
                             doCast := func(spell spellbook.Spell){
                                 combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
-                                    charge, hasCharge := caster.SpellCharges[spell]
-                                    if hasCharge && charge > 0 {
-                                        caster.SpellCharges[spell] -= 1
-                                    } else {
-                                        // units pay the full cost of a spell with no modifiers
-                                        caster.CastingSkill -= float32(spell.Cost(false))
-                                    }
-                                    caster.Casted = true
+                                    combat.Model.RemoteUnitCastSpell(caster, spell)
+
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                         combat.PlaySound(spell)
+                                    } else {
+                                        combat.Model.RemoteSpellFailed(spell)
                                     }
-                                    caster.MovesLeft = fraction.FromInt(0)
-                                    select {
-                                        case combat.Events <- &CombatEventNextUnit{}:
-                                        default:
-                                    }
+
+                                    combat.Model.doUnitCast(caster, spell)
                                 })
                             }
 
@@ -1937,7 +1930,7 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.Model.UpdateProjectiles(combat.Counter) {
+    for combat.Model.UpdateProjectiles(combat.Counter, combat) {
         combat.Counter += 1
         combat.ProcessInput()
         combat.UpdateDamageIndicators()
@@ -2328,7 +2321,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
     for unit.Height < 0 {
         // so that the summoning circle displays
-        combat.Model.UpdateProjectiles(combat.Counter)
+        combat.Model.UpdateProjectiles(combat.Counter, combat)
         combat.Counter += 1
 
         if combat.Counter % 3 == 0 {
@@ -2727,6 +2720,7 @@ func (combat *CombatScreen) doMeleeWall(yield coroutine.YieldFunc, attacker *Arm
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    // this is what causes the attack animation to play
     attacker.Attacking = true
     defender.Defending = true
     defer func(){
@@ -2745,6 +2739,41 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
     combat.Model.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
+    if combat.Model.Remote != nil && combat.Model.IsRemoteUnit(attacker) {
+        done := false
+        for !done {
+            combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
+            combat.ProcessInput()
+            combat.ProcessEvents(yield) // ignore return
+            if yield() != nil {
+                break
+            }
+
+            select {
+                case event := <-combat.Model.Remote.Events:
+                    // FIXME: this is redundant with the event switch in model.UpdateProjectiles()
+                    switch event.GetType() {
+                        case RemoteDamageIndicatorType:
+                            event := event.(*RemoteDamageIndicatorEvent)
+                            unit := combat.Model.GetUnitById(event.Id)
+                            if unit != nil {
+                                combat.AddDamageIndicator(unit, event.Damage)
+                            }
+                        case RemoteFinishMeleeAttackType:
+                            done = true
+                        default:
+                            combat.Model.HandleRemoteEvent(combat, event)
+
+                    }
+                default:
+            }
+        }
+
+        return
+    }
+
     for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
@@ -2758,12 +2787,17 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
             combat.AddDamageIndicator(defender, attackerDamage)
             combat.AddDamageIndicator(attacker, defenderDamage)
+
+            combat.Model.RemoteDamageIndicator(defender, attackerDamage)
+            combat.Model.RemoteDamageIndicator(attacker, defenderDamage)
         }
 
         if yield() != nil {
-            return
+            break
         }
     }
+
+    combat.Model.RemoteFinishMeleeAttack()
 }
 
 func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {

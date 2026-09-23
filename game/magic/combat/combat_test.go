@@ -1,7 +1,10 @@
 package combat
 
 import (
-    // "log"
+    "log"
+    "net"
+    "context"
+    "time"
     "testing"
     "math"
     "slices"
@@ -1067,7 +1070,7 @@ func TestFullCombat(test *testing.T){
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
     state := Run(model)
     if state != CombatStateAttackerWin {
@@ -1105,7 +1108,7 @@ func TestInvisibleEnemy(test *testing.T) {
 
         var allSpells spellbook.Spells
 
-        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
         targeted := false
         onTarget := func(unit *ArmyUnit){
@@ -1165,7 +1168,7 @@ func TestSpellSkillItemBonus(test *testing.T) {
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
     _ = model
 
     // hero should get base (5) + item (10) = 15 spell skill
@@ -1222,7 +1225,7 @@ func TestSpellSavePower(test *testing.T) {
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
     casted := false
     model.InvokeSpell(&ProxySpellSystem{Model: model}, attackingArmy, attackingUnit, spellbook.Spell{Name: "Banish"}, func(success bool) {
@@ -1333,4 +1336,73 @@ func TestCombatOffMapTileAccessDoesNotPanic(test *testing.T) {
     model.Teleport(attacker, 5, 5)
     model.KillUnit(defender)
     model.RemoveUnit(attacker)
+}
+
+func TestRemoteRangeDamage(test *testing.T) {
+
+    var allSpells spellbook.Spells
+
+    peer1, peer2 := net.Pipe()
+
+    defer peer1.Close()
+    defer peer2.Close()
+
+    // remote side is defender, so false for isAttacker
+    remote := MakeRemote(true, false, peer1)
+
+    defendingArmy := &Army{Player: makeTestCombatPlayer()}
+    attackingArmy := &Army{Player: makeTestCombatPlayer()}
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+    // attacking army has a unit that can range attack. grant very high tohit
+    attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attackingUnit := attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+    effect := model.CreateRangeAttackEffect(attackingUnit, &FakeDamageIndicator{})
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    // remote side is attacker, so true for isAttacker
+    remoteDefender := MakeRemote(false, true, peer2)
+
+    go remoteDefender.RunReceiveLoop(quit)
+
+    remoteDidDamage := false
+    finish := make(chan struct{})
+
+    go func() {
+        for quit.Err() == nil {
+            select {
+                case <-quit.Done():
+                    return
+                case event := <-remoteDefender.Events:
+                    log.Printf("remote received event: %v", event)
+                    switch event.GetType() {
+                        case RemoteDamageType:
+                            event := event.(*RemoteDamageEvent)
+                            if event.Id == defendingArmy.units[0].Id && event.Damage > 0 {
+                                remoteDidDamage = true
+                                close(finish)
+                            }
+
+                    }
+            }
+        }
+    }()
+
+    // invoking the effect should send a damage event to the remote
+    effect(defendingArmy.units[0])
+
+    select {
+        case <-time.After(500 * time.Millisecond):
+            test.Errorf("Error: remote did not receive damage event")
+        case <-finish:
+            if !remoteDidDamage {
+                test.Errorf("Error: remote did not receive damage event")
+            }
+    }
+
 }
