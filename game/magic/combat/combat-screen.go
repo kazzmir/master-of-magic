@@ -1704,14 +1704,6 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                 combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
                                     combat.Model.RemoteUnitCastSpell(caster, spell)
 
-                                    charge, hasCharge := caster.SpellCharges[spell]
-                                    if hasCharge && charge > 0 {
-                                        caster.SpellCharges[spell] -= 1
-                                    } else {
-                                        // units pay the full cost of a spell with no modifiers
-                                        caster.CastingSkill -= float32(spell.Cost(false))
-                                    }
-                                    caster.Casted = true
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                         combat.PlaySound(spell)
@@ -1719,12 +1711,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                         combat.Model.RemoteSpellFailed(spell)
                                     }
 
-                                    caster.MovesLeft = fraction.FromInt(0)
-                                    select {
-                                        case combat.Events <- &CombatEventNextUnit{}:
-                                            combat.Model.RemoteDoneTurn(caster)
-                                        default:
-                                    }
+                                    combat.Model.doUnitCast(caster, spell)
                                 })
                             }
 
@@ -2777,7 +2764,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
                         case RemoteFinishMeleeAttackType:
                             done = true
                         default:
-                            combat.Model.HandleRemoteEvent(event)
+                            combat.Model.HandleRemoteEvent(combat, event)
 
                     }
                 default:

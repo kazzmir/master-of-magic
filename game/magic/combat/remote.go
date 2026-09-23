@@ -12,7 +12,6 @@ import (
     "encoding/json/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
-    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 const (
@@ -284,9 +283,10 @@ func (remote *RemoteKillUnitEvent) GetType() string {
 }
 
 type RemoteUnitTargetSpellEvent struct {
-    Id uint64 `json:"id"`
+    TargetId uint64 `json:"target_id"`
     Type string `json:"type"`
-    Spell spellbook.Spell `json:"spell"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
 }
 
 func (remote *RemoteUnitTargetSpellEvent) GetType() string {
@@ -296,7 +296,8 @@ func (remote *RemoteUnitTargetSpellEvent) GetType() string {
 type RemoteUnitCastSpellEvent struct {
     Id uint64 `json:"id"`
     Type string `json:"type"`
-    Spell spellbook.Spell `json:"spell"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
 }
 
 func (remote *RemoteUnitCastSpellEvent) GetType() string {
@@ -305,7 +306,8 @@ func (remote *RemoteUnitCastSpellEvent) GetType() string {
 
 type RemoteSpellFailedEvent struct {
     Type string `json:"type"`
-    Spell spellbook.Spell `json:"spell"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
 }
 
 func (remote *RemoteSpellFailedEvent) GetType() string {

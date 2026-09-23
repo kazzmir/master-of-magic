@@ -3453,7 +3453,8 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
                                 damageIndicators.AddDamageIndicator(unit, event.Damage)
                             }
                         default:
-                            model.HandleRemoteEvent(event)
+                            // FIXME: its ugly to pass nil for a SpellSystem here
+                            model.HandleRemoteEvent(nil, event)
                     }
                 default:
             }
@@ -4886,6 +4887,34 @@ func getSpellSave(caster *ArmyUnit) int {
     return caster.GetSpellSave()
 }
 
+func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *ArmyUnit, spell spellbook.Spell) {
+    switch spell.Name {
+        case "Fireball":
+            model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
+    }
+}
+
+func (model *CombatModel) doUnitCast(caster *ArmyUnit, spell spellbook.Spell) {
+    charge, hasCharge := caster.SpellCharges[spell]
+    if hasCharge && charge > 0 {
+        caster.SpellCharges[spell] -= 1
+    } else {
+        // units pay the full cost of a spell with no modifiers
+        caster.CastingSkill -= float32(spell.Cost(false))
+    }
+    caster.Casted = true
+
+    caster.MovesLeft = fraction.FromInt(0)
+
+    // I think this is an event rather than just calling model.DoneTurn()
+    // so that the projectiles can fire before the next unit gets a chance to act
+    select {
+        case model.Events <- &CombatEventNextUnit{}:
+            model.RemoteDoneTurn(caster)
+        default:
+    }
+}
+
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
 func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func(bool)){
 
@@ -4950,7 +4979,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     switch spell.Name {
         case "Fireball":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
+                model.doUnitTargetSpell(spellSystem, target, spell)
                 model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, targetNotImmune)
@@ -5970,7 +5999,8 @@ func (model *CombatModel) RemoteUnitCastSpell(caster *ArmyUnit, spell spellbook.
         event := RemoteUnitCastSpellEvent{
             Id: caster.Id,
             Type: RemoteUnitCastSpellType,
-            Spell: spell,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
         }
 
         err := model.Remote.SendEvent(&event)
@@ -5988,7 +6018,8 @@ func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
     if model.Remote != nil {
         event := RemoteSpellFailedEvent{
             Type: RemoteSpellFailedType,
-            Spell: spell,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
         }
 
         err := model.Remote.SendEvent(&event)
@@ -6005,9 +6036,10 @@ func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
 func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell) error {
     if model.Remote != nil {
         event := RemoteUnitTargetSpellEvent{
-            Id: target.Id,
+            TargetId: target.Id,
             Type: RemoteUnitTargetSpellType,
-            Spell: spell,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
         }
 
         err := model.Remote.SendEvent(&event)
@@ -6427,7 +6459,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
                             }
                         default:
-                            model.HandleRemoteEvent(event)
+                            model.HandleRemoteEvent(spellSystem, event)
 
                     }
                 default:
@@ -6498,7 +6530,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     }
 }
 
-func (model *CombatModel) HandleRemoteEvent(event RemoteEvent) {
+func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event RemoteEvent) {
     switch event.GetType() {
         case RemoteDoneTurnType:
             event := event.(*RemoteDoneTurnEvent)
@@ -6525,7 +6557,29 @@ func (model *CombatModel) HandleRemoteEvent(event RemoteEvent) {
             if unit != nil {
                 model.KillUnit(unit)
             }
-
+        case RemoteUnitCastSpellType:
+            event := event.(*RemoteUnitCastSpellEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                spell := model.AllSpells.FindByName(event.Spell)
+                if spell.Valid() {
+                    spell.OverrideCost = event.OverrideCost
+                    model.doUnitCast(unit, spell)
+                }
+            }
+        case RemoteUnitTargetSpellType:
+            // FIXME: this nil check is ugly here
+            if spellSystem != nil {
+                event := event.(*RemoteUnitTargetSpellEvent)
+                unit := model.GetUnitById(event.TargetId)
+                if unit != nil {
+                    spell := model.AllSpells.FindByName(event.Spell)
+                    if spell.Valid() {
+                        spell.OverrideCost = event.OverrideCost
+                        model.doUnitTargetSpell(spellSystem, unit, spell)
+                    }
+                }
+            }
     }
 }
 

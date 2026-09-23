@@ -132,7 +132,8 @@ func MakeScenario1(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
 
-    attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
+    // attackingArmy := createArmyN(attackingPlayer, units.Warlocks, 3)
+    attackingArmy := createArmyN(attackingPlayer, units.DraconianMagician , 3)
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
