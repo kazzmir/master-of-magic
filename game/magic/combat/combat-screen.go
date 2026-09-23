@@ -1702,7 +1702,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
                             doCast := func(spell spellbook.Spell){
                                 combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
-                                    // FIXME: remote invoke spell
+                                    combat.Model.RemoteUnitCastSpell(caster, spell)
 
                                     charge, hasCharge := caster.SpellCharges[spell]
                                     if hasCharge && charge > 0 {
@@ -1715,10 +1715,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                         combat.PlaySound(spell)
+                                    } else {
+                                        combat.Model.RemoteSpellFailed(spell)
                                     }
+
                                     caster.MovesLeft = fraction.FromInt(0)
                                     select {
                                         case combat.Events <- &CombatEventNextUnit{}:
+                                            combat.Model.RemoteDoneTurn(caster)
                                         default:
                                     }
                                 })

@@ -12,6 +12,7 @@ import (
     "encoding/json/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
 )
 
 const (
@@ -26,6 +27,9 @@ const (
     RemoteFinishMeleeAttackType = "melee_finished"
     RemoteHealType = "heal"
     RemoteKillUnitType = "kill_unit"
+    RemoteUnitTargetSpellType = "unit_target_spell"
+    RemoteUnitCastSpellType = "unit_cast_spell"
+    RemoteSpellFailedType = "spell_failed"
 )
 
 type Remote struct {
@@ -154,6 +158,9 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteFinishMeleeAttackType: return convert[*RemoteFinishMeleeAttackEvent](data)
         case RemoteHealType: return convert[*RemoteHealEvent](data)
         case RemoteKillUnitType: return convert[*RemoteKillUnitEvent](data)
+        case RemoteUnitTargetSpellType: return convert[*RemoteUnitTargetSpellEvent](data)
+        case RemoteUnitCastSpellType: return convert[*RemoteUnitCastSpellEvent](data)
+        case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -273,5 +280,34 @@ type RemoteKillUnitEvent struct {
 }
 
 func (remote *RemoteKillUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitTargetSpellEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Spell spellbook.Spell `json:"spell"`
+}
+
+func (remote *RemoteUnitTargetSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitCastSpellEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Spell spellbook.Spell `json:"spell"`
+}
+
+func (remote *RemoteUnitCastSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSpellFailedEvent struct {
+    Type string `json:"type"`
+    Spell spellbook.Spell `json:"spell"`
+}
+
+func (remote *RemoteSpellFailedEvent) GetType() string {
     return remote.Type
 }

@@ -4951,6 +4951,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Fireball":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, targetNotImmune)
         case "Ice Bolt":
@@ -5961,6 +5962,63 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         default:
             log.Error("Unhandled spell %v", spell.Name)
     }
+}
+
+
+func (model *CombatModel) RemoteUnitCastSpell(caster *ArmyUnit, spell spellbook.Spell) error {
+    if model.Remote != nil {
+        event := RemoteUnitCastSpellEvent{
+            Id: caster.Id,
+            Type: RemoteUnitCastSpellType,
+            Spell: spell,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit cast spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
+    if model.Remote != nil {
+        event := RemoteSpellFailedEvent{
+            Type: RemoteSpellFailedType,
+            Spell: spell,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit target spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell) error {
+    if model.Remote != nil {
+        event := RemoteUnitTargetSpellEvent{
+            Id: target.Id,
+            Type: RemoteUnitTargetSpellType,
+            Spell: spell,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit target spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
