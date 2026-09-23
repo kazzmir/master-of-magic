@@ -4904,15 +4904,19 @@ func (model *CombatModel) doUnitCast(caster *ArmyUnit, spell spellbook.Spell) {
     }
     caster.Casted = true
 
+    // just by virtue of setting the moves to 0 will cause the next unit to be selected
     caster.MovesLeft = fraction.FromInt(0)
 
     // I think this is an event rather than just calling model.DoneTurn()
     // so that the projectiles can fire before the next unit gets a chance to act
+    /*
     select {
         case model.Events <- &CombatEventNextUnit{}:
             model.RemoteDoneTurn(caster)
         default:
     }
+    */
+    // model.DoneTurn()
 }
 
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
