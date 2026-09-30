@@ -4990,6 +4990,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Ice Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, targetAny)
         case "Star Fires":
@@ -6811,7 +6812,7 @@ func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
         model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
@@ -6819,7 +6820,7 @@ func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndi
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
