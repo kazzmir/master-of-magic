@@ -4891,6 +4891,10 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
     switch spell.Name {
         case "Fireball":
             model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
+        case "Ice Bolt":
+            model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
+        case "Star Fires":
+            model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
     }
 }
 
@@ -4989,13 +4993,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, targetNotImmune)
         case "Ice Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
+                model.doUnitTargetSpell(spellSystem, target, spell)
                 model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, targetAny)
         case "Star Fires":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
+                model.doUnitTargetSpell(spellSystem, target, spell)
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, func (target *ArmyUnit) bool {
                 realm := target.Unit.GetRealm()
@@ -6850,7 +6855,7 @@ func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageInd
 }
 
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
         model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
@@ -6858,7 +6863,7 @@ func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDam
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {

@@ -1439,7 +1439,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
         attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
 
         // attacking army has a unit that can range attack. grant very high tohit
         attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
@@ -1497,6 +1497,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createIceBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
                 return makeProjectile(target, model.CreateIceBoltProjectileEffect(1000, &FakeDamageIndicator{}))
             },
+            createStarFiresProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateStarFiresProjectileEffect(&FakeDamageIndicator{}))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1529,4 +1532,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
 
     doSpellTest("Fireball")
     doSpellTest("Ice Bolt")
+    doSpellTest("Star Fires")
 }
