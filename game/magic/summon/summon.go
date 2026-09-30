@@ -37,7 +37,7 @@ type Summon struct {
     SummonHeight int
 }
 
-func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, baseColor color.Color, short bool) *Summon {
+func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summonPic *ebiten.Image, realm data.MagicType, short bool) *Summon {
     summon := &Summon{
         Cache: cache,
         ImageCache: util.MakeImageCache(cache),
@@ -52,28 +52,39 @@ func makeSummon(cache *lbx.LbxCache, title string, wizard data.WizardBase, summo
         summon.Counter = 300
     }
 
-    // FIXME: some of the pixels still have the wrong color, like the outer edges of the summoning circle
+    var summonPalette color.Palette
+    summonPaletteIndex := 0
+    lbxFile, err := cache.GetLbxFile("spellscr.lbx")
+    if err == nil {
+        switch realm {
+            case data.LifeMagic: summonPaletteIndex = 65
+            case data.SorceryMagic: summonPaletteIndex = 63
+            case data.NatureMagic: summonPaletteIndex = 62
+            case data.DeathMagic: summonPaletteIndex = 66
+            case data.ChaosMagic: summonPaletteIndex = 64
+            case data.ArcaneMagic: summonPaletteIndex = 61
+        }
+
+        summonPalette, err = lbxFile.GetPalette(summonPaletteIndex)
+        if err != nil {
+            log.Printf("Error: could not load summon palette at index %v: %v", summonPaletteIndex, err)
+            summonPalette = nil
+        }
+    }
+
     updateColors := func (img *image.Paletted) image.Image {
         // 228-245 remap colors
         // colorRange := 245 - 226
 
-        newPalette := make(color.Palette, len(img.Palette))
-        copy(newPalette, img.Palette)
-        img.Palette = newPalette
+        if len(summonPalette) > 0 {
+            newPalette := make(color.Palette, len(img.Palette))
+            copy(newPalette, img.Palette)
+            img.Palette = newPalette
 
-        light := 0
-        for i := 225; i <= 247; i++ {
-            img.Palette[i] = util.Lighten(baseColor, float64(light))
-            light -= 4
+            for i := 224; i <= 254; i++ {
+                newPalette[i] = summonPalette[i]
+            }
         }
-
-        /*
-        img.Palette[227] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[228] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[237] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[238] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        img.Palette[239] = color.RGBA{R: 0, G: 0, B: 0, A: 0}
-        */
 
         return img
     }
@@ -199,20 +210,6 @@ func getMonsterIndex(unit units.Unit) int {
     return monsterIndex
 }
 
-func getRealmColor(unit units.Unit) color.Color {
-    baseColor := color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
-    switch unit.Realm {
-        case data.LifeMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-        case data.SorceryMagic: baseColor = color.RGBA{R: 0, G: 0, B: 0xff, A: 0xff}
-        case data.NatureMagic: baseColor = color.RGBA{R: 0, B: 0, G: 0xff, A: 0xff}
-        case data.DeathMagic: baseColor = color.RGBA{R: 0xd6, G: 0x63, B: 0xff, A: 0xff}
-        case data.ChaosMagic: baseColor = color.RGBA{R: 0xff, G: 0, B: 0, A: 0xff}
-        case data.ArcaneMagic: baseColor = color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}
-    }
-
-    return baseColor
-}
-
 func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase, short bool) *Summon {
     imageCache := util.MakeImageCache(cache)
 
@@ -222,7 +219,7 @@ func MakeSummonUnit(cache *lbx.LbxCache, unit units.Unit, wizard data.WizardBase
         log.Printf("Error: could not load monster image at index %v: %v", monsterIndex, err)
     }
 
-    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, getRealmColor(unit), short)
+    return makeSummon(cache, fmt.Sprintf("%v Summoned", unit.Name), wizard, monsterPicture, unit.Realm, short)
 }
 
 func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase, short bool) *Summon {
@@ -234,7 +231,7 @@ func MakeSummonArtifact(cache *lbx.LbxCache, wizard data.WizardBase, short bool)
         log.Printf("Error: could not load artifact image at index %v: %v", artifactIndex, err)
     }
 
-    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, short)
+    return makeSummon(cache, "Artifact Summoned", wizard, monsterPicture, data.ArcaneMagic, short)
 }
 
 func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, short bool, female bool) *Summon {
@@ -259,7 +256,8 @@ func MakeSummonHero(cache *lbx.LbxCache, wizard data.WizardBase, champion bool, 
         title = "Champion Summoned"
     }
 
-    return makeSummon(cache, title, wizard, heroPicture, color.RGBA{R: 0xff, G: 0xff, B: 0xff, A: 0xff}, short)
+    // FIXME: should realm be a property of the hero?
+    return makeSummon(cache, title, wizard, heroPicture, data.ArcaneMagic, short)
 }
 
 func (summon *Summon) Update() SummonState {
