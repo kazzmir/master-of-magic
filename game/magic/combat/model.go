@@ -4895,6 +4895,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
         case "Star Fires":
             model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
+        case "Psionic Blast":
+            model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
     }
 }
 
@@ -5012,7 +5014,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             })
         case "Psionic Blast":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
+                model.doUnitTargetSpell(spellSystem, target, spell)
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, targetAny)
         case "Doom Bolt":
@@ -6894,7 +6897,7 @@ func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDa
 }
 
 func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         _ = strength // strength currently unused; damage is fixed by spell rules
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
         model.RemoteDamage(unit, DamageNormal, hurt)
@@ -6903,7 +6906,7 @@ func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damag
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
