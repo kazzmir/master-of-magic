@@ -4897,6 +4897,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
         case "Psionic Blast":
             model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
+        case "Doom Bolt":
+            model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
     }
 }
 
@@ -5020,7 +5022,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, targetAny)
         case "Doom Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
+                model.doUnitTargetSpell(spellSystem, target, spell)
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, doomBoltTarget)
         case "Fire Bolt":
@@ -6911,10 +6914,12 @@ func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damag
 
 func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
     return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
-        unit.TakeDamage(10, DamageNormal)
-        model.RemoteDamage(unit, DamageNormal, 10)
-        damageIndicator.AddDamageIndicator(unit, 10)
-        model.RemoteDamageIndicator(unit, 10)
+        damage := 10
+
+        unit.TakeDamage(damage, DamageNormal)
+        model.RemoteDamage(unit, DamageNormal, damage)
+        damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
