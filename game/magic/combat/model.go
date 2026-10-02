@@ -4903,6 +4903,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
         case "Lightning Bolt":
             model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
+        case "Warp Lightning":
+            model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
     }
 }
 
@@ -5021,10 +5023,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Lightning Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Warp Lightning":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
-                castedCallback(true)
-            }, warpLightningTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpLightningTarget)
         case "Flame Strike":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
@@ -6923,7 +6922,7 @@ func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, dama
 }
 
 func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         damage := 0
         // 10 separate attacks are different than a single 55-point attack due to defense
         for strength := range 10 {
@@ -6938,7 +6937,7 @@ func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator Ad
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
