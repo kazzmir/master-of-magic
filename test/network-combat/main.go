@@ -141,7 +141,7 @@ func MakeScenario1(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     return model, combatScreen, nil
 }
 
-func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit units.Unit, defendingCount int, attackingUnit units.Unit, attackingCount int) (*combat.CombatModel, *combat.CombatScreen, error) {
     cache := lbx.AutoCache()
 
     allSpells, err := spellbook.ReadSpellsFromCache(cache)
@@ -157,7 +157,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 
     // defendingArmy := createWarlockArmy(&defendingPlayer)
     // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createArmyN(defendingPlayer, units.ArchAngel, 2)
+    defendingArmy := createArmyN(defendingPlayer, defendingUnit, defendingCount)
 
     defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
     defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
@@ -185,7 +185,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
 
-    attackingArmy := createArmyN(attackingPlayer, units.Griffin, 2)
+    attackingArmy := createArmyN(attackingPlayer, attackingUnit, attackingCount)
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
@@ -193,10 +193,19 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     return model, combatScreen, nil
 }
 
+func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    return makeGenericScenario(isServer, remote, units.ArchAngel, 2, units.Griffin, 2)
+}
+
+func MakeScenario3(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 2, units.Griffin, 2)
+}
+
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
     switch scenario {
         case 1: return MakeScenario1(isServer, remote)
         case 2: return MakeScenario2(isServer, remote)
+        case 3: return MakeScenario3(isServer, remote)
         default: return MakeScenario1(isServer, remote)
     }
 }
