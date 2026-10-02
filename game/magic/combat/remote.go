@@ -287,6 +287,8 @@ type RemoteUnitTargetSpellEvent struct {
     Type string `json:"type"`
     Spell string `json:"spell"`
     OverrideCost int `json:"override_cost"`
+    CasterId uint64 `json:"caster_id"`
+    ArmyId uint64 `json:"army_id"`
 }
 
 func (remote *RemoteUnitTargetSpellEvent) GetType() string {

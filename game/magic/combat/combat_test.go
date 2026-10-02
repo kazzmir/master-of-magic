@@ -1515,6 +1515,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createWarpLightningProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateWarpLightningProjectileEffect(&FakeDamageIndicator{}))
             },
+            createLifeDrainProjectile: func(target *ArmyUnit, cost int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateLifeDrainProjectileEffect(1000, player, unitCaster, &FakeDamageIndicator{}))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1548,7 +1551,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     unitSpells := []string{
         "Fireball", "Ice Bolt", "Star Fires",
         "Psionic Blast", "Doom Bolt", "Fire Bolt",
-        "Lightning Bolt", "Warp Lightning",
+        "Lightning Bolt", "Warp Lightning", "Life Drain",
     }
 
     for _, spell := range unitSpells {

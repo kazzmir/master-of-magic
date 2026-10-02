@@ -2063,6 +2063,7 @@ type Army struct {
     Fled bool
     Casted bool
     RecalledUnits []*ArmyUnit
+    Id uint64
 
     Enchantments []data.CombatEnchantment
     Cleanups []func()
@@ -2515,6 +2516,9 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     model.AllSpells = allSpells
     model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.GetMana(), model.AttackingArmy.Player.ComputeCastingSkill())
     model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.GetMana(), model.DefendingArmy.Player.ComputeCastingSkill())
+
+    model.AttackingArmy.Id = 0
+    model.DefendingArmy.Id = 1
 
     model.DefendingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.DefendingArmy.Player)
     model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
@@ -3148,6 +3152,18 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
     }
 
     return &newUnit
+}
+
+func (model *CombatModel) GetArmyById(id uint64) *Army {
+    if model.DefendingArmy.Id == id {
+        return model.DefendingArmy
+    }
+
+    if model.AttackingArmy.Id == id {
+        return model.AttackingArmy
+    }
+
+    return nil
 }
 
 func (model *CombatModel) GetUnitById(id uint64) *ArmyUnit {
@@ -4887,7 +4903,7 @@ func getSpellSave(caster *ArmyUnit) int {
     return caster.GetSpellSave()
 }
 
-func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *ArmyUnit, spell spellbook.Spell) {
+func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *ArmyUnit, spell spellbook.Spell, unitCaster *ArmyUnit, army *Army) {
     switch spell.Name {
         case "Fireball":
             model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
@@ -4905,6 +4921,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
         case "Warp Lightning":
             model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
+        case "Life Drain":
+            model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
     }
 }
 
@@ -4995,8 +5013,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     disintegrateTarget := targetNotImmune
 
     standardUnitTarget := func(target *ArmyUnit){
-        model.doUnitTargetSpell(spellSystem, target, spell)
-        model.RemoteUnitTargetSpell(target, spell)
+        model.doUnitTargetSpell(spellSystem, target, spell, unitCaster, army)
+        model.RemoteUnitTargetSpell(target, spell, unitCaster, army)
         castedCallback(true)
     }
 
@@ -5030,10 +5048,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, targetAny)
             castedCallback(true)
         case "Life Drain":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Dispel Evil":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
@@ -6032,13 +6047,21 @@ func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
     return nil
 }
 
-func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell) error {
+func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell, caster *ArmyUnit, army *Army) error {
     if model.Remote != nil {
+        // a little ugly but this means there is no caster
+        casterId := uint64(9999999)
+        if caster != nil {
+            casterId = caster.Id
+        }
+
         event := RemoteUnitTargetSpellEvent{
             TargetId: target.Id,
             Type: RemoteUnitTargetSpellType,
             Spell: spell.Name,
             OverrideCost: spell.OverrideCost,
+            CasterId: casterId,
+            ArmyId: army.Id,
         }
 
         err := model.Remote.SendEvent(&event)
@@ -6575,7 +6598,11 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event Remot
                     spell := model.AllSpells.FindByName(event.Spell)
                     if spell.Valid() {
                         spell.OverrideCost = event.OverrideCost
-                        model.doUnitTargetSpell(spellSystem, unit, spell)
+
+                        army := model.GetArmyById(event.ArmyId)
+                        caster := model.GetUnitById(event.CasterId)
+
+                        model.doUnitTargetSpell(spellSystem, unit, spell, caster, army)
                     }
                 }
             }
@@ -6941,7 +6968,7 @@ func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator Ad
 }
 
 func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
@@ -6962,7 +6989,7 @@ func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, 
                 model.KillUnit(unit)
             }
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFlameStrikeProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
