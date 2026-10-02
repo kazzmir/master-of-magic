@@ -4990,25 +4990,19 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     doomBoltTarget := targetNotImmune
     disintegrateTarget := targetNotImmune
 
+    standardUnitTarget := func(target *ArmyUnit){
+        model.doUnitTargetSpell(spellSystem, target, spell)
+        model.RemoteUnitTargetSpell(target, spell)
+        castedCallback(true)
+    }
+
     switch spell.Name {
         case "Fireball":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Ice Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Star Fires":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 realm := target.Unit.GetRealm()
                 if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
                     return true
@@ -5017,23 +5011,11 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return false
             })
         case "Psionic Blast":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Doom Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, doomBoltTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, doomBoltTarget)
         case "Fire Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell)
-                model.RemoteUnitTargetSpell(target, spell)
-                castedCallback(true)
-            }, fireBoltTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, fireBoltTarget)
         case "Lightning Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
