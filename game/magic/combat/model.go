@@ -4901,6 +4901,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
         case "Fire Bolt":
             model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
+        case "Lightning Bolt":
+            model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
     }
 }
 
@@ -5017,10 +5019,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Fire Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, fireBoltTarget)
         case "Lightning Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Warp Lightning":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
@@ -6912,7 +6911,7 @@ func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDama
 }
 
 func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
         model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
@@ -6920,7 +6919,7 @@ func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, dama
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
