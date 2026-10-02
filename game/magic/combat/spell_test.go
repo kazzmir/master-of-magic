@@ -346,7 +346,7 @@ func TestFireballSpell(test *testing.T){
                 test.Errorf("Expected the defender to be targeted")
             }
 
-            return nil
+            return &Projectile{}
         },
     }
 
