@@ -188,7 +188,13 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingArmy := createArmyN(attackingPlayer, attackingUnit, attackingCount)
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
-    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+
+    player := attackingPlayer
+    if !isServer {
+        player = defendingPlayer
+    }
+
+    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](player), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
     return model, combatScreen, nil
 }
