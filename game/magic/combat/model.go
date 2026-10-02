@@ -4899,6 +4899,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
         case "Doom Bolt":
             model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
+        case "Fire Bolt":
+            model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
     }
 }
 
@@ -5028,7 +5030,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, doomBoltTarget)
         case "Fire Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
+                model.doUnitTargetSpell(spellSystem, target, spell)
+                model.RemoteUnitTargetSpell(target, spell)
                 castedCallback(true)
             }, fireBoltTarget)
         case "Lightning Bolt":
@@ -6835,7 +6838,7 @@ func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndi
 }
 
 func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
         model.RemoteDamage(unit, DamageNormal, fireDamage)
         damageIndicator.AddDamageIndicator(unit, fireDamage)
@@ -6846,7 +6849,7 @@ func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageInd
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", unit.Unit.GetRace(), unit.Unit.GetName()))
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {

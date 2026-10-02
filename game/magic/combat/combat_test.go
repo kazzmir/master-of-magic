@@ -1506,6 +1506,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createDoomBoltProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateDoomBoltProjectileEffect(&FakeDamageIndicator{}))
             },
+            createFireBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreateFireBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1538,7 +1541,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
 
     unitSpells := []string{
         "Fireball", "Ice Bolt", "Star Fires",
-        "Psionic Blast", "Doom Bolt",
+        "Psionic Blast", "Doom Bolt", "Fire Bolt",
     }
 
     for _, spell := range unitSpells {
