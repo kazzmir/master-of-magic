@@ -3093,6 +3093,10 @@ func (model *CombatModel) AddLogEvent(text string) {
 }
 
 func (model *CombatModel) AddProjectile(projectile *Projectile){
+    if projectile == nil {
+        panic("cannot add nil projectile")
+    }
+
     model.Projectiles = append(model.Projectiles, projectile)
 }
 
@@ -4923,6 +4927,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
         case "Life Drain":
             model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
+        case "Dispel Evil":
+            model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5050,10 +5056,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Life Drain":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Dispel Evil":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.Unit.GetRace() == data.RaceFantastic &&
                    (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
                     return true
@@ -6883,7 +6886,7 @@ func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDam
 }
 
 func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
         }
@@ -6902,11 +6905,13 @@ func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDa
         }
 
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
