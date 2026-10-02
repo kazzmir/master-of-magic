@@ -4929,6 +4929,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
         case "Dispel Evil":
             model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
+        case "Healing":
+            model.AddProjectile(spellSystem.CreateHealingProjectile(target))
     }
 }
 
@@ -5024,20 +5026,22 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         castedCallback(true)
     }
 
+    targetFantasticDeathOrChaos := func (target *ArmyUnit) bool {
+        realm := target.Unit.GetRealm()
+        if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
+            return true
+        }
+
+        return false
+    }
+
     switch spell.Name {
         case "Fireball":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Ice Bolt":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Star Fires":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
-                realm := target.Unit.GetRealm()
-                if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantasticDeathOrChaos)
         case "Psionic Blast":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Doom Bolt":
@@ -5056,19 +5060,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Life Drain":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Dispel Evil":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
-                if target.Unit.GetRace() == data.RaceFantastic &&
-                   (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantasticDeathOrChaos)
         case "Healing":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHealingProjectile(target))
-                castedCallback(true)
-            }, healingTarget)
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, healingTarget)
         case "Holy Word":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
@@ -7014,9 +7008,10 @@ func (model *CombatModel) CreateRecallHeroProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateHealingProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.Heal(5)
-    }
+        model.RemoteHeal(unit, 5)
+    })
 }
 
 func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
@@ -7576,7 +7571,9 @@ func (model *CombatModel) createRemoteProjectileEffect(effect func(*ArmyUnit)) f
     return func(unit *ArmyUnit) {
         if model.Remote != nil {
             // the remote side will compute damage and apply it
-            if !model.IsRemoteUnit(unit) {
+            // if !model.IsRemoteUnit(unit) {
+            // the server always computes projectile effects
+            if !model.Remote.IsServer {
                 model.RemoteProjectiles += 1
                 return
             }

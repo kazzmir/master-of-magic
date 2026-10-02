@@ -1425,7 +1425,8 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         }
     }
 
-    doSpellTest := func(spellName string) {
+    doSpellTest := func(spellName string, defender bool) {
+        log.Printf("== Testing spell: %s", spellName)
         var allSpells spellbook.Spells
 
         peer1, peer2 := net.Pipe()
@@ -1445,6 +1446,12 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
         attackingUnit := attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
 
+        // a different unit that can be healed
+        attacker2 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        attackingFriend := attackingArmy.AddUnit(attacker2)
+        // set health to half so we can test healing
+        attackingFriend.TakeDamage(attackingFriend.GetMaxHealth() / 2, DamageNormal)
+
         model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
 
         quit, cancel := context.WithCancel(context.Background())
@@ -1461,6 +1468,11 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         // remoteDidDamage := false
         finish := make(chan struct{})
 
+        expectedId := defendingUnit.Id
+        if !defender {
+            expectedId = attackingFriend.Id
+        }
+
         go func() {
             for quit.Err() == nil {
                 select {
@@ -1470,12 +1482,18 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                         switch event.GetType() {
                             case RemoteUnitTargetSpellType:
                                 event := event.(*RemoteUnitTargetSpellEvent)
-                                if event.TargetId == defendingUnit.Id && event.Spell == spellName {
+                                if event.TargetId == expectedId && event.Spell == spellName {
                                     didCastSpell = true
                                 }
                             case RemoteDamageType:
                                 event := event.(*RemoteDamageEvent)
-                                if event.Id == defendingUnit.Id && event.Damage > 0 {
+                                if event.Id == expectedId && event.Damage > 0 {
+                                    didDamage = true
+                                }
+                            case RemoteHealType:
+                                event := event.(*RemoteHealEvent)
+                                if event.Id == expectedId && event.Heal > 0 {
+                                    // not really damage but we can treat it as such for the purposes of this test
                                     didDamage = true
                                 }
                             case RemoteProjectileFinishedType:
@@ -1521,6 +1539,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createDispelEvilProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateDispelEvilProjectileEffect(&FakeDamageIndicator{}, reduce))
             },
+            createHealingProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateHealingProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1551,14 +1572,22 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         }
     }
 
-    unitSpells := []string{
+    damageUnitSpells := []string{
         "Fireball", "Ice Bolt", "Star Fires",
         "Psionic Blast", "Doom Bolt", "Fire Bolt",
         "Lightning Bolt", "Warp Lightning", "Life Drain",
         "Dispel Evil",
     }
 
-    for _, spell := range unitSpells {
-        doSpellTest(spell)
+    healUnitSpells := []string{
+        "Healing",
+    }
+
+    for _, spell := range damageUnitSpells {
+        doSpellTest(spell, true)
+    }
+
+    for _, spell := range healUnitSpells {
+        doSpellTest(spell, false)
     }
 }
