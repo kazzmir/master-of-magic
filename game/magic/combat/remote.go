@@ -12,6 +12,7 @@ import (
     "encoding/json/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
 )
 
 const (
@@ -29,6 +30,7 @@ const (
     RemoteUnitTargetSpellType = "unit_target_spell"
     RemoteUnitCastSpellType = "unit_cast_spell"
     RemoteSpellFailedType = "spell_failed"
+    RemoteArmyType = "army"
 )
 
 type Remote struct {
@@ -85,6 +87,8 @@ func (remote *Remote) SendEvent(event RemoteEvent) error {
 
 // caller should run this in a goroutine
 func (remote *Remote) RunReceiveLoop(quit context.Context) {
+
+    defer remote.Peer.SetReadDeadline(time.Time{}) // clear read deadline on exit
 
     for quit.Err() == nil {
         done := make(chan struct{})
@@ -160,6 +164,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteUnitTargetSpellType: return convert[*RemoteUnitTargetSpellEvent](data)
         case RemoteUnitCastSpellType: return convert[*RemoteUnitCastSpellEvent](data)
         case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
+        case RemoteArmyType: return convert[*RemoteArmyEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -314,4 +319,18 @@ type RemoteSpellFailedEvent struct {
 
 func (remote *RemoteSpellFailedEvent) GetType() string {
     return remote.Type
+}
+
+type RemoteArmyEvent struct {
+    Type string `json:"type"`
+    Team Team `json:"team"`
+    Units []RemoteUnit `json:"units"`
+}
+
+func (remote *RemoteArmyEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnit struct {
+    UnitId units.UnitId `json:"unit_id"`
 }

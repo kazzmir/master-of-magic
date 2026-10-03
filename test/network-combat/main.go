@@ -9,7 +9,9 @@ import (
     "math"
     "flag"
     "net"
+    "sync"
     "strconv"
+    "context"
 
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/maplib"
@@ -141,6 +143,54 @@ func MakeScenario1(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     return model, combatScreen, nil
 }
 
+func sendArmy(remote *combat.Remote, team combat.Team, army *combat.Army) {
+    var units []combat.RemoteUnit
+
+    for _, unit := range army.GetUnits() {
+        units = append(units, combat.RemoteUnit{
+            UnitId: unit.Unit.GetRawUnit().GetId(),
+        })
+    }
+
+    event := combat.RemoteArmyEvent{
+        Team: team,
+        Type: combat.RemoteArmyType,
+        Units: units,
+    }
+
+    remote.SendEvent(&event)
+}
+
+func receiveArmy(remote *combat.Remote, player *player.Player) (*combat.Army, error) {
+    select {
+        case <-time.After(5 * time.Second):
+            return nil, fmt.Errorf("timeout waiting for defending army from client")
+        case event := <-remote.Events:
+            switch event.GetType() {
+                case combat.RemoteArmyType:
+                    armyEvent := event.(*combat.RemoteArmyEvent)
+
+                    log.Printf("Received army from remote: %v", armyEvent)
+
+                    army := &combat.Army{
+                        Player: player,
+                    }
+
+                    experienceInfo := player.MakeExperienceInfo()
+                    enchantmentProvider := player.MakeUnitEnchantmentProvider()
+
+                    for _, unitId := range armyEvent.Units {
+                        made := units.MakeOverworldUnitFromUnit(units.GetUnitById(unitId.UnitId), 1, 1, data.PlaneArcanus, player.Wizard.Banner, experienceInfo, enchantmentProvider)
+                        army.AddUnit(made)
+                    }
+
+                    return army, nil
+            }
+    }
+
+    return nil, fmt.Errorf("did not receive an event from remote")
+}
+
 func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit units.Unit, defendingCount int, attackingUnit units.Unit, attackingCount int) (*combat.CombatModel, *combat.CombatScreen, error) {
     cache := lbx.AutoCache()
 
@@ -149,15 +199,17 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
         return nil, nil, err
     }
 
-    // remote player is always the defending player
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    var waiter sync.WaitGroup
+    waiter.Go(func(){ remote.RunReceiveLoop(quit) })
+
+    // connecting player is always the defending player
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
         Name: "Lair",
         Banner: data.BannerBrown,
     }, !isServer, 0, 0, nil, &noGlobalEnchantments{})
-
-    // defendingArmy := createWarlockArmy(&defendingPlayer)
-    // defendingArmy := createHighMenBowmanArmyN(defendingPlayer, 3)
-    defendingArmy := createArmyN(defendingPlayer, defendingUnit, defendingCount)
 
     defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
     defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
@@ -165,6 +217,18 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 
     defendingPlayer.CastingSkillPower = 1000
     defendingPlayer.Mana = 1000
+
+    var defendingArmy *combat.Army
+
+    if !isServer {
+        defendingArmy = createArmyN(defendingPlayer, defendingUnit, defendingCount)
+        sendArmy(remote, combat.TeamDefender, defendingArmy)
+    } else {
+        defendingArmy, err = receiveArmy(remote, defendingPlayer)
+        if err != nil {
+            return nil, nil, err
+        }
+    }
 
     // server is attacker
     attackingPlayer := player.MakePlayer(setup.WizardCustom{
@@ -185,7 +249,20 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.CastingSkillPower = 1000
     attackingPlayer.Mana = 1000
 
-    attackingArmy := createArmyN(attackingPlayer, attackingUnit, attackingCount)
+    var attackingArmy *combat.Army
+
+    if isServer {
+        attackingArmy = createArmyN(attackingPlayer, attackingUnit, attackingCount)
+        sendArmy(remote, combat.TeamAttacker, attackingArmy)
+    } else {
+        attackingArmy, err = receiveArmy(remote, attackingPlayer)
+        if err != nil {
+            return nil, nil, err
+        }
+    }
+
+    cancel()
+    waiter.Wait()
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
 
@@ -204,7 +281,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 }
 
 func MakeScenario3(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
-    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 2, units.Griffin, 2)
+    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 2, units.OrcSpearmen, 2)
 }
 
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
