@@ -4981,7 +4981,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target, getSpellSave(unitCaster)))
         case "Creature Binding":
             model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target, getSpellSave(unitCaster)))
-
+        case "Mind Storm":
+            model.AddProjectile(spellSystem.CreateMindStormProjectile(target))
     }
 }
 
@@ -5370,10 +5371,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return false
             }
 
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateMindStormProjectile(target))
-                castedCallback(true)
-            }, selectable)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, selectable)
 
         case "Bless":
             model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
@@ -7044,9 +7042,10 @@ func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, dam
 }
 
 func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
-    return func (target *ArmyUnit){
+    return model.createRemoteProjectileEffect(func (target *ArmyUnit){
         model.ApplyCurse(target, data.UnitCurseMindStorm)
-    }
+        model.RemoteCurse(target, data.UnitCurseMindStorm)
+    })
 }
 
 func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {

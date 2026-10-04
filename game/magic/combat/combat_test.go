@@ -1559,6 +1559,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createCreatureBindingProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateCreatureBindingProjectileEffect(reduce + 100))
             },
+            createMindStormProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateMindStormProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1748,6 +1751,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Web", true, makeCurseUnitExpecter(data.UnitCurseWeb))
+    doSpellTest("Mind Storm", true, makeCurseUnitExpecter(data.UnitCurseMindStorm))
 
     makeRemoveEnchantmentExpecter := func() Expecter {
         var expect Expecter
