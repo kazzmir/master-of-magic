@@ -1461,6 +1461,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         attackingFriend.TakeDamage(attackingFriend.GetMaxHealth() / 2, DamageNormal)
 
         model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+        model.CracksCallChance = 100
 
         quit, cancel := context.WithCancel(context.Background())
         defer cancel()
@@ -1529,6 +1530,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             },
             createCracksCallProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateCracksCallProjectileEffect())
+            },
+            createWebProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateWebProjectileEffect())
             },
         }
 
@@ -1678,4 +1682,56 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Cracks Call", true, makeRemoveUnitExpecter())
+
+    type CurseUnitExpecter struct {
+        Expecter
+        DidCurse bool
+        DidFinishProjectile bool
+    }
+
+    makeCurseUnitExpecter := func(curse data.UnitEnchantment) Expecter {
+        var expect CurseUnitExpecter
+        expect.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.TargetId == expectedId && event.Spell == spellName {
+                        expect.DidCastSpell = true
+                    }
+                case RemoteCurseUnitType:
+                    event := event.(*RemoteCurseUnitEvent)
+                    if event.Id == expectedId && event.Curse == curse {
+                        expect.DidCurse = true
+                    }
+                case RemoteProjectileFinishedType:
+                    expect.DidFinishProjectile = true
+            }
+        }
+
+        expect.Finished = func() bool {
+            return expect.DidCastSpell && expect.DidCurse && expect.DidFinishProjectile
+        }
+
+        expect.Assertions = func(test *testing.T, spellName string) {
+            if !expect.DidCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !expect.DidCurse {
+                test.Errorf("Error: remote did not receive curse unit event for %v", spellName)
+            }
+
+            if !expect.DidFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+        }
+
+        return Expecter{
+            HandleEvent: expect.HandleEvent,
+            Finished: expect.Finished,
+            Assertions: expect.Assertions,
+        }
+    }
+
+    doSpellTest("Web", true, makeCurseUnitExpecter(data.UnitCurseWeb))
 }

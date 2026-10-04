@@ -2364,6 +2364,10 @@ type CombatModel struct {
     RemoteProjectiles int
 
     LastUnitId uint64
+
+    // if this is 0 then it is treated as 25, otherwise
+    // whatever this is set to is the chance that cracks call will fire
+    CracksCallChance int
 }
 
 func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent, remote *Remote) *CombatModel {
@@ -4941,6 +4945,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateHealingProjectile(target))
         case "Cracks Call":
             model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
+        case "Web":
+            model.AddProjectile(spellSystem.CreateWebProjectile(target))
     }
 }
 
@@ -5111,10 +5117,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 castedCallback(true)
             })
         case "Web":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWebProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 return !target.HasAbility(data.AbilityNonCorporeal)
             })
         case "Banish":
@@ -6760,6 +6763,26 @@ func (model *CombatModel) RemoteHeal(unit *ArmyUnit, heal int) error {
     return nil
 }
 
+func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteCurseUnitEvent{
+            Id: unit.Id,
+            Type: RemoteCurseUnitType,
+            Curse: curse,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+
+}
+
 func (model *CombatModel) RemoteDamage(unit *ArmyUnit, kind DamageType, damage int) error {
     if model.Remote != nil {
         event := RemoteDamageEvent{
@@ -7343,10 +7366,12 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
 }
 
 func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddCurse(data.UnitCurseWeb)
         unit.WebHealth = 12
-    }
+
+        model.RemoteCurse(unit, data.UnitCurseWeb)
+    })
 }
 
 func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
@@ -7433,7 +7458,14 @@ func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*Army
 
 func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
     return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
-        if rand.N(4) == 0 || true {
+        percent := 25
+
+        // to allow tests to make cracks call always be invoked
+        if model.CracksCallChance != 0 {
+            percent = model.CracksCallChance
+        }
+
+        if chance(percent) {
             model.RemoveUnit(unit)
         }
     })

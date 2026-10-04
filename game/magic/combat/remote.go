@@ -13,6 +13,7 @@ import (
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
 )
 
 const (
@@ -32,6 +33,7 @@ const (
     RemoteUnitCastSpellType = "unit_cast_spell"
     RemoteSpellFailedType = "spell_failed"
     RemoteArmyType = "army"
+    RemoteCurseUnitType = "curse_unit"
 )
 
 type Remote struct {
@@ -167,6 +169,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteUnitCastSpellType: return convert[*RemoteUnitCastSpellEvent](data)
         case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
         case RemoteArmyType: return convert[*RemoteArmyEvent](data)
+        case RemoteCurseUnitType: return convert[*RemoteCurseUnitEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -344,4 +347,14 @@ func (remote *RemoteArmyEvent) GetType() string {
 
 type RemoteUnit struct {
     UnitId units.UnitId `json:"unit_id"`
+}
+
+type RemoteCurseUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Curse data.UnitEnchantment `json:"curse"`
+}
+
+func (remote *RemoteCurseUnitEvent) GetType() string {
+    return remote.Type
 }
