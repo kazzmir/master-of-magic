@@ -4358,6 +4358,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
     return totalAttackerDamage, totalDefenderDamage
 }
 
+// killed units go into a killed units list so they can possibly be revived later
 func (model *CombatModel) KillUnit(unit *ArmyUnit){
     if model.IsRemoteUnit(unit) {
         model.RemoteKillUnit(unit)
@@ -4379,7 +4380,13 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     }
 }
 
+// removing a unit removes it outright from battle, with no chance to be brought back
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
+    if model.IsRemoteUnit(unit) {
+        model.RemoteRemoveUnit(unit)
+    }
+
+    // FIXME: should defeated defenders/attackers always go up by 1?
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
         model.DefendingArmy.RemoveUnit(unit)
@@ -4392,6 +4399,7 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
 
     if unit == model.SelectedUnit {
         model.NextUnit()
+        model.RemoteDoneTurn(unit)
     }
 }
 
@@ -4931,6 +4939,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
         case "Healing":
             model.AddProjectile(spellSystem.CreateHealingProjectile(target))
+        case "Cracks Call":
+            model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
     }
 }
 
@@ -5080,10 +5090,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }, targetNonDeath)
             castedCallback(true)
         case "Cracks Call":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.IsFlying() {
                     return false
                 }
@@ -6606,6 +6613,24 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event Remot
     }
 }
 
+func (model *CombatModel) RemoteRemoveUnit(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteRemoveUnitEvent{
+            Type: RemoteRemoveUnitType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove unit event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteKillUnit(unit *ArmyUnit) error {
     if model.Remote != nil {
         event := RemoteKillUnitEvent{
@@ -6615,7 +6640,7 @@ func (model *CombatModel) RemoteKillUnit(unit *ArmyUnit) error {
 
         err := model.Remote.SendEvent(&event)
         if err != nil {
-            log.Error("Failed to send remote melee attack event: %v", err)
+            log.Error("Failed to send remote kill unit event: %v", err)
         }
 
         return err
@@ -6633,7 +6658,7 @@ func (model *CombatModel) RemoteDoneTurn(unit *ArmyUnit) error {
 
         err := model.Remote.SendEvent(&event)
         if err != nil {
-            log.Error("Failed to send remote melee attack event: %v", err)
+            log.Error("Failed to send remote done turn event: %v", err)
         }
 
         return err
@@ -7407,11 +7432,11 @@ func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*Army
 }
 
 func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
-        if rand.N(4) == 0 {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
+        if rand.N(4) == 0 || true {
             model.RemoveUnit(unit)
         }
-    }
+    })
 }
 
 // true if a wall was destroyed

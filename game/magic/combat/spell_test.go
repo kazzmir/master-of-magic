@@ -23,6 +23,7 @@ type TestSpellSystem struct {
     createLifeDrainProjectile func(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
     createDispelEvilProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createHealingProjectile func(target *ArmyUnit) *Projectile
+    createCracksCallProjectile func(target *ArmyUnit) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -109,6 +110,9 @@ func (system *TestSpellSystem) CreateRecallHeroProjectile(target *ArmyUnit) *Pro
     return nil
 }
 func (system *TestSpellSystem) CreateCracksCallProjectile(target *ArmyUnit) *Projectile {
+    if system.createCracksCallProjectile != nil {
+        return system.createCracksCallProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWebProjectile(target *ArmyUnit) *Projectile {

@@ -27,6 +27,7 @@ const (
     RemoteFinishMeleeAttackType = "melee_finished"
     RemoteHealType = "heal"
     RemoteKillUnitType = "kill_unit"
+    RemoteRemoveUnitType = "remove_unit"
     RemoteUnitTargetSpellType = "unit_target_spell"
     RemoteUnitCastSpellType = "unit_cast_spell"
     RemoteSpellFailedType = "spell_failed"
@@ -161,6 +162,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteFinishMeleeAttackType: return convert[*RemoteFinishMeleeAttackEvent](data)
         case RemoteHealType: return convert[*RemoteHealEvent](data)
         case RemoteKillUnitType: return convert[*RemoteKillUnitEvent](data)
+        case RemoteRemoveUnitType: return convert[*RemoteRemoveUnitEvent](data)
         case RemoteUnitTargetSpellType: return convert[*RemoteUnitTargetSpellEvent](data)
         case RemoteUnitCastSpellType: return convert[*RemoteUnitCastSpellEvent](data)
         case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
@@ -284,6 +286,15 @@ type RemoteKillUnitEvent struct {
 }
 
 func (remote *RemoteKillUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteRemoveUnitEvent) GetType() string {
     return remote.Type
 }
 

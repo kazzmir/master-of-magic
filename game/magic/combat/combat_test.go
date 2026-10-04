@@ -1425,7 +1425,15 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         }
     }
 
-    doSpellTest := func(spellName string, defender bool) {
+    type Expecter struct {
+        HandleEvent func(RemoteEvent, uint64, string)
+        Assertions func(*testing.T, string)
+        Finished func() bool
+
+        DidCastSpell bool
+    }
+
+    doSpellTest := func(spellName string, defender bool, expecter Expecter) {
         log.Printf("== Testing spell: %s", spellName)
         var allSpells spellbook.Spells
 
@@ -1462,10 +1470,6 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
 
         go remoteDefender.RunReceiveLoop(quit)
 
-        didCastSpell := false
-        didDamage := false
-        projectileFinished := false
-        // remoteDidDamage := false
         finish := make(chan struct{})
 
         expectedId := defendingUnit.Id
@@ -1479,29 +1483,10 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                     case <-quit.Done():
                         return
                     case event := <-remoteDefender.Events:
-                        switch event.GetType() {
-                            case RemoteUnitTargetSpellType:
-                                event := event.(*RemoteUnitTargetSpellEvent)
-                                if event.TargetId == expectedId && event.Spell == spellName {
-                                    didCastSpell = true
-                                }
-                            case RemoteDamageType:
-                                event := event.(*RemoteDamageEvent)
-                                if event.Id == expectedId && event.Damage > 0 {
-                                    didDamage = true
-                                }
-                            case RemoteHealType:
-                                event := event.(*RemoteHealEvent)
-                                if event.Id == expectedId && event.Heal > 0 {
-                                    // not really damage but we can treat it as such for the purposes of this test
-                                    didDamage = true
-                                }
-                            case RemoteProjectileFinishedType:
-                                projectileFinished = true
-                        }
+                        expecter.HandleEvent(event, expectedId, spellName)
                 }
 
-                if didCastSpell && didDamage && projectileFinished {
+                if expecter.Finished() {
                     close(finish)
                     break
                 }
@@ -1542,6 +1527,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createHealingProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateHealingProjectileEffect())
             },
+            createCracksCallProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateCracksCallProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1561,33 +1549,133 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             case <-finish:
         }
 
-        if !didCastSpell {
-            test.Errorf("Error: remote did not receive cast spell for %v", spellName)
-        }
-        if !didDamage {
-            test.Errorf("Error: remote did not receive damage event for %v", spellName)
-        }
-        if !projectileFinished {
-            test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
-        }
+        expecter.Assertions(test, spellName)
     }
 
-    damageUnitSpells := []string{
+    enemyDamageUnitSpells := []string{
         "Fireball", "Ice Bolt", "Star Fires",
         "Psionic Blast", "Doom Bolt", "Fire Bolt",
         "Lightning Bolt", "Warp Lightning", "Life Drain",
         "Dispel Evil",
     }
 
-    healUnitSpells := []string{
+    friendlyUnitSpells := []string{
         "Healing",
     }
 
-    for _, spell := range damageUnitSpells {
-        doSpellTest(spell, true)
+    type HarmExpecter struct {
+        Expecter
+        DidDamage bool
+        DidFinishProjectile bool
     }
 
-    for _, spell := range healUnitSpells {
-        doSpellTest(spell, false)
+    makeHarmExpecter := func() Expecter {
+        var harm HarmExpecter
+        harm.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.TargetId == expectedId && event.Spell == spellName {
+                        harm.DidCastSpell = true
+                    }
+                case RemoteDamageType:
+                    event := event.(*RemoteDamageEvent)
+                    if event.Id == expectedId {
+                        harm.DidDamage = true
+                    }
+                case RemoteHealType:
+                    event := event.(*RemoteHealEvent)
+                    if event.Id == expectedId && event.Heal > 0 {
+                        // not really damage but we can treat it as such for the purposes of this test
+                        harm.DidDamage = true
+                    }
+                case RemoteProjectileFinishedType:
+                    harm.DidFinishProjectile = true
+            }
+        }
+
+        harm.Finished = func() bool {
+            return harm.DidCastSpell && harm.DidDamage && harm.DidFinishProjectile
+        }
+
+        harm.Assertions = func(test *testing.T, spellName string) {
+            if !harm.DidDamage {
+                test.Errorf("Error: remote did not receive damage event for %v", spellName)
+            }
+
+            if !harm.DidCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !harm.DidFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+        }
+
+        return Expecter{
+            HandleEvent: harm.HandleEvent,
+            Finished: harm.Finished,
+            Assertions: harm.Assertions,
+        }
     }
+
+    for _, spell := range enemyDamageUnitSpells {
+        doSpellTest(spell, true, makeHarmExpecter())
+    }
+
+    for _, spell := range friendlyUnitSpells {
+        doSpellTest(spell, false, makeHarmExpecter())
+    }
+
+    type RemoveUnitExpecter struct {
+        Expecter
+        DidRemoveUnit bool
+        DidFinishProjectile bool
+    }
+
+    makeRemoveUnitExpecter := func() Expecter {
+        var remove RemoveUnitExpecter
+        remove.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.TargetId == expectedId && event.Spell == spellName {
+                        remove.DidCastSpell = true
+                    }
+                case RemoteRemoveUnitType:
+                    event := event.(*RemoteRemoveUnitEvent)
+                    if event.Id == expectedId {
+                        remove.DidRemoveUnit = true
+                    }
+                case RemoteProjectileFinishedType:
+                    remove.DidFinishProjectile = true
+            }
+        }
+
+        remove.Finished = func() bool {
+            return remove.DidCastSpell && remove.DidRemoveUnit && remove.DidFinishProjectile
+        }
+
+        remove.Assertions = func(test *testing.T, spellName string) {
+            if !remove.DidCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !remove.DidRemoveUnit {
+                test.Errorf("Error: remote did not receive remove unit event for %v", spellName)
+            }
+
+            if !remove.DidFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+        }
+
+        return Expecter{
+            HandleEvent: remove.HandleEvent,
+            Finished: remove.Finished,
+            Assertions: remove.Assertions,
+        }
+    }
+
+    doSpellTest("Cracks Call", true, makeRemoveUnitExpecter())
 }
