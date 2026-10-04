@@ -4973,6 +4973,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target, getSpellSave(unitCaster)))
         case "Warp Wood":
             model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
+        case "Word of Death":
+            model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target, getSpellSave(unitCaster)))
 
     }
 }
@@ -5203,15 +5205,13 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return false
             })
         case "Death Spell":
+            // TODO: remote
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateDeathSpellProjectile(target, getSpellSave(unitCaster)))
             }, targetNotImmune)
             castedCallback(true)
         case "Word of Death":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.PhantomWarrior, units.FacingDown, true)
@@ -7539,7 +7539,7 @@ func (model *CombatModel) CreateDeathSpellProjectileEffect(damageIndicator AddDa
 }
 
 func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         resistance := GetResistanceFor(unit, data.DeathMagic) - 5 - reduceResistance
         damage := 0
 
@@ -7550,11 +7550,13 @@ func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddD
         }
 
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
