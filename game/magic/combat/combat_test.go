@@ -1461,13 +1461,10 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
         attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-        useUnit := units.HellHounds
-        // hack to get warped wood to work
-        useUnit.RangedAttackPower = 1
-        useUnit.RangedAttacks = 8
-        useUnit.RangedAttackDamageType = units.DamageRangedPhysical
-        defendingOverworld := units.MakeOverworldUnitFromUnit(useUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        // default is hell hounds: fantastic chaos unit
+        defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
+        // allow a test to override defending unit
         for _, option := range testOptions {
             if option.MakeUnit != nil {
                 defendingOverworld = option.MakeUnit()
@@ -1894,7 +1891,11 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         return expect
     }
 
-    doSpellTest("Warp Wood", true, makeSetRangedAttacksExpecter())
+    doSpellTest("Warp Wood", true, makeSetRangedAttacksExpecter(), TestOptions{
+        MakeUnit: func() *units.OverworldUnit {
+            return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        },
+    })
 
     makeChangeTeamExpecter := func() Expecter {
         var expect Expecter
