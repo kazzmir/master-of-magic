@@ -4983,6 +4983,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target, getSpellSave(unitCaster)))
         case "Mind Storm":
             model.AddProjectile(spellSystem.CreateMindStormProjectile(target))
+        case "Bless":
+            model.AddProjectile(spellSystem.CreateBlessProjectile(target))
     }
 }
 
@@ -5374,10 +5376,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, selectable)
 
         case "Bless":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBlessProjectile(target))
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, targetAny)
         case "Weakness":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWeaknessProjectile(target, getSpellSave(unitCaster)))
@@ -6641,6 +6640,13 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 model.ApplyCurse(unit, curse)
             }
+        case RemoteEnchantmentUnitType:
+            event := event.(*RemoteEnchantmentUnitEvent)
+            unit := model.GetUnitById(event.Id)
+            enchantment := event.Enchantment
+            if unit != nil {
+                unit.AddEnchantment(enchantment)
+            }
 
         case RemoteRemoveUnitEnchantmentType:
             event := event.(*RemoteRemoveUnitEnchantmentEvent)
@@ -6921,6 +6927,25 @@ func (model *CombatModel) RemoteRemoveEnchantment(unit *ArmyUnit, enchantment da
     return nil
 }
 
+func (model *CombatModel) RemoteEnchantment(unit *ArmyUnit, enchantment data.UnitEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteEnchantmentUnitEvent{
+            Id: unit.Id,
+            Type: RemoteEnchantmentUnitType,
+            Enchantment: enchantment,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
     if model.Remote != nil {
         event := RemoteCurseUnitEvent{
@@ -6938,7 +6963,6 @@ func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment
     }
 
     return nil
-
 }
 
 func (model *CombatModel) RemoteDamage(unit *ArmyUnit, kind DamageType, damage int) error {
@@ -7416,9 +7440,10 @@ func (model *CombatModel) CreateChaosChannelsProjectileEffect() func(*ArmyUnit) 
 }
 
 func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentBless)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentBless)
+    })
 }
 
 func (model *CombatModel) CreateWeaknessProjectileEffect(reduceResistance int) func(*ArmyUnit) {
