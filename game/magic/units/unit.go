@@ -199,6 +199,19 @@ type Unit struct {
     CastingCost int
 }
 
+// an object that can be used to uniquely identify a unit type, without needing to pass around the entire unit object
+type UnitId struct {
+    LbxFile string
+    Index int
+}
+
+func (unit Unit) GetId() UnitId {
+    return UnitId{
+        LbxFile: unit.LbxFile,
+        Index: unit.Index,
+    }
+}
+
 // make a deep clone
 func (unit *Unit) Clone() Unit {
     out := *unit
@@ -5544,6 +5557,16 @@ func ChooseRandomUnit(race data.Race) Unit {
 func GetUnitByName(name string) Unit {
     for _, unit := range AllUnits {
         if unit.Name == name {
+            return unit
+        }
+    }
+
+    return UnitNone
+}
+
+func GetUnitById(unitId UnitId) Unit {
+    for _, unit := range AllUnits {
+        if unit.GetId() == unitId {
             return unit
         }
     }

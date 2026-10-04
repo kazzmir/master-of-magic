@@ -7,6 +7,7 @@ import (
     "math"
     "math/rand/v2"
     "time"
+    "context"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -561,6 +562,9 @@ const (
 )
 
 type ArmyUnit struct {
+    // unique id to identify the unit, for use in networked combat
+    Id uint64
+
     Unit units.StackUnit
     Facing units.Facing
     Moving bool
@@ -1780,6 +1784,8 @@ func (unit *ArmyUnit) TakeDamage(damage int, damageType DamageType) int {
     // the first figure should take damage, and if it dies then the next unit takes damage, etc
     unit.Unit.AdjustHealth(-damage)
 
+    log.Debug("Unit %v took %v damage of type %v. Health now %v/%v", unit.Unit.GetName(), damage, damageType, unit.GetHealth(), unit.GetMaxHealth())
+
     switch damageType {
         case DamageNormal: unit.NormalDamage += damage
         case DamageIrreversable: unit.IrreversableDamage += damage
@@ -2057,6 +2063,7 @@ type Army struct {
     Fled bool
     Casted bool
     RecalledUnits []*ArmyUnit
+    Id uint64
 
     Enchantments []data.CombatEnchantment
     Cleanups []func()
@@ -2351,9 +2358,15 @@ type CombatModel struct {
 
     // cache of all spells so projectile effects that need spell data (like Dispel Magic) can access it
     AllSpells spellbook.Spells
+
+    Remote *Remote
+    // a count of the number of projectiles waiting to be resolved
+    RemoteProjectiles int
+
+    LastUnitId uint64
 }
 
-func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent) *CombatModel {
+func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent, remote *Remote) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
         Plane: plane,
@@ -2367,6 +2380,7 @@ func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingA
         Events: events,
         Zone: zone,
         Influence: influence,
+        Remote: remote,
     }
 
     model.AttackingArmy.LayoutUnits(TeamAttacker, model)
@@ -2503,10 +2517,14 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     model.AttackingArmy.ManaPool = min(model.AttackingArmy.Player.GetMana(), model.AttackingArmy.Player.ComputeCastingSkill())
     model.DefendingArmy.ManaPool = min(model.DefendingArmy.Player.GetMana(), model.DefendingArmy.Player.ComputeCastingSkill())
 
+    model.AttackingArmy.Id = 0
+    model.DefendingArmy.Id = 1
+
     model.DefendingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.DefendingArmy.Player)
     model.AttackingArmy.Range = computeRangeToFortress(model.Plane, overworldX, overworldY, model.AttackingArmy.Player)
 
     for _, unit := range model.DefendingArmy.units {
+        unit.Id = model.NextUnitId()
         unit.Model = model
         unit.Team = TeamDefender
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
@@ -2515,11 +2533,17 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
     }
 
     for _, unit := range model.AttackingArmy.units {
+        unit.Id = model.NextUnitId()
         unit.Model = model
         unit.Team = TeamAttacker
         unit.RangedAttacks = unit.Unit.GetRangedAttacks()
         unit.InitializeSpells(allSpells, model.AttackingArmy.Player, false)
         model.setTileUnit(unit.X, unit.Y, unit)
+    }
+
+    if model.Remote != nil {
+        // FIXME: pass in quit context from combat screen
+        go model.Remote.RunReceiveLoop(context.Background())
     }
 }
 
@@ -3069,6 +3093,10 @@ func (model *CombatModel) AddLogEvent(text string) {
 }
 
 func (model *CombatModel) AddProjectile(projectile *Projectile){
+    if projectile == nil {
+        panic("cannot add nil projectile")
+    }
+
     model.Projectiles = append(model.Projectiles, projectile)
 }
 
@@ -3108,6 +3136,7 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
         MovesLeft: fraction.FromInt(unit.MovementSpeed),
         LastTurn: model.CurrentTurn-1,
         Summoned: summoned,
+        Id: model.NextUnitId(),
     }
 
     newUnit.Model = model
@@ -3127,6 +3156,42 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
     }
 
     return &newUnit
+}
+
+func (model *CombatModel) GetArmyById(id uint64) *Army {
+    if model.DefendingArmy.Id == id {
+        return model.DefendingArmy
+    }
+
+    if model.AttackingArmy.Id == id {
+        return model.AttackingArmy
+    }
+
+    return nil
+}
+
+func (model *CombatModel) GetUnitById(id uint64) *ArmyUnit {
+    for _, unit := range model.DefendingArmy.units {
+        if unit.Id == id {
+            return unit
+        }
+    }
+
+    for _, unit := range model.AttackingArmy.units {
+        if unit.Id == id {
+            return unit
+        }
+    }
+
+    // FIXME: check killed units?
+
+    return nil
+}
+
+func (model *CombatModel) NextUnitId() uint64 {
+    value := model.LastUnitId
+    model.LastUnitId += 1
+    return value
 }
 
 /* makes a 5x5 square of tiles have mud on them
@@ -3348,7 +3413,7 @@ func distance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
     return math.Sqrt(xDiff * xDiff + yDiff * yDiff)
 }
 
-func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
+func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators AddDamageIndicators) bool {
     animationSpeed := uint64(5)
 
     alive := len(model.Projectiles) > 0
@@ -3394,6 +3459,30 @@ func (model *CombatModel) UpdateProjectiles(counter uint64) bool {
 
     model.Projectiles = projectilesOut
 
+    if model.Remote != nil {
+        if model.RemoteProjectiles > 0 {
+            select {
+                case event := <-model.Remote.Events:
+                    switch event.GetType() {
+                        case RemoteProjectileFinishedType:
+                            model.RemoteProjectiles -= 1
+                        case RemoteDamageIndicatorType:
+                            event := event.(*RemoteDamageIndicatorEvent)
+                            unit := model.GetUnitById(event.Id)
+                            if unit != nil {
+                                damageIndicators.AddDamageIndicator(unit, event.Damage)
+                            }
+                        default:
+                            // FIXME: its ugly to pass nil for a SpellSystem here
+                            model.HandleRemoteEvent(nil, event)
+                    }
+                default:
+            }
+        }
+
+        return model.RemoteProjectiles > 0 || alive
+    }
+
     return alive
 }
 
@@ -3417,6 +3506,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
                 fireDamage += moreDamage
                 lost += moreLost
             }
+            model.RemoteDamage(defender, DamageNormal, fireDamage)
             model.AddLogEvent(fmt.Sprintf("%v uses fire breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), fireDamage))
             // damage += fireDamage
             model.Observer.FireBreathAttack(attacker, defender, fireDamage)
@@ -3437,6 +3527,7 @@ func (model *CombatModel) doBreathAttack(attacker *ArmyUnit, defender *ArmyUnit)
                 lightningDamage += moreLightningDamage
                 lost += mostLost
             }
+            model.RemoteDamage(defender, DamageNormal, lightningDamage)
             model.AddLogEvent(fmt.Sprintf("%v uses lightning breath on %v for %v damage", attacker.Unit.GetName(), defender.Unit.GetName(), lightningDamage))
             // damage += lightningDamage
             model.Observer.LightningBreathAttack(attacker, defender, lightningDamage)
@@ -3552,6 +3643,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
         damageFuncs = append(damageFuncs, func() int {
             defender.TakeDamage(damage, damageType)
+            model.RemoteDamage(defender, damageType, damage)
             model.Observer.PoisonTouchAttack(attacker, defender, damage)
             model.AddLogEvent(fmt.Sprintf("%v is poisoned for %v damage. HP now %v", defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3579,7 +3671,9 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
                 damageFuncs = append(damageFuncs, func() int {
                     defender.TakeDamage(damage, DamageUndead)
+                    model.RemoteDamage(defender, DamageUndead, damage)
                     attacker.Heal(damage)
+                    model.RemoteHeal(attacker, damage)
                     model.AddLogEvent(fmt.Sprintf("%v steals %v life from %v. HP now %v", attacker.Unit.GetName(), damage, defender.Unit.GetName(), defender.GetHealth()))
 
                     model.Observer.LifeStealTouchAttack(attacker, defender, damage)
@@ -3606,6 +3700,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
 
                 model.AddLogEvent(fmt.Sprintf("%v turns %v to stone for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3646,6 +3741,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
                 model.AddLogEvent(fmt.Sprintf("%v dispels evil from %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DispelEvilTouchAttack(attacker, defender, damage)
@@ -3668,6 +3764,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageNormal)
+                model.RemoteDamage(defender, DamageNormal, damage)
 
                 model.AddLogEvent(fmt.Sprintf("%v uses death touch on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
@@ -3690,6 +3787,7 @@ func (model *CombatModel) doTouchAttack(attacker *ArmyUnit, defender *ArmyUnit, 
 
             damageFuncs = append(damageFuncs, func() int {
                 defender.TakeDamage(damage, DamageIrreversable)
+                model.RemoteDamage(defender, DamageIrreversable, damage)
                 model.AddLogEvent(fmt.Sprintf("%v uses destruction on %v for %v damage. HP now %v", attacker.Unit.GetName(), defender.Unit.GetName(), damage, defender.GetHealth()))
 
                 model.Observer.DestructionAttack(attacker, defender, damage)
@@ -3725,6 +3823,7 @@ func (model *CombatModel) ComputeWallDefense(attacker *ArmyUnit, defender *ArmyU
 func (model *CombatModel) ApplyImmolationDamage(defender *ArmyUnit, immolationDamage int) int {
     if immolationDamage > 0 {
         hurt, _ := ApplyAreaDamage(defender, immolationDamage, units.DamageImmolation, 0)
+        model.RemoteDamage(defender, DamageNormal, hurt)
         model.AddLogEvent(fmt.Sprintf("%v is immolated for %v damage. HP now %v", defender.Unit.GetName(), hurt, defender.GetHealth()))
         return hurt
     }
@@ -3747,6 +3846,7 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
     }
 
     hurt, _ := ApplyDamage(defender, damageRolls, units.DamageMeleePhysical, attacker.GetDamageSource(), modifiers)
+    model.RemoteDamage(defender, modifiers.DamageType, hurt)
     model.AddLogEvent(fmt.Sprintf("%v damage rolls %v, %v took %v damage. HP now %v", attacker.Unit.GetName(), damageRolls, defender.Unit.GetName(), hurt, defender.GetHealth()))
     return hurt
 }
@@ -4020,11 +4120,14 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 if len(throwRolls) > 0 {
-                    damage, _ := ApplyDamage(defender, throwRolls, units.DamageThrown, attacker.GetDamageSource(), DamageModifiers{
+                    modifiers := DamageModifiers{
                         ArmorPiercing: attacker.HasAbility(data.AbilityArmorPiercing),
                         NegateWeaponImmunity: attacker.CanNegateWeaponImmunity(),
                         EldritchWeapon: attacker.HasEnchantment(data.UnitEnchantmentEldritchWeapon),
-                    })
+                    }
+
+                    damage, _ := ApplyDamage(defender, throwRolls, units.DamageThrown, attacker.GetDamageSource(), modifiers)
+                    model.RemoteDamage(defender, modifiers.DamageType, damage)
 
                     totalAttackerDamage += damage
 
@@ -4033,6 +4136,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                 }
 
                 totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
+
                 for _, f := range damageFuncs {
                     totalAttackerDamage += f()
                 }
@@ -4041,6 +4145,9 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                 defender.TakeDamage(gazeDamage, DamageNormal)
                 defender.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
+
+                model.RemoteDamage(defender, DamageNormal, gazeDamage)
+                model.RemoteDamage(defender, DamageIrreversable, gazeIrreversableDamage)
 
             case 1:
                 immolationDamage := 0
@@ -4063,6 +4170,9 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 
                 attacker.TakeDamage(gazeDamage, DamageNormal)
                 attacker.TakeDamage(gazeIrreversableDamage, DamageIrreversable)
+
+                model.RemoteDamage(attacker, DamageNormal, gazeDamage)
+                model.RemoteDamage(attacker, DamageIrreversable, gazeIrreversableDamage)
 
             case 2:
 
@@ -4110,8 +4220,11 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
                             damageFuncs = append(damageFuncs, model.doTouchAttack(attacker, defender, attackerFear)...)
                         }
 
-                        totalAttackerDamage += model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
-                        totalAttackerDamage += model.ApplyImmolationDamage(defender, immolationDamage)
+                        meleeDamage := model.ApplyMeleeDamage(attacker, defender, attackerDamageRolls)
+                        immolationDamage := model.ApplyImmolationDamage(defender, immolationDamage)
+
+                        totalAttackerDamage += meleeDamage
+                        totalAttackerDamage += immolationDamage
                         for _, f := range damageFuncs {
                             totalAttackerDamage += f()
                         }
@@ -4246,6 +4359,10 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
 }
 
 func (model *CombatModel) KillUnit(unit *ArmyUnit){
+    if model.IsRemoteUnit(unit) {
+        model.RemoteKillUnit(unit)
+    }
+
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
         model.DefendingArmy.KillUnit(unit)
@@ -4258,6 +4375,7 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
     if unit == model.SelectedUnit {
         model.NextUnit()
+        model.RemoteDoneTurn(unit)
     }
 }
 
@@ -4286,12 +4404,29 @@ func (model *CombatModel) RecallUnit(unit *ArmyUnit) {
     model.RemoveUnit(unit)
 }
 
+func (model *CombatModel) IsRemoteUnit(unit *ArmyUnit) bool {
+    remoteDefender := (model.Remote != nil && !model.Remote.Attacker)
+    remoteAttacker := (model.Remote != nil && model.Remote.Attacker)
+
+    isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
+
+    if unit.Team == TeamDefender {
+        return (remoteDefender && !isConfused) || (remoteAttacker && isConfused)
+    } else {
+        return (remoteAttacker && !isConfused) || (remoteDefender && isConfused)
+    }
+}
+
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
     isConfused := unit.ConfusionAction == ConfusionActionEnemyControl
+
+    remoteDefender := (model.Remote != nil && !model.Remote.Attacker)
+    remoteAttacker := (model.Remote != nil && model.Remote.Attacker)
+
     if unit.Team == TeamDefender {
-        return (model.DefendingArmy.IsAI() && !isConfused) || (model.AttackingArmy.IsAI() && isConfused)
+        return ((model.DefendingArmy.IsAI() || remoteDefender) && !isConfused) || ((model.AttackingArmy.IsAI() || remoteAttacker) && isConfused)
     } else {
-        return (model.AttackingArmy.IsAI() && !isConfused) || (model.DefendingArmy.IsAI() && isConfused)
+        return ((model.AttackingArmy.IsAI() || remoteAttacker) && !isConfused) || ((model.DefendingArmy.IsAI() || remoteDefender) && isConfused)
     }
 }
 
@@ -4772,6 +4907,58 @@ func getSpellSave(caster *ArmyUnit) int {
     return caster.GetSpellSave()
 }
 
+func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *ArmyUnit, spell spellbook.Spell, unitCaster *ArmyUnit, army *Army) {
+    switch spell.Name {
+        case "Fireball":
+            model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
+        case "Ice Bolt":
+            model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
+        case "Star Fires":
+            model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
+        case "Psionic Blast":
+            model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
+        case "Doom Bolt":
+            model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
+        case "Fire Bolt":
+            model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
+        case "Lightning Bolt":
+            model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
+        case "Warp Lightning":
+            model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
+        case "Life Drain":
+            model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
+        case "Dispel Evil":
+            model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
+        case "Healing":
+            model.AddProjectile(spellSystem.CreateHealingProjectile(target))
+    }
+}
+
+func (model *CombatModel) doUnitCast(caster *ArmyUnit, spell spellbook.Spell) {
+    charge, hasCharge := caster.SpellCharges[spell]
+    if hasCharge && charge > 0 {
+        caster.SpellCharges[spell] -= 1
+    } else {
+        // units pay the full cost of a spell with no modifiers
+        caster.CastingSkill -= float32(spell.Cost(false))
+    }
+    caster.Casted = true
+
+    // just by virtue of setting the moves to 0 will cause the next unit to be selected
+    caster.MovesLeft = fraction.FromInt(0)
+
+    // I think this is an event rather than just calling model.DoneTurn()
+    // so that the projectiles can fire before the next unit gets a chance to act
+    /*
+    select {
+        case model.Events <- &CombatEventNextUnit{}:
+            model.RemoteDoneTurn(caster)
+        default:
+    }
+    */
+    // model.DoneTurn()
+}
+
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
 func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func(bool)){
 
@@ -4833,81 +5020,49 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     doomBoltTarget := targetNotImmune
     disintegrateTarget := targetNotImmune
 
+    standardUnitTarget := func(target *ArmyUnit){
+        model.doUnitTargetSpell(spellSystem, target, spell, unitCaster, army)
+        model.RemoteUnitTargetSpell(target, spell, unitCaster, army)
+        castedCallback(true)
+    }
+
+    targetFantasticDeathOrChaos := func (target *ArmyUnit) bool {
+        realm := target.Unit.GetRealm()
+        if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
+            return true
+        }
+
+        return false
+    }
+
     switch spell.Name {
         case "Fireball":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFireballProjectile(target, spell.Cost(false) / 3))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Ice Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateIceBoltProjectile(target, spell.Cost(false)))
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Star Fires":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateStarFiresProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
-                realm := target.Unit.GetRealm()
-                if target.Unit.GetRace() == data.RaceFantastic && (realm == data.ChaosMagic || realm == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantasticDeathOrChaos)
         case "Psionic Blast":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePsionicBlastProjectile(target, spell.Cost(false) / 2))
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Doom Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDoomBoltProjectile(target))
-                castedCallback(true)
-            }, doomBoltTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, doomBoltTarget)
         case "Fire Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFireBoltProjectile(target, spell.Cost(false)))
-                castedCallback(true)
-            }, fireBoltTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, fireBoltTarget)
         case "Lightning Bolt":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLightningBoltProjectile(target, spell.Cost(false) - 5))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Warp Lightning":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpLightningProjectile(target))
-                castedCallback(true)
-            }, warpLightningTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpLightningTarget)
         case "Flame Strike":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
             }, targetAny)
             castedCallback(true)
         case "Life Drain":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
-                castedCallback(true)
-            }, targetNotImmune)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Dispel Evil":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
-                if target.Unit.GetRace() == data.RaceFantastic &&
-                   (target.Unit.GetRealm() == data.ChaosMagic || target.Unit.GetRealm() == data.DeathMagic) {
-                    return true
-                }
-
-                return false
-            })
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantasticDeathOrChaos)
         case "Healing":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHealingProjectile(target))
-                castedCallback(true)
-            }, healingTarget)
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, healingTarget)
         case "Holy Word":
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
@@ -5849,6 +6004,74 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     }
 }
 
+
+func (model *CombatModel) RemoteUnitCastSpell(caster *ArmyUnit, spell spellbook.Spell) error {
+    if model.Remote != nil {
+        event := RemoteUnitCastSpellEvent{
+            Id: caster.Id,
+            Type: RemoteUnitCastSpellType,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit cast spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
+    if model.Remote != nil {
+        event := RemoteSpellFailedEvent{
+            Type: RemoteSpellFailedType,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit target spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell, caster *ArmyUnit, army *Army) error {
+    if model.Remote != nil {
+        // a little ugly but this means there is no caster
+        casterId := uint64(9999999)
+        if caster != nil {
+            casterId = caster.Id
+        }
+
+        event := RemoteUnitTargetSpellEvent{
+            TargetId: target.Id,
+            Type: RemoteUnitTargetSpellType,
+            Spell: spell.Name,
+            OverrideCost: spell.OverrideCost,
+            CasterId: casterId,
+            ArmyId: army.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote unit target spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
     switch spell.Name {
         case "Healing":
@@ -6215,6 +6438,55 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
         aiArmy := model.GetArmy(aiUnit)
 
+        // remote side will send an update
+        if model.IsAIControlled(aiUnit) && model.IsRemoteUnit(aiUnit) {
+            select {
+                case event := <-model.Remote.Events:
+                    switch event.GetType() {
+                        case RemoteMoveType:
+                            event := event.(*RemoteMoveEvent)
+                            path := event.Path
+                            id := event.Id
+                            unit := model.GetUnitById(id)
+                            if unit != nil {
+                                actions.MoveUnit(unit, path)
+                            }
+                        case RemoteRangeAttackType:
+                            event := event.(*RemoteRangeAttackEvent)
+                            attackerId := event.AttackerId
+                            defenderId := event.DefenderId
+                            attacker := model.GetUnitById(attackerId)
+                            defender := model.GetUnitById(defenderId)
+
+                            if attacker != nil && defender != nil {
+                                actions.RangeAttack(attacker, defender)
+                            }
+                        case RemoteMeleeAttackType:
+                            event := event.(*RemoteMeleeAttackEvent)
+                            attackerId := event.AttackerId
+                            defenderId := event.DefenderId
+                            attacker := model.GetUnitById(attackerId)
+                            defender := model.GetUnitById(defenderId)
+                            if attacker != nil && defender != nil {
+                                actions.MeleeAttack(attacker, defender)
+                            }
+                        case RemoteTeleportType:
+                            event := event.(*RemoteTeleportEvent)
+                            id := event.Id
+                            unit := model.GetUnitById(id)
+                            if unit != nil {
+                                actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
+                            }
+                        default:
+                            model.HandleRemoteEvent(spellSystem, event)
+
+                    }
+                default:
+            }
+
+            return
+        }
+
         // don't let a single auto unit cast wizard spells
         if model.IsAIControlled(aiUnit) {
             casted := model.doAiCast(spellSystem, aiArmy)
@@ -6238,10 +6510,12 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     if actionSelect {
         if model.TileIsEmpty(actionTileX, actionTileY) && model.CanMoveTo(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl()) {
             if model.SelectedUnit.CanTeleport() {
+                model.RemoteTeleport(model.SelectedUnit, actionTileX, actionTileY)
                 actions.Teleport(model.SelectedUnit, actionTileX, actionTileY, model.SelectedUnit.HasAbility(data.AbilityMerging))
             } else {
                 path, _ := model.FindPath(model.SelectedUnit, actionTileX, actionTileY, actions.ExtraControl())
                 path = path[1:]
+                model.RemoteMove(model.SelectedUnit, path)
                 actions.MoveUnit(model.SelectedUnit, path)
             }
         } else {
@@ -6252,9 +6526,11 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
            if defender != nil {
                // try a ranged attack first
                if model.withinArrowRange(attacker, defender) && model.canRangeAttack(attacker, defender) {
+                   model.RemoteRangeAttack(attacker, defender)
                    actions.RangeAttack(attacker, defender)
                // then fall back to melee
                } else if model.withinMeleeRange(attacker, defender) && model.canMeleeAttack(attacker, defender, true){
+                   model.RemoteMeleeAttack(attacker, defender)
                    actions.MeleeAttack(attacker, defender)
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
@@ -6268,8 +6544,255 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
     // the unit died or is out of moves
     if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
+        model.RemoteDoneTurn(model.SelectedUnit)
         model.DoneTurn()
     }
+}
+
+func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event RemoteEvent) {
+    switch event.GetType() {
+        case RemoteDoneTurnType:
+            event := event.(*RemoteDoneTurnEvent)
+            id := event.Id
+            unit := model.GetUnitById(id)
+            if unit != nil {
+                model.DoneTurn()
+            }
+        case RemoteDamageType:
+            event := event.(*RemoteDamageEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.TakeDamage(event.Damage, event.DamageKind)
+            }
+        case RemoteHealType:
+            event := event.(*RemoteHealEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.Heal(event.Heal)
+            }
+        case RemoteKillUnitType:
+            event := event.(*RemoteKillUnitEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                model.KillUnit(unit)
+            }
+        case RemoteUnitCastSpellType:
+            event := event.(*RemoteUnitCastSpellEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                spell := model.AllSpells.FindByName(event.Spell)
+                if spell.Valid() {
+                    spell.OverrideCost = event.OverrideCost
+                    model.doUnitCast(unit, spell)
+                }
+            }
+        case RemoteUnitTargetSpellType:
+            // FIXME: this nil check is ugly here
+            if spellSystem != nil {
+                event := event.(*RemoteUnitTargetSpellEvent)
+                unit := model.GetUnitById(event.TargetId)
+                if unit != nil {
+                    spell := model.AllSpells.FindByName(event.Spell)
+                    if spell.Valid() {
+                        spell.OverrideCost = event.OverrideCost
+
+                        army := model.GetArmyById(event.ArmyId)
+                        caster := model.GetUnitById(event.CasterId)
+
+                        model.doUnitTargetSpell(spellSystem, unit, spell, caster, army)
+                    }
+                }
+            }
+    }
+}
+
+func (model *CombatModel) RemoteKillUnit(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteKillUnitEvent{
+            Type: RemoteKillUnitType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteDoneTurn(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteDoneTurnEvent{
+            Type: RemoteDoneTurnType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteMeleeAttack(attacker *ArmyUnit, defender *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteMeleeAttackEvent{
+            Type: RemoteMeleeAttackType,
+            AttackerId: attacker.Id,
+            DefenderId: defender.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteRangeAttackEvent{
+            Type: RemoteRangeAttackType,
+            AttackerId: attacker.Id,
+            DefenderId: defender.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote range attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteFinishMeleeAttack() error {
+    if model.Remote != nil {
+        event := RemoteFinishMeleeAttackEvent{
+            Type: RemoteFinishMeleeAttackType,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote melee finish event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteDamageIndicator(unit *ArmyUnit, damage int) error {
+    if model.Remote != nil {
+        event := RemoteDamageIndicatorEvent{
+            Id: unit.Id,
+            Type: RemoteDamageIndicatorType,
+            Damage: damage,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage indicator event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteHeal(unit *ArmyUnit, heal int) error {
+    if model.Remote != nil {
+        event := RemoteHealEvent{
+            Id: unit.Id,
+            Type: RemoteHealType,
+            Heal: heal,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteDamage(unit *ArmyUnit, kind DamageType, damage int) error {
+    if model.Remote != nil {
+        event := RemoteDamageEvent{
+            Id: unit.Id,
+            Type: RemoteDamageType,
+            DamageKind: kind,
+            Damage: damage,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteTeleport(unit *ArmyUnit, x int, y int) error {
+    // send teleport event to remote side
+    if model.Remote != nil {
+        event := RemoteTeleportEvent{
+            Id: unit.Id,
+            Type: RemoteTeleportType,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote teleport event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) error {
+    if model.Remote != nil {
+        event := RemoteMoveEvent{
+            Id: unit.Id,
+            Type: RemoteMoveType,
+            Path: path,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote move event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 type AddDamageIndicators interface {
@@ -6277,7 +6800,7 @@ type AddDamageIndicators interface {
 }
 
 func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, damageIndicator AddDamageIndicators) func (*ArmyUnit) {
-    return func (unit *ArmyUnit){
+    return model.createRemoteProjectileEffect(func (unit *ArmyUnit){
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
         }
@@ -6296,7 +6819,7 @@ func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, dam
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 
 }
 
@@ -6307,50 +6830,57 @@ func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateIceBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageCold, DamageSourceSpell, DamageModifiers{Magic: data.NatureMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFireBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         fireDamage, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageFire, DamageSourceSpell, DamageModifiers{Magic: data.ChaosMagic})
+        model.RemoteDamage(unit, DamageNormal, fireDamage)
         damageIndicator.AddDamageIndicator(unit, fireDamage)
+        model.RemoteDamageIndicator(unit, fireDamage)
 
         model.AddLogEvent(fmt.Sprintf("Firebolt hits %v for %v damage", unit.Unit.GetName(), fireDamage))
         if unit.GetHealth() <= 0 {
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", unit.Unit.GetRace(), unit.Unit.GetName()))
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFireballProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt := model.ApplyImmolationDamage(unit, strength)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateStarFiresProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
         }
@@ -6369,46 +6899,56 @@ func (model *CombatModel) CreateDispelEvilProjectileEffect(damageIndicator AddDa
         }
 
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreatePsionicBlastProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         _ = strength // strength currently unused; damage is fixed by spell rules
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(15, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{Magic: data.SorceryMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateDoomBoltProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
-        unit.TakeDamage(10, DamageNormal)
-        damageIndicator.AddDamageIndicator(unit, 10)
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
+        damage := 10
+
+        unit.TakeDamage(damage, DamageNormal)
+        model.RemoteDamage(unit, DamageNormal, damage)
+        damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateLightningBoltProjectileEffect(strength int, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt, _ := ApplyDamage(unit, []int{ComputeRoll(strength, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+        model.RemoteDamage(unit, DamageNormal, hurt)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         damage := 0
         // 10 separate attacks are different than a single 55-point attack due to defense
         for strength := range 10 {
@@ -6416,32 +6956,39 @@ func (model *CombatModel) CreateWarpLightningProjectileEffect(damageIndicator Ad
             damage += hurt
         }
 
+        model.RemoteDamage(unit, DamageNormal, damage)
+
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit, damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         resistance := GetResistanceFor(unit, data.LifeMagic) - reduceResistance
         damage := rand.N(10) + 1 - resistance
         if damage > 0 {
             unit.TakeDamage(damage, DamageUndead)
+            model.RemoteDamage(unit, DamageUndead, damage)
             damageIndicator.AddDamageIndicator(unit, damage)
+            model.RemoteDamageIndicator(unit, damage)
             if unitCaster != nil {
                 unitCaster.Heal(damage)
+                model.RemoteHeal(unitCaster, damage)
             } else {
                 army := model.GetArmyForPlayer(player)
                 army.ManaPool += damage * 3
+                // FIXME: send remote mana event
             }
 
             if unit.GetHealth() <= 0 {
                 model.KillUnit(unit)
             }
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateFlameStrikeProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
@@ -6461,9 +7008,10 @@ func (model *CombatModel) CreateRecallHeroProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateHealingProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.Heal(5)
-    }
+        model.RemoteHeal(unit, 5)
+    })
 }
 
 func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
@@ -7019,12 +7567,53 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     return false
 }
 
+func (model *CombatModel) createRemoteProjectileEffect(effect func(*ArmyUnit)) func(*ArmyUnit) {
+    return func(unit *ArmyUnit) {
+        if model.Remote != nil {
+            // the remote side will compute damage and apply it
+            // if !model.IsRemoteUnit(unit) {
+            // the server always computes projectile effects
+            if !model.Remote.IsServer {
+                model.RemoteProjectiles += 1
+                return
+            }
+        }
+
+        effect(unit)
+
+        if model.Remote != nil {
+            model.Remote.SendEvent(&RemoteProjectileFinishedEvent{
+                Type: RemoteProjectileFinishedType,
+            })
+        }
+    }
+}
+
 func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndicators AddDamageIndicators) func(*ArmyUnit) {
-    return func (defender *ArmyUnit){
-        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
+    return model.createRemoteProjectileEffect(func (defender *ArmyUnit){
+        /*
+        if model.Remote != nil {
+            // the remote side will compute damage and apply it
+            if model.IsRemoteUnit(attacker) {
+                model.RemoteProjectiles += 1
+                return
+            }
+        }
+
+        defer func() {
+            if model.Remote != nil {
+                model.Remote.SendEvent(&RemoteProjectileFinishedEvent{
+                    Type: RemoteProjectileFinishedType,
+                })
+            }
+        }()
+        */
+
         if defender.GetHealth() <= 0 {
             return
         }
+
+        tileDistance := computeTileDistance(attacker.X, attacker.Y, defender.X, defender.Y)
 
         damage := attacker.ComputeRangeDamage(defender, tileDistance)
 
@@ -7042,6 +7631,10 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 
         appliedDamage, _ := ApplyDamage(defender, []int{damage}, attacker.GetRangedAttackDamageType(), attacker.GetDamageSource(), modifiers)
 
+        if appliedDamage > 0 {
+            model.RemoteDamage(defender, modifiers.DamageType, appliedDamage)
+        }
+
         totalDamage := appliedDamage
 
         log.Info("attacker %v %v rolled %v ranged damage to defender %v %v, applied %v", attacker.Unit.GetRace(), attacker.Unit.GetName(), damage, defender.Unit.GetRace(), defender.Unit.GetName(), appliedDamage)
@@ -7053,9 +7646,12 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
             }
         }
 
-        totalDamage += model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+        immolationDamage := model.ApplyImmolationDamage(defender, model.immolationDamage(attacker, defender))
+        totalDamage += immolationDamage
 
         damageIndicators.AddDamageIndicator(defender, totalDamage)
+
+        model.RemoteDamageIndicator(defender, totalDamage)
 
         // log.Printf("Ranged attack from %v: damage=%v defense=%v distance=%v", attacker.Unit.Name, damage, defense, tileDistance)
 
@@ -7069,7 +7665,7 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
             model.AddLogEvent(fmt.Sprintf("%v %v is killed", defender.Unit.GetRace(), defender.Unit.GetName()))
             model.KillUnit(defender)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateRangeAttackWallEffect(attacker *ArmyUnit, x int, y int) func(*ArmyUnit) {

@@ -1,7 +1,10 @@
 package combat
 
 import (
-    // "log"
+    "log"
+    "net"
+    "context"
+    "time"
     "testing"
     "math"
     "slices"
@@ -14,6 +17,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
@@ -1067,7 +1071,7 @@ func TestFullCombat(test *testing.T){
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
     state := Run(model)
     if state != CombatStateAttackerWin {
@@ -1105,7 +1109,7 @@ func TestInvisibleEnemy(test *testing.T) {
 
         var allSpells spellbook.Spells
 
-        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
         targeted := false
         onTarget := func(unit *ArmyUnit){
@@ -1165,7 +1169,7 @@ func TestSpellSkillItemBonus(test *testing.T) {
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
     _ = model
 
     // hero should get base (5) + item (10) = 15 spell skill
@@ -1222,7 +1226,7 @@ func TestSpellSavePower(test *testing.T) {
 
     var allSpells spellbook.Spells
 
-    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10))
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
 
     casted := false
     model.InvokeSpell(&ProxySpellSystem{Model: model}, attackingArmy, attackingUnit, spellbook.Spell{Name: "Banish"}, func(success bool) {
@@ -1242,8 +1246,8 @@ func TestSpellSavePower(test *testing.T) {
     }
 }
 
-func makeTestCombatPlayer() *playerlib.Player {
-    return playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{})
+func makeTestCombatPlayer(human bool) *playerlib.Player {
+    return playerlib.MakePlayer(setup.WizardCustom{}, human, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{})
 }
 
 type noopAIActions struct{}
@@ -1257,7 +1261,7 @@ func (noopAIActions) Teleport(*ArmyUnit, int, int, bool) {}
 func (noopAIActions) DoProjectiles() {}
 
 func TestLayoutUnitsStayInsideMap(test *testing.T) {
-    player := makeTestCombatPlayer()
+    player := makeTestCombatPlayer(false)
     model := &CombatModel{
         Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
     }
@@ -1277,8 +1281,8 @@ func TestLayoutUnitsStayInsideMap(test *testing.T) {
 }
 
 func TestAIMovementPathfindingOffMapUnit(test *testing.T) {
-    defendingArmy := &Army{Player: makeTestCombatPlayer()}
-    attackingArmy := &Army{Player: makeTestCombatPlayer()}
+    defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+    attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
     defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
@@ -1303,8 +1307,8 @@ func TestAIMovementPathfindingOffMapUnit(test *testing.T) {
 }
 
 func TestCombatOffMapTileAccessDoesNotPanic(test *testing.T) {
-    defendingArmy := &Army{Player: makeTestCombatPlayer()}
-    attackingArmy := &Army{Player: makeTestCombatPlayer()}
+    defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+    attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
     defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
@@ -1333,4 +1337,257 @@ func TestCombatOffMapTileAccessDoesNotPanic(test *testing.T) {
     model.Teleport(attacker, 5, 5)
     model.KillUnit(defender)
     model.RemoveUnit(attacker)
+}
+
+func TestRemoteRangeDamage(test *testing.T) {
+
+    var allSpells spellbook.Spells
+
+    peer1, peer2 := net.Pipe()
+
+    defer peer1.Close()
+    defer peer2.Close()
+
+    // remote side is defender, so false for isAttacker
+    remote := MakeRemote(true, false, peer1)
+
+    defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+    attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
+
+    defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+    // attacking army has a unit that can range attack. grant very high tohit
+    attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attackingUnit := attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+    model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+    effect := model.CreateRangeAttackEffect(attackingUnit, &FakeDamageIndicator{})
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    // remote side is attacker, so true for isAttacker
+    remoteDefender := MakeRemote(false, true, peer2)
+
+    go remoteDefender.RunReceiveLoop(quit)
+
+    remoteDidDamage := false
+    finish := make(chan struct{})
+
+    go func() {
+        for quit.Err() == nil {
+            select {
+                case <-quit.Done():
+                    return
+                case event := <-remoteDefender.Events:
+                    log.Printf("remote received event: %v", event)
+                    switch event.GetType() {
+                        case RemoteDamageType:
+                            event := event.(*RemoteDamageEvent)
+                            if event.Id == defendingArmy.units[0].Id && event.Damage > 0 {
+                                remoteDidDamage = true
+                                close(finish)
+                            }
+
+                    }
+            }
+        }
+    }()
+
+    // invoking the effect should send a damage event to the remote
+    effect(defendingArmy.units[0])
+
+    select {
+        case <-time.After(500 * time.Millisecond):
+            test.Errorf("Error: remote did not receive damage event")
+        case <-finish:
+            if !remoteDidDamage {
+                test.Errorf("Error: remote did not receive damage event")
+            }
+    }
+
+}
+
+type proxySpellSystem struct {
+    TestSpellSystem
+}
+
+func TestRemoteUnitCastProjectile(test *testing.T) {
+
+    makeProjectile := func (target *ArmyUnit, effect func(*ArmyUnit)) *Projectile {
+        // a projectile that explodes immediately and invokes the effect
+        return &Projectile{
+            Animation: util.MakeAnimation(nil, true),
+            Explode: util.MakeAnimation(nil, false),
+            Exploding: true,
+            Target: target,
+            Effect: effect,
+        }
+    }
+
+    doSpellTest := func(spellName string, defender bool) {
+        log.Printf("== Testing spell: %s", spellName)
+        var allSpells spellbook.Spells
+
+        peer1, peer2 := net.Pipe()
+
+        defer peer1.Close()
+        defer peer2.Close()
+
+        // remote side is defender, so false for isAttacker
+        remote := MakeRemote(true, false, peer1)
+
+        defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+        attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
+
+        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+        // attacking army has a unit that can range attack. grant very high tohit
+        attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        attackingUnit := attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+        // a different unit that can be healed
+        attacker2 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        attackingFriend := attackingArmy.AddUnit(attacker2)
+        // set health to half so we can test healing
+        attackingFriend.TakeDamage(attackingFriend.GetMaxHealth() / 2, DamageNormal)
+
+        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+
+        quit, cancel := context.WithCancel(context.Background())
+        defer cancel()
+
+        // remote side is attacker, so true for isAttacker
+        remoteDefender := MakeRemote(false, true, peer2)
+
+        go remoteDefender.RunReceiveLoop(quit)
+
+        didCastSpell := false
+        didDamage := false
+        projectileFinished := false
+        // remoteDidDamage := false
+        finish := make(chan struct{})
+
+        expectedId := defendingUnit.Id
+        if !defender {
+            expectedId = attackingFriend.Id
+        }
+
+        go func() {
+            for quit.Err() == nil {
+                select {
+                    case <-quit.Done():
+                        return
+                    case event := <-remoteDefender.Events:
+                        switch event.GetType() {
+                            case RemoteUnitTargetSpellType:
+                                event := event.(*RemoteUnitTargetSpellEvent)
+                                if event.TargetId == expectedId && event.Spell == spellName {
+                                    didCastSpell = true
+                                }
+                            case RemoteDamageType:
+                                event := event.(*RemoteDamageEvent)
+                                if event.Id == expectedId && event.Damage > 0 {
+                                    didDamage = true
+                                }
+                            case RemoteHealType:
+                                event := event.(*RemoteHealEvent)
+                                if event.Id == expectedId && event.Heal > 0 {
+                                    // not really damage but we can treat it as such for the purposes of this test
+                                    didDamage = true
+                                }
+                            case RemoteProjectileFinishedType:
+                                projectileFinished = true
+                        }
+                }
+
+                if didCastSpell && didDamage && projectileFinished {
+                    close(finish)
+                    break
+                }
+            }
+        }()
+
+        spellSystem := proxySpellSystem{
+            createFireballProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreateFireballProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
+            createIceBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreateIceBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
+            createStarFiresProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateStarFiresProjectileEffect(&FakeDamageIndicator{}))
+            },
+            createPsionicBlastProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreatePsionicBlastProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
+            createDoomBoltProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateDoomBoltProjectileEffect(&FakeDamageIndicator{}))
+            },
+            createFireBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreateFireBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
+            createLightningBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
+                return makeProjectile(target, model.CreateLightningBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+            },
+            createWarpLightningProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateWarpLightningProjectileEffect(&FakeDamageIndicator{}))
+            },
+            createLifeDrainProjectile: func(target *ArmyUnit, cost int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateLifeDrainProjectileEffect(1000, player, unitCaster, &FakeDamageIndicator{}))
+            },
+            createDispelEvilProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateDispelEvilProjectileEffect(&FakeDamageIndicator{}, reduce))
+            },
+            createHealingProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateHealingProjectileEffect())
+            },
+        }
+
+        model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
+
+        var counter uint64
+        for model.UpdateProjectiles(counter, &FakeDamageIndicator{}) && counter < 10000 {
+            counter += 1
+        }
+
+        // now the remote side should receive a spell invocation event
+
+        // invoking the effect should send a damage event to the remote
+        // effect(defendingArmy.units[0])
+
+        select {
+            case <-time.After(500 * time.Millisecond):
+            case <-finish:
+        }
+
+        if !didCastSpell {
+            test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+        }
+        if !didDamage {
+            test.Errorf("Error: remote did not receive damage event for %v", spellName)
+        }
+        if !projectileFinished {
+            test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+        }
+    }
+
+    damageUnitSpells := []string{
+        "Fireball", "Ice Bolt", "Star Fires",
+        "Psionic Blast", "Doom Bolt", "Fire Bolt",
+        "Lightning Bolt", "Warp Lightning", "Life Drain",
+        "Dispel Evil",
+    }
+
+    healUnitSpells := []string{
+        "Healing",
+    }
+
+    for _, spell := range damageUnitSpells {
+        doSpellTest(spell, true)
+    }
+
+    for _, spell := range healUnitSpells {
+        doSpellTest(spell, false)
+    }
 }

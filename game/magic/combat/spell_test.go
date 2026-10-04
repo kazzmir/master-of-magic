@@ -13,6 +13,16 @@ import (
 
 type TestSpellSystem struct {
     createFireballProjectile func(target *ArmyUnit, cost int) *Projectile
+    createIceBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createStarFiresProjectile func(target *ArmyUnit) *Projectile
+    createPsionicBlastProjectile func(target *ArmyUnit, cost int) *Projectile
+    createDoomBoltProjectile func(target *ArmyUnit) *Projectile
+    createFireBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createLightningBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createWarpLightningProjectile func(target *ArmyUnit) *Projectile
+    createLifeDrainProjectile func(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
+    createDispelEvilProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createHealingProjectile func(target *ArmyUnit) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -27,36 +37,69 @@ func (system *TestSpellSystem) CreateFireballProjectile(target *ArmyUnit, cost i
 }
 
 func (system *TestSpellSystem) CreateIceBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createIceBoltProjectile != nil {
+        return system.createIceBoltProjectile(target, cost)
+    }
+
     return nil
 }
 func (system *TestSpellSystem) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
+    if system.createStarFiresProjectile != nil {
+        return system.createStarFiresProjectile(target)
+    }
+
     return nil
 }
 func (system *TestSpellSystem) CreatePsionicBlastProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createPsionicBlastProjectile != nil {
+        return system.createPsionicBlastProjectile(target, cost)
+    }
     return nil
 }
+
 func (system *TestSpellSystem) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
+    if system.createDoomBoltProjectile != nil {
+        return system.createDoomBoltProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateFireBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createFireBoltProjectile != nil {
+        return system.createFireBoltProjectile(target, cost)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createLightningBoltProjectile != nil {
+        return system.createLightningBoltProjectile(target, cost)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWarpLightningProjectile(target *ArmyUnit) *Projectile {
+    if system.createWarpLightningProjectile != nil {
+        return system.createWarpLightningProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
+    if system.createLifeDrainProjectile != nil {
+        return system.createLifeDrainProjectile(target, reduceResistance, player, unitCaster)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createDispelEvilProjectile != nil {
+        return system.createDispelEvilProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
+    if system.createHealingProjectile != nil {
+        return system.createHealingProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
@@ -303,7 +346,7 @@ func TestFireballSpell(test *testing.T){
                 test.Errorf("Expected the defender to be targeted")
             }
 
-            return nil
+            return &Projectile{}
         },
     }
 
