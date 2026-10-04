@@ -106,6 +106,11 @@ func (remote *Remote) RunReceiveLoop(quit context.Context) {
 
         event, err := remote.ReceiveEvent()
         close(done)
+
+        if quit.Err() != nil {
+            return
+        }
+
         if err != nil {
             log.Printf("Error receiving event: %v", err)
             return
