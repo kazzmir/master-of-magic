@@ -34,6 +34,9 @@ const (
     RemoteSpellFailedType = "spell_failed"
     RemoteArmyType = "army"
     RemoteCurseUnitType = "curse_unit"
+    RemoteRemoveUnitEnchantmentType = "remove_unit_enchantment"
+    RemoteRemoveUnitCurseType = "remove_unit_curse"
+    RemoteSwitchTeamsType = "switch_teams"
 )
 
 type Remote struct {
@@ -175,6 +178,9 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
         case RemoteArmyType: return convert[*RemoteArmyEvent](data)
         case RemoteCurseUnitType: return convert[*RemoteCurseUnitEvent](data)
+        case RemoteRemoveUnitEnchantmentType: return convert[*RemoteRemoveUnitEnchantmentEvent](data)
+        case RemoteRemoveUnitCurseType: return convert[*RemoteRemoveUnitCurseEvent](data)
+        case RemoteSwitchTeamsType: return convert[*RemoteSwitchTeamsEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -361,5 +367,34 @@ type RemoteCurseUnitEvent struct {
 }
 
 func (remote *RemoteCurseUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitEnchantmentEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Enchantment data.UnitEnchantment `json:"enchantment"`
+}
+
+func (remote *RemoteRemoveUnitEnchantmentEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitCurseEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Curse data.UnitEnchantment `json:"curse"`
+}
+
+func (remote *RemoteRemoveUnitCurseEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSwitchTeamsEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteSwitchTeamsEvent) GetType() string {
     return remote.Type
 }

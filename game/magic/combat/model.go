@@ -13,6 +13,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/log"
     "github.com/kazzmir/master-of-magic/lib/functional"
+    "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/artifact"
@@ -3032,6 +3033,7 @@ func (model *CombatModel) DoDisenchantUnit(allSpells spellbook.Spells, unit *Arm
 
     for _, enchantment := range removedEnchantments {
         unit.RemoveEnchantment(enchantment)
+        model.RemoteRemoveEnchantment(unit, enchantment)
     }
 }
 
@@ -3061,10 +3063,13 @@ func (model *CombatModel) DoDisenchantUnitCurses(allSpells spellbook.Spells, uni
         if enchantment == data.UnitCurseConfusion {
             unit.ConfusionAction = ConfusionActionNone
         }
+
+        model.RemoteRemoveCurse(unit, enchantment)
     }
 
     if swapArmy {
         model.SwitchTeams(unit)
+        model.RemoteSwitchTeams(unit)
     }
 }
 
@@ -3477,8 +3482,7 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
                                 damageIndicators.AddDamageIndicator(unit, event.Damage)
                             }
                         default:
-                            // FIXME: its ugly to pass nil for a SpellSystem here
-                            model.HandleRemoteEvent(nil, event)
+                            model.HandleRemoteEvent(optional.Empty[SpellSystem](), event)
                     }
                 default:
             }
@@ -4685,12 +4689,12 @@ func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
 }
 
 func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit){
-    target.AddCurse(data.UnitCurseCreatureBinding)
+    model.ApplyCurse(target, data.UnitCurseCreatureBinding)
     model.SwitchTeams(target)
 }
 
 func (model *CombatModel) ApplyPossession(target *ArmyUnit){
-    target.AddCurse(data.UnitCursePossession)
+    model.ApplyCurse(target, data.UnitCursePossession)
     model.SwitchTeams(target)
 }
 
@@ -4949,6 +4953,15 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWebProjectile(target))
         case "Banish":
             model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15 + getSpellSave(unitCaster)))
+        case "Dispel Magic True":
+            disenchantStrength := spell.Cost(false) * 3
+
+            if army.Player.GetWizard().RetortEnabled(data.RetortRunemaster) {
+                disenchantStrength *= 2
+            }
+
+            model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
+
     }
 }
 
@@ -5130,16 +5143,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Banish":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantastic)
         case "Dispel Magic True":
-            model.DoTargetUnitSpell(army, spell, TargetEither, func(target *ArmyUnit){
-                disenchantStrength := spell.Cost(false) * 3
-
-                if army.Player.GetWizard().RetortEnabled(data.RetortRunemaster) {
-                    disenchantStrength *= 2
-                }
-
-                model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEither, standardUnitTarget, targetAny)
         case "Dispel Magic":
             model.DoTargetUnitSpell(army, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false)
@@ -6102,6 +6106,11 @@ func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
             if unit.IsFlying() {
                 return false
             }
+        case "Dispel Magic True":
+            // if the unit has no enchantments or curses then no need to cast dispel magic
+            if len(unit.GetEnchantments()) == 0 && len(unit.GetCurses()) == 0 {
+                return false
+            }
     }
 
     // any enchantment/curse should not be cast on a unit that already has the enchantment/curse
@@ -6492,7 +6501,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
                             }
                         default:
-                            model.HandleRemoteEvent(spellSystem, event)
+                            model.HandleRemoteEvent(optional.Of(spellSystem), event)
 
                     }
                 default:
@@ -6563,7 +6572,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     }
 }
 
-func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event RemoteEvent) {
+func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellSystem], event RemoteEvent) {
     switch event.GetType() {
         case RemoteDoneTurnType:
             event := event.(*RemoteDoneTurnEvent)
@@ -6600,9 +6609,45 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event Remot
                     model.doUnitCast(unit, spell)
                 }
             }
+        case RemoteCurseUnitType:
+            event := event.(*RemoteCurseUnitEvent)
+
+            unit := model.GetUnitById(event.Id)
+            curse := event.Curse
+            if unit != nil {
+                model.ApplyCurse(unit, curse)
+            }
+
+        case RemoteRemoveUnitEnchantmentType:
+            event := event.(*RemoteRemoveUnitEnchantmentEvent)
+
+            unit := model.GetUnitById(event.Id)
+            enchantment := event.Enchantment
+
+            if unit != nil {
+                unit.RemoveEnchantment(enchantment)
+            }
+
+        case RemoteRemoveUnitCurseType:
+            event := event.(*RemoteRemoveUnitCurseEvent)
+
+            unit := model.GetUnitById(event.Id)
+            curse := event.Curse
+
+            if unit != nil {
+                unit.RemoveCurse(curse)
+            }
+
+        case RemoteSwitchTeamsType:
+            event := event.(*RemoteSwitchTeamsEvent)
+            unit := model.GetUnitById(event.Id)
+
+            if unit != nil {
+                model.SwitchTeams(unit)
+            }
+
         case RemoteUnitTargetSpellType:
-            // FIXME: this nil check is ugly here
-            if spellSystem != nil {
+            spellSystem.With(func (spellSystem SpellSystem) {
                 event := event.(*RemoteUnitTargetSpellEvent)
                 unit := model.GetUnitById(event.TargetId)
                 if unit != nil {
@@ -6616,7 +6661,7 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem SpellSystem, event Remot
                         model.doUnitTargetSpell(spellSystem, unit, spell, caster, army)
                     }
                 }
-            }
+            })
     }
 }
 
@@ -6767,6 +6812,63 @@ func (model *CombatModel) RemoteHeal(unit *ArmyUnit, heal int) error {
     return nil
 }
 
+func (model *CombatModel) RemoteSwitchTeams(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteSwitchTeamsEvent{
+            Id: unit.Id,
+            Type: RemoteSwitchTeamsType,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote switch teams event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteRemoveCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteRemoveUnitCurseEvent{
+            Id: unit.Id,
+            Type: RemoteRemoveUnitCurseType,
+            Curse: curse,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove curse event: %v", err)
+        }
+
+        return err
+
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteRemoveEnchantment(unit *ArmyUnit, enchantment data.UnitEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteRemoveUnitEnchantmentEvent{
+            Id: unit.Id,
+            Type: RemoteRemoveUnitEnchantmentType,
+            Enchantment: enchantment,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove enchantment event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
     if model.Remote != nil {
         event := RemoteCurseUnitEvent{
@@ -6777,7 +6879,7 @@ func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment
 
         err := model.Remote.SendEvent(&event)
         if err != nil {
-            log.Error("Failed to send remote damage event: %v", err)
+            log.Error("Failed to send remote curse event: %v", err)
         }
 
         return err
@@ -6847,6 +6949,16 @@ func (model *CombatModel) RemoteMove(unit *ArmyUnit, path pathfinding.Path) erro
     return nil
 }
 
+func (model *CombatModel) ApplyCurse(unit *ArmyUnit, curse data.UnitEnchantment) {
+    switch curse {
+        case data.UnitCurseWeb:
+            unit.AddCurse(data.UnitCurseWeb)
+            unit.WebHealth = 12
+        default:
+            unit.AddCurse(curse)
+    }
+}
+
 type AddDamageIndicators interface {
     AddDamageIndicator(unit *ArmyUnit, damage int)
 }
@@ -6879,7 +6991,7 @@ func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, dam
 
 func (model *CombatModel) CreateMindStormProjectileEffect() func (*ArmyUnit) {
     return func (target *ArmyUnit){
-        target.AddCurse(data.UnitCurseMindStorm)
+        model.ApplyCurse(target, data.UnitCurseMindStorm)
     }
 }
 
@@ -7259,7 +7371,7 @@ func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
 func (model *CombatModel) CreateWeaknessProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 - reduceResistance {
-            unit.AddCurse(data.UnitCurseWeakness)
+            model.ApplyCurse(unit, data.UnitCurseWeakness)
         }
     }
 }
@@ -7267,7 +7379,7 @@ func (model *CombatModel) CreateWeaknessProjectileEffect(reduceResistance int) f
 func (model *CombatModel) CreateBlackSleepProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 - reduceResistance {
-            unit.AddCurse(data.UnitCurseBlackSleep)
+            model.ApplyCurse(unit, data.UnitCurseBlackSleep)
         }
     }
 }
@@ -7275,7 +7387,7 @@ func (model *CombatModel) CreateBlackSleepProjectileEffect(reduceResistance int)
 func (model *CombatModel) CreateVertigoProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic) - reduceResistance {
-            unit.AddCurse(data.UnitCurseVertigo)
+            model.ApplyCurse(unit, data.UnitCurseVertigo)
         }
     }
 }
@@ -7283,7 +7395,7 @@ func (model *CombatModel) CreateVertigoProjectileEffect(reduceResistance int) fu
 func (model *CombatModel) CreateShatterProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic) - reduceResistance {
-            unit.AddCurse(data.UnitCurseShatter)
+            model.ApplyCurse(unit, data.UnitCurseShatter)
         }
     }
 }
@@ -7297,7 +7409,7 @@ func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance in
             if choices.Size() > 0 {
                 values := choices.Values()
                 use := values[rand.N(len(values))]
-                unit.AddCurse(use)
+                model.ApplyCurse(unit, use)
             }
         }
     }
@@ -7306,7 +7418,7 @@ func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance in
 func (model *CombatModel) CreateConfusionProjectileEffect(reduceResistance int) func(*ArmyUnit) {
     return func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-4 - reduceResistance {
-            unit.AddCurse(data.UnitCurseConfusion)
+            model.ApplyCurse(unit, data.UnitCurseConfusion)
         }
     }
 }
@@ -7373,8 +7485,7 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
 
 func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
     return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
-        unit.AddCurse(data.UnitCurseWeb)
-        unit.WebHealth = 12
+        model.ApplyCurse(unit, data.UnitCurseWeb)
 
         model.RemoteCurse(unit, data.UnitCurseWeb)
     })
@@ -7439,7 +7550,7 @@ func (model *CombatModel) CreateWordOfRecallProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, dispelStrength int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         playerArmy := model.GetArmyForPlayer(caster)
         unitArmy := model.GetArmy(unit)
 
@@ -7448,7 +7559,7 @@ func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, d
         } else {
             model.DoDisenchantUnit(model.AllSpells, unit, unitArmy.Player, dispelStrength)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*ArmyUnit) {

@@ -2766,7 +2766,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
                         case RemoteFinishMeleeAttackType:
                             done = true
                         default:
-                            combat.Model.HandleRemoteEvent(combat, event)
+                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), event)
 
                     }
                 default:
