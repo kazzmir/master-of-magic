@@ -6544,8 +6544,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
     // the unit died or is out of moves
     if model.SelectedUnit != nil && (model.SelectedUnit.GetHealth() <= 0 || model.SelectedUnit.MovesLeft.LessThanEqual(fraction.FromInt(0))) {
-        model.DoneTurn()
         model.RemoteDoneTurn(model.SelectedUnit)
+        model.DoneTurn()
     }
 }
 

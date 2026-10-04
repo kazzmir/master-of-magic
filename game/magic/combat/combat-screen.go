@@ -1813,6 +1813,8 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // done
     elements = append(elements, makeButton(3, 28, 1, 2, func(){
+        // FIXME: this call should be in the model, its ugly to reference the selected unit here
+        combat.Model.RemoteDoneTurn(combat.Model.SelectedUnit)
         combat.Model.DoneTurn()
     }))
 
