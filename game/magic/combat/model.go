@@ -4987,6 +4987,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateBlessProjectile(target))
         case "Weakness":
             model.AddProjectile(spellSystem.CreateWeaknessProjectile(target, getSpellSave(unitCaster)))
+        case "Black Sleep":
+            model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5396,10 +5398,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Black Sleep":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasCurse(data.UnitCurseBlackSleep) {
                     return false
                 }
@@ -7455,11 +7454,12 @@ func (model *CombatModel) CreateWeaknessProjectileEffect(reduceResistance int) f
 }
 
 func (model *CombatModel) CreateBlackSleepProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-2 - reduceResistance {
             model.ApplyCurse(unit, data.UnitCurseBlackSleep)
+            model.RemoteCurse(unit, data.UnitCurseBlackSleep)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateVertigoProjectileEffect(reduceResistance int) func(*ArmyUnit) {

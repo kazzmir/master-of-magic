@@ -1579,6 +1579,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createWeaknessProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateWeaknessProjectileEffect(reduce + 100))
             },
+            createBlackSleepProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateBlackSleepProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1770,6 +1773,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Web", true, makeCurseUnitExpecter(data.UnitCurseWeb))
     doSpellTest("Mind Storm", true, makeCurseUnitExpecter(data.UnitCurseMindStorm))
     doSpellTest("Weakness", true, makeCurseUnitExpecter(data.UnitCurseWeakness))
+    doSpellTest("Black Sleep", true, makeCurseUnitExpecter(data.UnitCurseBlackSleep))
 
     makeRemoveEnchantmentExpecter := func() Expecter {
         var expect Expecter
@@ -1928,7 +1932,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             switch event.GetType() {
                 case RemoteUnitTargetSpellType:
                     event := event.(*RemoteUnitTargetSpellEvent)
-                    if event.TargetId == expectedId && event.Spell == spellName {
+                    if isAttacker(event.TargetId, model) && event.Spell == spellName {
                         didCastSpell = true
                     }
                 case RemoteEnchantmentUnitType:
