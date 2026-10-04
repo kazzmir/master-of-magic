@@ -1442,7 +1442,11 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         return model.GetTeamForArmy(army) == TeamAttacker
     }
 
-    doSpellTest := func(spellName string, defender bool, expecter Expecter) {
+    type TestOptions struct {
+        MakeUnit func() *units.OverworldUnit
+    }
+
+    doSpellTest := func(spellName string, defender bool, expecter Expecter, testOptions... TestOptions) {
         log.Printf("== Testing spell: %s", spellName)
         var allSpells spellbook.Spells
 
@@ -1462,8 +1466,15 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         useUnit.RangedAttackPower = 1
         useUnit.RangedAttacks = 8
         useUnit.RangedAttackDamageType = units.DamageRangedPhysical
+        defendingOverworld := units.MakeOverworldUnitFromUnit(useUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
-        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(useUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+        for _, option := range testOptions {
+            if option.MakeUnit != nil {
+                defendingOverworld = option.MakeUnit()
+            }
+        }
+
+        defendingUnit := defendingArmy.AddUnit(defendingOverworld)
 
         // an enchantment that can be removed via dispel magic
         defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
@@ -1584,6 +1595,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             },
             createVertigoProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateVertigoProjectileEffect(reduce + 100))
+            },
+            createShatterProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateShatterProjectileEffect(reduce + 100))
             },
         }
 
@@ -1778,6 +1792,11 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Weakness", true, makeCurseUnitExpecter(data.UnitCurseWeakness))
     doSpellTest("Black Sleep", true, makeCurseUnitExpecter(data.UnitCurseBlackSleep))
     doSpellTest("Vertigo", true, makeCurseUnitExpecter(data.UnitCurseVertigo))
+    doSpellTest("Shatter", true, makeCurseUnitExpecter(data.UnitCurseShatter), TestOptions{
+        MakeUnit: func() *units.OverworldUnit {
+            return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        },
+    })
 
     makeRemoveEnchantmentExpecter := func() Expecter {
         var expect Expecter

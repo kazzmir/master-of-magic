@@ -36,6 +36,7 @@ type TestSpellSystem struct {
     createWeaknessProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createBlackSleepProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createVertigoProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createShatterProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -212,6 +213,9 @@ func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit, reduceR
 }
 
 func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createShatterProjectile != nil {
+        return system.createShatterProjectile(target, reduceResistance)
+    }
     return nil
 }
 

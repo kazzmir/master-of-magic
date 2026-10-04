@@ -4991,6 +4991,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateBlackSleepProjectile(target, getSpellSave(unitCaster)))
         case "Vertigo":
             model.AddProjectile(spellSystem.CreateVertigoProjectile(target, getSpellSave(unitCaster)))
+        case "Shatter":
+            model.AddProjectile(spellSystem.CreateShatterProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5432,10 +5434,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Shatter":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateShatterProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7471,11 +7470,12 @@ func (model *CombatModel) CreateVertigoProjectileEffect(reduceResistance int) fu
 }
 
 func (model *CombatModel) CreateShatterProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic) - reduceResistance {
             model.ApplyCurse(unit, data.UnitCurseShatter)
+            model.RemoteCurse(unit, data.UnitCurseShatter)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance int) func(*ArmyUnit) {
