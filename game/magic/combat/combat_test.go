@@ -1534,6 +1534,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createWebProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateWebProjectileEffect())
             },
+            createBanishProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateBanishProjectileEffect(reduce, &FakeDamageIndicator{}))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1560,7 +1563,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         "Fireball", "Ice Bolt", "Star Fires",
         "Psionic Blast", "Doom Bolt", "Fire Bolt",
         "Lightning Bolt", "Warp Lightning", "Life Drain",
-        "Dispel Evil",
+        "Dispel Evil", "Banish",
     }
 
     friendlyUnitSpells := []string{

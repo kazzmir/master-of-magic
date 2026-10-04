@@ -4947,6 +4947,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
         case "Web":
             model.AddProjectile(spellSystem.CreateWebProjectile(target))
+        case "Banish":
+            model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15 + getSpellSave(unitCaster)))
     }
 }
 
@@ -5069,6 +5071,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Warp Lightning":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpLightningTarget)
         case "Flame Strike":
+            // TODO: remote
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
             }, targetAny)
@@ -5080,17 +5083,20 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Healing":
             model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, healingTarget)
         case "Holy Word":
+            // TODO: remote
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
             }, targetFantastic)
             castedCallback(true)
         case "Recall Hero":
+            // TODO: remote
             // FIXME:  check planar seal and summoning circle?
             model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateRecallHeroProjectile(target))
                 castedCallback(true)
             }, targetHero)
         case "Mass Healing":
+            // TODO: remote
             model.DoAllUnitsSpell(army, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateHealingProjectile(target))
             }, targetNonDeath)
@@ -5112,6 +5118,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Earth to Mud":
+            // TODO: remote
             model.DoTargetTileSpell(army, spell, func (x int, y int) bool { return true}, func (x int, y int){
                 model.CreateEarthToMud(x, y)
                 castedCallback(true)
@@ -5121,10 +5128,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return !target.HasAbility(data.AbilityNonCorporeal)
             })
         case "Banish":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateBanishProjectile(target, spell.SpentAdditionalCost(false) / 15 + getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, targetFantastic)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantastic)
         case "Dispel Magic True":
             model.DoTargetUnitSpell(army, spell, TargetEither, func(target *ArmyUnit){
                 disenchantStrength := spell.Cost(false) * 3
@@ -6863,7 +6867,9 @@ func (model *CombatModel) CreateBanishProjectileEffect(reduceResistance int, dam
         }
 
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
