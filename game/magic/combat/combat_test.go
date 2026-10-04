@@ -1541,6 +1541,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createDispelMagicProjectile: func(target *ArmyUnit, caster ArmyPlayer, strength int) *Projectile {
                 return makeProjectile(target, model.CreateDispelMagicProjectileEffect(caster, strength + 10000))
             },
+            createDisintegrateProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateDisintegrateProjectileEffect(reduce))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1677,6 +1680,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Cracks Call", true, makeRemoveUnitExpecter())
+    doSpellTest("Disintegrate", true, makeRemoveUnitExpecter())
 
     type CurseUnitExpecter struct {
         Expecter

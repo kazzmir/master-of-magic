@@ -27,6 +27,7 @@ type TestSpellSystem struct {
     createWebProjectile func(target *ArmyUnit) *Projectile
     createBanishProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createDispelMagicProjectile func(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile
+    createDisintegrateProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -140,6 +141,9 @@ func (system *TestSpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *P
     return nil
 }
 func (system *TestSpellSystem) CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createDisintegrateProjectile != nil {
+        return system.createDisintegrateProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {

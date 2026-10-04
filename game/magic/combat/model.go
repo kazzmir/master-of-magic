@@ -4969,6 +4969,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             }
 
             model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
+        case "Disintegrate":
+            model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target, getSpellSave(unitCaster)))
 
     }
 }
@@ -5155,6 +5157,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Dispel Magic":
             model.DoTargetUnitSpell(army, spell, TargetEither, standardUnitTarget, targetAny)
         case "Word of Recall":
+            // TODO: remote
             // FIXME: check planar seal and summoning circle?
             model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateWordOfRecallProjectile(target))
@@ -5167,10 +5170,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Disintegrate":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, disintegrateTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, disintegrateTarget)
         case "Disrupt":
             model.DoTargetTileSpell(army, spell, model.ContainsWall, func (x int, y int){
                 model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
@@ -7535,11 +7535,11 @@ func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateDisintegrateProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if GetResistanceFor(unit, data.ChaosMagic) - reduceResistance <= 9 {
             model.RemoveUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWordOfRecallProjectileEffect() func(*ArmyUnit) {
