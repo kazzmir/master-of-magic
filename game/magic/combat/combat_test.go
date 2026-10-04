@@ -1582,6 +1582,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createBlackSleepProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateBlackSleepProjectileEffect(reduce + 100))
             },
+            createVertigoProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateVertigoProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1774,6 +1777,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Mind Storm", true, makeCurseUnitExpecter(data.UnitCurseMindStorm))
     doSpellTest("Weakness", true, makeCurseUnitExpecter(data.UnitCurseWeakness))
     doSpellTest("Black Sleep", true, makeCurseUnitExpecter(data.UnitCurseBlackSleep))
+    doSpellTest("Vertigo", true, makeCurseUnitExpecter(data.UnitCurseVertigo))
 
     makeRemoveEnchantmentExpecter := func() Expecter {
         var expect Expecter
