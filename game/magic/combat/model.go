@@ -4690,12 +4690,16 @@ func (model *CombatModel) SwitchTeams(target *ArmyUnit) {
 
 func (model *CombatModel) ApplyCreatureBinding(target *ArmyUnit){
     model.ApplyCurse(target, data.UnitCurseCreatureBinding)
+    model.RemoteCurse(target, data.UnitCurseCreatureBinding)
     model.SwitchTeams(target)
+    model.RemoteSwitchTeams(target)
 }
 
 func (model *CombatModel) ApplyPossession(target *ArmyUnit){
     model.ApplyCurse(target, data.UnitCursePossession)
+    model.RemoteCurse(target, data.UnitCursePossession)
     model.SwitchTeams(target)
+    model.RemoteSwitchTeams(target)
 }
 
 /* let the user select a target, then cast the spell on that target
@@ -4975,6 +4979,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
         case "Word of Death":
             model.AddProjectile(spellSystem.CreateWordOfDeathProjectile(target, getSpellSave(unitCaster)))
+        case "Creature Binding":
+            model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target, getSpellSave(unitCaster)))
 
     }
 }
@@ -5213,36 +5219,43 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Word of Death":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Phantom Warriors":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.PhantomWarrior, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Phantom Beast":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.PhantomBeast, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Summon Demons":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.Demon, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Earth Elemental":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.EarthElemental, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Air Elemental":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.AirElemental, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Fire Elemental":
+            // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                 model.summonUnit(army, x, y, units.FireElemental, units.FacingDown, true)
                 castedCallback(true)
             })
         case "Summon Demon":
+            // TODO: remote
             x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
@@ -5252,6 +5265,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
+            // TODO: remote
             model.Events <- &CombatEventGlobalSpell{
                 Caster: army.Player,
                 Magic: spell.Magic,
@@ -5273,36 +5287,51 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             castedCallback(true)
 
         case "High Prayer":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentHighPrayer, castedCallback)
         case "Prayer":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentPrayer, castedCallback)
         case "True Light":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentTrueLight, castedCallback)
         case "Call Lightning":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentCallLightning, castedCallback)
         case "Entangle":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentEntangle, castedCallback)
         case "Blur":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentBlur, castedCallback)
         case "Counter Magic":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentCounterMagic, castedCallback)
             // set counter magic counter for the player to be the spell strength
             army.CounterMagic = spell.Cost(false)
         case "Mass Invisibility":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentMassInvisibility, castedCallback)
         case "Metal Fires":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentMetalFires, castedCallback)
         case "Warp Reality":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentWarpReality, castedCallback)
         case "Black Prayer":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentBlackPrayer, castedCallback)
         case "Darkness":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentDarkness, castedCallback)
         case "Mana Leak":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentManaLeak, castedCallback)
         case "Terror":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
+            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentWrack, castedCallback)
 
         case "Creature Binding":
@@ -5326,10 +5355,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return false
             }
 
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateCreatureBindingProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, selectable)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, selectable)
 
         case "Mind Storm":
             selectable := func(target *ArmyUnit) bool {
@@ -7460,11 +7486,11 @@ func (model *CombatModel) CreatePossessionProjectileEffect(reduceResistance int)
 }
 
 func (model *CombatModel) CreateCreatureBindingProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.SorceryMagic)-2 - reduceResistance {
             model.ApplyCreatureBinding(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreatePetrifyProjectileEffect(reduceResistance int) func(*ArmyUnit) {

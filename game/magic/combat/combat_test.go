@@ -1556,6 +1556,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createWordOfDeathProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateWordOfDeathProjectileEffect(&FakeDamageIndicator{}, 100))
             },
+            createCreatureBindingProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateCreatureBindingProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1843,4 +1846,52 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Warp Wood", true, makeSetRangedAttacksExpecter())
+
+    makeChangeTeamExpecter := func() Expecter {
+        var expect Expecter
+
+        didCastSpell := false
+        didFinishProjectile := false
+        didSwitchTeam := false
+
+        expect.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.TargetId == expectedId && event.Spell == spellName {
+                        didCastSpell = true
+                    }
+                case RemoteSwitchTeamsType:
+                    event := event.(*RemoteSwitchTeamsEvent)
+                    if event.Id == expectedId {
+                        didSwitchTeam = true
+                    }
+                case RemoteProjectileFinishedType:
+                    didFinishProjectile = true
+            }
+        }
+
+        expect.Finished = func() bool {
+            return didCastSpell && didFinishProjectile && didSwitchTeam
+        }
+
+        expect.Assertions = func(test *testing.T, spellName string) {
+            if !didCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !didSwitchTeam {
+                test.Errorf("Error: remote did not receive switch team event for %v", spellName)
+            }
+
+            if !didFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+        }
+
+
+        return expect
+    }
+
+    doSpellTest("Creature Binding", true, makeChangeTeamExpecter())
 }
