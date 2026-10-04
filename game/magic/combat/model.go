@@ -4961,6 +4961,14 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             }
 
             model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
+        case "Dispel Magic":
+            disenchantStrength := spell.Cost(false)
+
+            if army.Player.GetWizard().RetortEnabled(data.RetortRunemaster) {
+                disenchantStrength *= 2
+            }
+
+            model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
 
     }
 }
@@ -5145,16 +5153,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Dispel Magic True":
             model.DoTargetUnitSpell(army, spell, TargetEither, standardUnitTarget, targetAny)
         case "Dispel Magic":
-            model.DoTargetUnitSpell(army, spell, TargetEither, func(target *ArmyUnit){
-                disenchantStrength := spell.Cost(false)
-
-                if army.Player.GetWizard().RetortEnabled(data.RetortRunemaster) {
-                    disenchantStrength *= 2
-                }
-
-                model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
-                castedCallback(true)
-            }, targetAny)
+            model.DoTargetUnitSpell(army, spell, TargetEither, standardUnitTarget, targetAny)
         case "Word of Recall":
             // FIXME: check planar seal and summoning circle?
             model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
@@ -6106,7 +6105,7 @@ func shouldAITargetUnit(unit *ArmyUnit, spell spellbook.Spell) bool {
             if unit.IsFlying() {
                 return false
             }
-        case "Dispel Magic True":
+        case "Dispel Magic True", "Dispel Magic":
             // if the unit has no enchantments or curses then no need to cast dispel magic
             if len(unit.GetEnchantments()) == 0 && len(unit.GetCurses()) == 0 {
                 return false

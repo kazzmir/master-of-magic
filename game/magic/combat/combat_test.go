@@ -1778,4 +1778,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     // this test works because only one unit has an enchantment and we know that the AI will only
     // target a unit that has an enchantment on it
     doSpellTest("Dispel Magic True", true, makeRemoveEnchantmentExpecter())
+    doSpellTest("Dispel Magic", true, makeRemoveEnchantmentExpecter())
 }
