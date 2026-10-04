@@ -37,6 +37,7 @@ const (
     RemoteRemoveUnitEnchantmentType = "remove_unit_enchantment"
     RemoteRemoveUnitCurseType = "remove_unit_curse"
     RemoteSwitchTeamsType = "switch_teams"
+    RemoteSetRangedAttacksType = "set_ranged_attacks"
 )
 
 type Remote struct {
@@ -181,6 +182,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteRemoveUnitEnchantmentType: return convert[*RemoteRemoveUnitEnchantmentEvent](data)
         case RemoteRemoveUnitCurseType: return convert[*RemoteRemoveUnitCurseEvent](data)
         case RemoteSwitchTeamsType: return convert[*RemoteSwitchTeamsEvent](data)
+        case RemoteSetRangedAttacksType: return convert[*RemoteSetRangedAttacksEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -396,5 +398,15 @@ type RemoteSwitchTeamsEvent struct {
 }
 
 func (remote *RemoteSwitchTeamsEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSetRangedAttacksEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Attacks int `json:"attacks"`
+}
+
+func (remote *RemoteSetRangedAttacksEvent) GetType() string {
     return remote.Type
 }

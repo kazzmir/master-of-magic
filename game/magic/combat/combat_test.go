@@ -1446,7 +1446,13 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
         attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+        useUnit := units.HellHounds
+        // hack to get warped wood to work
+        useUnit.RangedAttackPower = 1
+        useUnit.RangedAttacks = 8
+        useUnit.RangedAttackDamageType = units.DamageRangedPhysical
+
+        defendingUnit := defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(useUnit, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
 
         // an enchantment that can be removed via dispel magic
         defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
@@ -1543,6 +1549,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             },
             createDisintegrateProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateDisintegrateProjectileEffect(reduce))
+            },
+            createWarpWoodProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateWarpWoodProjectileEffect())
             },
         }
 
@@ -1783,4 +1792,52 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     // target a unit that has an enchantment on it
     doSpellTest("Dispel Magic True", true, makeRemoveEnchantmentExpecter())
     doSpellTest("Dispel Magic", true, makeRemoveEnchantmentExpecter())
+
+    makeSetRangedAttacksExpecter := func() Expecter {
+        var expect Expecter
+
+        didCastSpell := false
+        didFinishProjectile := false
+        didSetAttacks := false
+
+        expect.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.TargetId == expectedId && event.Spell == spellName {
+                        didCastSpell = true
+                    }
+                case RemoteSetRangedAttacksType:
+                    event := event.(*RemoteSetRangedAttacksEvent)
+                    if event.Id == expectedId {
+                        didSetAttacks = true
+                    }
+                case RemoteProjectileFinishedType:
+                    didFinishProjectile = true
+            }
+        }
+
+        expect.Finished = func() bool {
+            return didCastSpell && didFinishProjectile && didSetAttacks
+        }
+
+        expect.Assertions = func(test *testing.T, spellName string) {
+            if !didCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !didSetAttacks {
+                test.Errorf("Error: remote did not receive set ranged attacks event for %v", spellName)
+            }
+
+            if !didFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+        }
+
+
+        return expect
+    }
+
+    doSpellTest("Warp Wood", true, makeSetRangedAttacksExpecter())
 }

@@ -28,6 +28,7 @@ type TestSpellSystem struct {
     createBanishProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createDispelMagicProjectile func(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile
     createDisintegrateProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createWarpWoodProjectile func(target *ArmyUnit) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -153,6 +154,9 @@ func (system *TestSpellSystem) CreateMagicVortex(team Team, x int, y int) *Magic
     return nil
 }
 func (system *TestSpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
+    if system.createWarpWoodProjectile != nil {
+        return system.createWarpWoodProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {

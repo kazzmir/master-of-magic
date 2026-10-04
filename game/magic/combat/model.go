@@ -4971,6 +4971,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateDispelMagicProjectile(target, army.Player, disenchantStrength))
         case "Disintegrate":
             model.AddProjectile(spellSystem.CreateDisintegrateProjectile(target, getSpellSave(unitCaster)))
+        case "Warp Wood":
+            model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
 
     }
 }
@@ -5172,11 +5174,13 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Disintegrate":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, disintegrateTarget)
         case "Disrupt":
+            // TODO: remote
             model.DoTargetTileSpell(army, spell, model.ContainsWall, func (x int, y int){
                 model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
                 castedCallback(true)
             })
         case "Magic Vortex":
+            // TODO: remote
             // FIXME: should this also take walls into account?
             unoccupied := func (x int, y int) bool {
                 return model.GetUnit(x, y) == nil && !model.ContainsMagicVortex(x, y)
@@ -5187,10 +5191,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 castedCallback(true)
             })
         case "Warp Wood":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpWoodProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.IsMagicImmune(spell.Magic) {
                     return false
                 }
@@ -6637,6 +6638,15 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 unit.RemoveCurse(curse)
             }
 
+        case RemoteSetRangedAttacksType:
+            event := event.(*RemoteSetRangedAttacksEvent)
+            unit := model.GetUnitById(event.Id)
+            attacks := event.Attacks
+
+            if unit != nil {
+                unit.SetRangedAttacks(attacks)
+            }
+
         case RemoteSwitchTeamsType:
             event := event.(*RemoteSwitchTeamsEvent)
             unit := model.GetUnitById(event.Id)
@@ -6662,6 +6672,25 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 }
             })
     }
+}
+
+func (model *CombatModel) RemoteSetRangedAttacks(unit *ArmyUnit, attacks int) error {
+    if model.Remote != nil {
+        event := RemoteSetRangedAttacksEvent{
+            Type: RemoteSetRangedAttacksType,
+            Id: unit.Id,
+            Attacks: attacks,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote set ranged attacks event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 func (model *CombatModel) RemoteRemoveUnit(unit *ArmyUnit) error {
@@ -7529,9 +7558,10 @@ func (model *CombatModel) CreateWordOfDeathProjectileEffect(damageIndicator AddD
 }
 
 func (model *CombatModel) CreateWarpWoodProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.SetRangedAttacks(0)
-    }
+        model.RemoteSetRangedAttacks(unit, 0)
+    })
 }
 
 func (model *CombatModel) CreateDisintegrateProjectileEffect(reduceResistance int) func(*ArmyUnit) {
