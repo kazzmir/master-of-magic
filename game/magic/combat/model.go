@@ -4990,6 +4990,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
         case "Holy Armor":
             model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
+        case "Holy Weapon":
+            model.AddProjectile(spellSystem.CreateHolyWeaponProjectile(target))
     }
 }
 
@@ -5704,10 +5706,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Holy Weapon":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHolyWeaponProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7334,9 +7333,10 @@ func (model *CombatModel) CreateRighteousnessProjectileEffect() func(*ArmyUnit) 
 }
 
 func (model *CombatModel) CreateHolyWeaponProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentHolyWeapon)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentHolyWeapon)
+    })
 }
 
 func (model *CombatModel) CreateFlightProjectileEffect() func(*ArmyUnit) {
