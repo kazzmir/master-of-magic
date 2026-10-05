@@ -4997,6 +4997,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target, getSpellSave(unitCaster)))
         case "Confusion":
             model.AddProjectile(spellSystem.CreateConfusionProjectile(target, getSpellSave(unitCaster)))
+        case "Possession":
+            model.AddProjectile(spellSystem.CreatePossessionProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5468,10 +5470,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Possession":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePossessionProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.Unit.IsHero() || target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7502,11 +7501,11 @@ func (model *CombatModel) CreateConfusionProjectileEffect(reduceResistance int) 
 }
 
 func (model *CombatModel) CreatePossessionProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.DeathMagic)-1 - reduceResistance {
             model.ApplyPossession(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateCreatureBindingProjectileEffect(reduceResistance int) func(*ArmyUnit) {

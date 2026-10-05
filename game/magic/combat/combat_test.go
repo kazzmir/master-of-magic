@@ -1602,6 +1602,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createConfusionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateConfusionProjectileEffect(reduce + 100))
             },
+            createPossessionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreatePossessionProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1957,6 +1960,11 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Creature Binding", true, makeChangeTeamExpecter())
+    doSpellTest("Possession", true, makeChangeTeamExpecter(), TestOptions{
+        MakeUnit: func() *units.OverworldUnit {
+            return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        },
+    })
 
     makeUnitEnchantmentExpecter := func(enchantment data.UnitEnchantment) Expecter {
         var expect Expecter
