@@ -1349,7 +1349,7 @@ func TestRemoteRangeDamage(test *testing.T) {
     defer peer2.Close()
 
     // remote side is defender, so false for isAttacker
-    remote := MakeRemote(true, false, peer1)
+    remote := MakeRemote(false, false, peer1)
 
     defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
     attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
@@ -1367,7 +1367,7 @@ func TestRemoteRangeDamage(test *testing.T) {
     defer cancel()
 
     // remote side is attacker, so true for isAttacker
-    remoteDefender := MakeRemote(false, true, peer2)
+    remoteDefender := MakeRemote(true, true, peer2)
 
     go remoteDefender.RunReceiveLoop(quit)
 
