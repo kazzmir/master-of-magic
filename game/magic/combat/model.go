@@ -4986,6 +4986,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreatePetrifyProjectile(target, getSpellSave(unitCaster)))
         case "Chaos Channels":
             model.AddProjectile(spellSystem.CreateChaosChannelsProjectile(target))
+        case "Heroism":
+            model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
     }
 }
 
@@ -5538,6 +5540,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Raise Dead":
             failed := true
 
+            // TODO: remote
+
             doRaiseDead := func (killedUnit *ArmyUnit){
                 model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                     // shouldn't really be necessary because the model should already be set, but just in case
@@ -5590,6 +5594,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 }
             }
         case "Animate Dead":
+            // TODO: remote
             // first filter possible candidates to revive
             allKilledUnits := slices.DeleteFunc(slices.Clone(append(model.AttackingArmy.KilledUnits, model.DefendingArmy.KilledUnits...)), func (unit *ArmyUnit) bool {
                 if unit.Unit.IsHero() {
@@ -5660,10 +5665,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
         case "Heroism":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7259,9 +7261,10 @@ func (model *CombatModel) CreateHealingProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentHeroism)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentHeroism)
+    })
 }
 
 func (model *CombatModel) CreateHolyArmorProjectileEffect() func(*ArmyUnit) {

@@ -41,6 +41,7 @@ type TestSpellSystem struct {
     createConfusionProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createPossessionProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
     createPetrifyProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createHeroismProjectile func(target *ArmyUnit) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -263,6 +264,9 @@ func (system *TestSpellSystem) CreateChaosChannelsProjectile(target *ArmyUnit) *
 }
 
 func (system *TestSpellSystem) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
+    if system.createHeroismProjectile != nil {
+        return system.createHeroismProjectile(target)
+    }
     return nil
 }
 
