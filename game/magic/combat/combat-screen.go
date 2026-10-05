@@ -1970,10 +1970,12 @@ func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
         combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
 
-        select {
-            case event := <-combat.Model.Remote.Events:
-                combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
-            default:
+        if combat.Model.Remote != nil {
+            select {
+                case event := <-combat.Model.Remote.Events:
+                    combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+                default:
+            }
         }
 
         if yield() != nil {
