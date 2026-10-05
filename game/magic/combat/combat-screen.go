@@ -1932,11 +1932,18 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.Model.UpdateProjectiles(combat.Counter, combat) {
+    for combat.Model.UpdateProjectiles(combat.Counter, combat, combat) {
         combat.Counter += 1
         combat.ProcessInput()
         combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
+
+        select {
+            case event := <-combat.Model.Remote.Events:
+                combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+            default:
+        }
+
         if yield() != nil {
             return
         }
@@ -2323,7 +2330,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
     for unit.Height < 0 {
         // so that the summoning circle displays
-        combat.Model.UpdateProjectiles(combat.Counter, combat)
+        combat.Model.UpdateProjectiles(combat.Counter, combat, combat)
         combat.Counter += 1
 
         if combat.Counter % 3 == 0 {
@@ -2766,7 +2773,7 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
                         case RemoteFinishMeleeAttackType:
                             done = true
                         default:
-                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), event)
+                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
 
                     }
                 default:

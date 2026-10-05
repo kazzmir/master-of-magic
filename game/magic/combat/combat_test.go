@@ -1455,8 +1455,8 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         defer peer1.Close()
         defer peer2.Close()
 
-        // remote side is defender, so false for isAttacker
-        remote := MakeRemote(true, false, peer1)
+        // the attacker's remote, which represents the defender, so false for isAttacker
+        remote := MakeRemote(false, false, peer1)
 
         defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
         attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
@@ -1492,8 +1492,8 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         quit, cancel := context.WithCancel(context.Background())
         defer cancel()
 
-        // remote side is attacker, so true for isAttacker
-        remoteDefender := MakeRemote(false, true, peer2)
+        // the defender's remote, which represents the attacker, so true for isAttacker
+        remoteDefender := MakeRemote(true, true, peer2)
 
         go remoteDefender.RunReceiveLoop(quit)
 
@@ -1613,7 +1613,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
 
         var counter uint64
-        for model.UpdateProjectiles(counter, &FakeDamageIndicator{}) && counter < 10000 {
+        for model.UpdateProjectiles(counter, &FakeDamageIndicator{}, &spellSystem) && counter < 10000 {
             counter += 1
         }
 

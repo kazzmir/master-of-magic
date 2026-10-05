@@ -3422,7 +3422,7 @@ func distance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
     return math.Sqrt(xDiff * xDiff + yDiff * yDiff)
 }
 
-func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators AddDamageIndicators) bool {
+func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators AddDamageIndicators, spellSystem SpellSystem) bool {
     animationSpeed := uint64(5)
 
     alive := len(model.Projectiles) > 0
@@ -3469,25 +3469,6 @@ func (model *CombatModel) UpdateProjectiles(counter uint64, damageIndicators Add
     model.Projectiles = projectilesOut
 
     if model.Remote != nil {
-        if model.RemoteProjectiles > 0 {
-            select {
-                case event := <-model.Remote.Events:
-                    switch event.GetType() {
-                        case RemoteProjectileFinishedType:
-                            model.RemoteProjectiles -= 1
-                        case RemoteDamageIndicatorType:
-                            event := event.(*RemoteDamageIndicatorEvent)
-                            unit := model.GetUnitById(event.Id)
-                            if unit != nil {
-                                damageIndicators.AddDamageIndicator(unit, event.Damage)
-                            }
-                        default:
-                            model.HandleRemoteEvent(optional.Empty[SpellSystem](), event)
-                    }
-                default:
-            }
-        }
-
         return model.RemoteProjectiles > 0 || alive
     }
 
@@ -4382,7 +4363,7 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
     model.setTileUnit(unit.X, unit.Y, nil)
 
-    if unit == model.SelectedUnit {
+    if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
         model.NextUnit()
         model.RemoteDoneTurn(unit)
     }
@@ -4390,6 +4371,8 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
 
 // removing a unit removes it outright from battle, with no chance to be brought back
 func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
+    log.Debug("Remove unit %v (%v), is remote %v", unit.Unit.GetName(), unit.Id, model.IsRemoteUnit(unit))
+
     if model.IsRemoteUnit(unit) {
         model.RemoteRemoveUnit(unit)
     }
@@ -4405,7 +4388,7 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
 
     model.setTileUnit(unit.X, unit.Y, nil)
 
-    if unit == model.SelectedUnit {
+    if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
         model.NextUnit()
         model.RemoteDoneTurn(unit)
     }
@@ -5001,6 +4984,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreatePossessionProjectile(target, getSpellSave(unitCaster)))
         case "Petrify":
             model.AddProjectile(spellSystem.CreatePetrifyProjectile(target, getSpellSave(unitCaster)))
+        case "Chaos Channels":
+            model.AddProjectile(spellSystem.CreateChaosChannelsProjectile(target))
     }
 }
 
@@ -5502,42 +5487,49 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     case 1:
                         if healingTarget(unit) {
                             model.AddProjectile(spellSystem.CreateHealingProjectile(unit))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Healing"}, nil, army)
                         }
 
                     // chaos channels
                     case 2:
                         if chaosChannelsTarget(unit) {
                             model.AddProjectile(spellSystem.CreateChaosChannelsProjectile(unit))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Chaos Channels"}, nil, army)
                         }
 
                     // warp creature
                     case 3:
                         if warpCreatureTarget(unit) {
                             model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(unit, 0))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Warp Creature"}, nil, army)
                         }
 
                     // fire bolt
                     case 4:
                         if fireBoltTarget(unit) {
                             model.AddProjectile(spellSystem.CreateFireBoltProjectile(unit, 15))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Fire Bolt", OverrideCost: 15}, nil, army)
                         }
 
                     // warp lightning
                     case 5:
                         if warpLightningTarget(unit) {
                             model.AddProjectile(spellSystem.CreateWarpLightningProjectile(unit))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Warp Lightning"}, nil, army)
                         }
 
                     // doom bolt
                     case 6:
                         if doomBoltTarget(unit) {
                             model.AddProjectile(spellSystem.CreateDoomBoltProjectile(unit))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Doom Bolt"}, nil, army)
                         }
 
                     // disintegrate
                     case 7:
                         if disintegrateTarget(unit) {
                             model.AddProjectile(spellSystem.CreateDisintegrateProjectile(unit, 0))
+                            model.RemoteUnitTargetSpell(unit, spellbook.Spell{Name: "Disintegrate"}, nil, army)
                         }
                 }
             }
@@ -6516,7 +6508,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                                 actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
                             }
                         default:
-                            model.HandleRemoteEvent(optional.Of(spellSystem), event)
+                            model.HandleRemoteEvent(optional.Of(spellSystem), optional.Empty[AddDamageIndicators](), event)
 
                     }
                 default:
@@ -6587,7 +6579,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
     }
 }
 
-func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellSystem], event RemoteEvent) {
+func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellSystem], damageIndicators optional.Optional[AddDamageIndicators], event RemoteEvent) {
     switch event.GetType() {
         case RemoteDoneTurnType:
             event := event.(*RemoteDoneTurnEvent)
@@ -6659,6 +6651,13 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 unit.RemoveCurse(curse)
             }
+        case RemoteRemoveUnitType:
+            event := event.(*RemoteRemoveUnitEvent)
+            unit := model.GetUnitById(event.Id)
+
+            if unit != nil {
+                model.RemoveUnit(unit)
+            }
 
         case RemoteSetRangedAttacksType:
             event := event.(*RemoteSetRangedAttacksEvent)
@@ -6693,6 +6692,16 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                     }
                 }
             })
+        case RemoteProjectileFinishedType:
+            model.RemoteProjectiles -= 1
+        case RemoteDamageIndicatorType:
+            event := event.(*RemoteDamageIndicatorEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                damageIndicators.With(func(damageIndicators AddDamageIndicators) {
+                    damageIndicators.AddDamageIndicator(unit, event.Damage)
+                })
+            }
     }
 }
 
@@ -7406,7 +7415,7 @@ func (model *CombatModel) CreateWraithFormProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateChaosChannelsProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         choices := []data.UnitEnchantment{
             data.UnitEnchantmentChaosChannelsDemonSkin,
             data.UnitEnchantmentChaosChannelsDemonWings,
@@ -7426,9 +7435,10 @@ func (model *CombatModel) CreateChaosChannelsProjectileEffect() func(*ArmyUnit) 
             }
 
             unit.Unit.AddEnchantment(choice)
+            model.RemoteEnchantment(unit, choice)
             break
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateBlessProjectileEffect() func(*ArmyUnit) {
@@ -7830,7 +7840,7 @@ func (model *CombatModel) createRemoteProjectileEffect(effect func(*ArmyUnit)) f
             // the remote side will compute damage and apply it
             // if !model.IsRemoteUnit(unit) {
             // the server always computes projectile effects
-            if !model.Remote.IsServer {
+            if model.Remote.IsServer {
                 model.RemoteProjectiles += 1
                 return
             }

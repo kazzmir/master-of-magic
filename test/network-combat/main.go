@@ -246,8 +246,11 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     fortressCity.Buildings.Insert(buildinglib.BuildingFortress)
     attackingPlayer.AddCity(fortressCity)
 
-    attackingPlayer.CastingSkillPower = 1000
+    attackingPlayer.CastingSkillPower = 50000
     attackingPlayer.Mana = 1000
+
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Chaos"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disintegrate"))
 
     var attackingArmy *combat.Army
 
@@ -281,7 +284,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 }
 
 func MakeScenario3(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
-    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 2, units.OrcSpearmen, 2)
+    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.OrcSpearmen, 3)
 }
 
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
