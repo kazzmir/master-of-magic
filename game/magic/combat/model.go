@@ -4993,6 +4993,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateVertigoProjectile(target, getSpellSave(unitCaster)))
         case "Shatter":
             model.AddProjectile(spellSystem.CreateShatterProjectile(target, getSpellSave(unitCaster)))
+        case "Warp Creature":
+            model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5450,10 +5452,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Warp Creature":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateWarpCreatureProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, warpCreatureTarget)
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpCreatureTarget)
         case "Confusion":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
                 model.AddProjectile(spellSystem.CreateConfusionProjectile(target, getSpellSave(unitCaster)))
@@ -7479,7 +7478,7 @@ func (model *CombatModel) CreateShatterProjectileEffect(reduceResistance int) fu
 }
 
 func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if rand.N(10)+1 > GetResistanceFor(unit, data.ChaosMagic)-1 - reduceResistance {
             choices := set.NewSet(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance)
             choices.RemoveMany(unit.GetCurses()...)
@@ -7488,9 +7487,10 @@ func (model *CombatModel) CreateWarpCreatureProjectileEffect(reduceResistance in
                 values := choices.Values()
                 use := values[rand.N(len(values))]
                 model.ApplyCurse(unit, use)
+                model.RemoteCurse(unit, use)
             }
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateConfusionProjectileEffect(reduceResistance int) func(*ArmyUnit) {

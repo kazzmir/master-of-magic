@@ -1596,6 +1596,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createShatterProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateShatterProjectileEffect(reduce + 100))
             },
+            createWarpCreatureProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateWarpCreatureProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1740,7 +1743,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         DidFinishProjectile bool
     }
 
-    makeCurseUnitExpecter := func(curse data.UnitEnchantment) Expecter {
+    makeCurseUnitExpecter := func(anyCurse... data.UnitEnchantment) Expecter {
         didCastSpell := false
         didCurse := false
         didFinishProjectile := false
@@ -1755,7 +1758,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                     }
                 case RemoteCurseUnitType:
                     event := event.(*RemoteCurseUnitEvent)
-                    if event.Id == expectedId && event.Curse == curse {
+                    if event.Id == expectedId && slices.Contains(anyCurse, event.Curse) {
                         didCurse = true
                     }
                 case RemoteProjectileFinishedType:
@@ -1791,6 +1794,12 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Vertigo", true, makeCurseUnitExpecter(data.UnitCurseVertigo))
     doSpellTest("Shatter", true, makeCurseUnitExpecter(data.UnitCurseShatter), TestOptions{
         MakeUnit: func() *units.OverworldUnit {
+            return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+        },
+    })
+    doSpellTest("Warp Creature", true, makeCurseUnitExpecter(data.UnitCurseWarpCreatureMelee, data.UnitCurseWarpCreatureDefense, data.UnitCurseWarpCreatureResistance), TestOptions{
+        MakeUnit: func() *units.OverworldUnit {
+            // need a non-fantastic unit
             return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
         },
     })
