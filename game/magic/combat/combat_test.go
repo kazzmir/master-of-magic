@@ -1599,6 +1599,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createWarpCreatureProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreateWarpCreatureProjectileEffect(reduce + 100))
             },
+            createConfusionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreateConfusionProjectileEffect(reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1803,6 +1806,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
         },
     })
+    doSpellTest("Confusion", true, makeCurseUnitExpecter(data.UnitCurseConfusion))
 
     makeRemoveEnchantmentExpecter := func() Expecter {
         var expect Expecter
