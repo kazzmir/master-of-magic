@@ -1489,6 +1489,24 @@ func (combat *CombatScreen) IsSelectingSpell() bool {
     return combat.DoSelectUnit || combat.DoSelectTile
 }
 
+func (combat *CombatScreen) IsAttackerTurn() bool {
+    selected := combat.Model.SelectedUnit
+    if selected != nil {
+        return combat.Model.GetArmy(selected) == combat.Model.AttackingArmy
+    }
+
+    return false
+}
+
+func (combat *CombatScreen) IsDefenderTurn() bool {
+    selected := combat.Model.SelectedUnit
+    if selected != nil {
+        return combat.Model.GetArmy(selected) == combat.Model.DefendingArmy
+    }
+
+    return false
+}
+
 func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -1502,7 +1520,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+                var colorOptions ebiten.DrawImageOptions
+
+                if combat.IsAttackerTurn() {
+                    v := float32(1 + math.Sin(float64(ui.Counter) / 10.0) * 0.5 + 0.5)
+                    colorOptions.ColorScale.Scale(v, v, v, 1.0)
+                }
+
+                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &colorOptions}, combat.Model.AttackingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(246, 179)
@@ -1529,7 +1554,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
+                var colorOptions ebiten.DrawImageOptions
+
+                if combat.IsDefenderTurn() {
+                    v := float32(1 + math.Sin(float64(ui.Counter) / 10.0) * 0.5 + 0.5)
+                    colorOptions.ColorScale.Scale(v, v, v, 1.0)
+                }
+
+                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true, Options: &colorOptions}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(7), float64(179))
