@@ -4999,6 +4999,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateConfusionProjectile(target, getSpellSave(unitCaster)))
         case "Possession":
             model.AddProjectile(spellSystem.CreatePossessionProjectile(target, getSpellSave(unitCaster)))
+        case "Petrify":
+            model.AddProjectile(spellSystem.CreatePetrifyProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5482,10 +5484,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Petrify":
-            model.DoTargetUnitSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreatePetrifyProjectile(target, getSpellSave(unitCaster)))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.IsMagicImmune(spell.Magic) || target.HasAbility(data.AbilityStoningImmunity) {
                     return false
                 }
@@ -7516,8 +7515,8 @@ func (model *CombatModel) CreateCreatureBindingProjectileEffect(reduceResistance
     })
 }
 
-func (model *CombatModel) CreatePetrifyProjectileEffect(reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+func (model *CombatModel) CreatePetrifyProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         damage := 0
         for range unit.Figures() {
             if rand.N(10)+1 > GetResistanceFor(unit, data.NatureMagic) - reduceResistance {
@@ -7525,11 +7524,15 @@ func (model *CombatModel) CreatePetrifyProjectileEffect(reduceResistance int) fu
             }
         }
 
+        damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
+
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {

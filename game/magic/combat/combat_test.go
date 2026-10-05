@@ -1605,6 +1605,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createPossessionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreatePossessionProjectileEffect(reduce + 100))
             },
+            createPetrifyProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, model.CreatePetrifyProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -1632,6 +1635,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         "Psionic Blast", "Doom Bolt", "Fire Bolt",
         "Lightning Bolt", "Warp Lightning", "Life Drain",
         "Dispel Evil", "Banish", "Word of Death",
+        "Petrify",
     }
 
     friendlyUnitSpells := []string{

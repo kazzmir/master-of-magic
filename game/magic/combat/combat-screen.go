@@ -1056,7 +1056,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit, reduceResi
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 12)
     explodeImages := images
 
-    effect := combat.Model.CreatePetrifyProjectileEffect(reduceResistance)
+    effect := combat.Model.CreatePetrifyProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
