@@ -4988,6 +4988,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateChaosChannelsProjectile(target))
         case "Heroism":
             model.AddProjectile(spellSystem.CreateHeroismProjectile(target))
+        case "Holy Armor":
+            model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
     }
 }
 
@@ -5686,10 +5688,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Holy Armor":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7268,9 +7267,10 @@ func (model *CombatModel) CreateHeroismProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateHolyArmorProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentHolyArmor)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentHolyArmor)
+    })
 }
 
 func (model *CombatModel) CreateInvulnerabilityProjectileEffect() func(*ArmyUnit) {

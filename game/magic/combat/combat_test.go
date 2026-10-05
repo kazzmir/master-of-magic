@@ -1608,6 +1608,12 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createPetrifyProjectile: func(target *ArmyUnit, reduce int) *Projectile {
                 return makeProjectile(target, model.CreatePetrifyProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
             },
+            createHeroismProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateHeroismProjectileEffect())
+            },
+            createHolyArmorProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateHolyArmorProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2018,4 +2024,6 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }
 
     doSpellTest("Bless", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentBless))
+    doSpellTest("Heroism", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHeroism))
+    doSpellTest("Holy Armor", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHolyArmor))
 }
