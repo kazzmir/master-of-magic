@@ -5012,6 +5012,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
         case "Stone Skin":
             model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
+        case "Flight":
+            model.AddProjectile(spellSystem.CreateFlightProjectile(target))
     }
 }
 
@@ -5840,10 +5842,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Flight":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFlightProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 // we could check if the unit has the flight ability, but the Flight spell also grants
                 // 3 movement, so its still worthwhile to cast Flight on a unit that has less than 3 movement speed
                 if target.HasEnchantment(data.UnitEnchantmentFlight) {
@@ -7340,9 +7339,10 @@ func (model *CombatModel) CreateHolyWeaponProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateFlightProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentFlight)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentFlight)
+    })
 }
 
 func (model *CombatModel) CreateGuardianWindProjectileEffect() func(*ArmyUnit) {
