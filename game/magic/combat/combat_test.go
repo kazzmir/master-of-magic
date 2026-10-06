@@ -1650,6 +1650,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createFlightProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateFlightProjectileEffect())
             },
+            createGuardianWindProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateGuardianWindProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2074,4 +2077,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Resist Elements", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentResistElements))
     doSpellTest("Stone Skin", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentStoneSkin))
     doSpellTest("Flight", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentFlight))
+    doSpellTest("Guardian Wind", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentGuardianWind))
 }
