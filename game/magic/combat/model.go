@@ -5006,6 +5006,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateGiantStrengthProjectile(target))
         case "Iron Skin":
             model.AddProjectile(spellSystem.CreateIronSkinProjectile(target))
+        case "Regeneration":
+            model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
     }
 }
 
@@ -5809,10 +5811,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Regeneration":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityRegeneration){
                     return false
                 }
@@ -7314,9 +7313,10 @@ func (model *CombatModel) CreateStoneSkinProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateRegenerationProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentRegeneration)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentRegeneration)
+    })
 }
 
 func (model *CombatModel) CreateResistElementsProjectileEffect() func(*ArmyUnit) {
