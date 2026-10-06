@@ -1659,6 +1659,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createHasteProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateHasteProjectileEffect())
             },
+            createInvisibilityProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateInvisibilityProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2088,4 +2091,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Flight", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentFlight))
     doSpellTest("Guardian Wind", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentGuardianWind))
     doSpellTest("Haste", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHaste))
+    doSpellTest("Invisiblity", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentInvisibility))
 }
