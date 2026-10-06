@@ -1641,6 +1641,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createRegenerationProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateRegenerationProjectileEffect())
             },
+            createResistElementsProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateResistElementsProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2062,4 +2065,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Giant Strength", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentGiantStrength))
     doSpellTest("Iron Skin", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentIronSkin))
     doSpellTest("Regeneration", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentRegeneration))
+    doSpellTest("Resist Elements", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentResistElements))
 }
