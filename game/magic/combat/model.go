@@ -5030,6 +5030,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
         case "Flame Blade":
             model.AddProjectile(spellSystem.CreateFlameBladeProjectile(target))
+        case "Immolation":
+            model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
     }
 }
 
@@ -5940,10 +5942,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Immolation":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasAbility(data.AbilityImmolation) {
                     return false
                 }
@@ -7394,9 +7393,10 @@ func (model *CombatModel) CreateFlameBladeProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateImmolationProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentImmolation)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentImmolation)
+    })
 }
 
 func (model *CombatModel) CreateBerserkProjectileEffect() func(*ArmyUnit) {
