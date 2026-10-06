@@ -1623,6 +1623,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createLionHeartProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateLionHeartProjectileEffect())
             },
+            createRighteousnessProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateRighteousnessProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2038,4 +2041,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Holy Weapon", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHolyWeapon))
     doSpellTest("Invulnerability", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentInvulnerability))
     doSpellTest("Lionheart", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentLionHeart))
+    doSpellTest("Righteousness", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentRighteousness))
 }

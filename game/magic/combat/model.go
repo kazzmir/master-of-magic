@@ -4996,6 +4996,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateInvulnerabilityProjectile(target))
         case "Lionheart":
             model.AddProjectile(spellSystem.CreateLionHeartProjectile(target))
+        case "Righteousness":
+            model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
     }
 }
 
@@ -5750,10 +5752,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Righteousness":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
                 }
@@ -7327,9 +7326,10 @@ func (model *CombatModel) CreateResistElementsProjectileEffect() func(*ArmyUnit)
 }
 
 func (model *CombatModel) CreateRighteousnessProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentRighteousness)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentRighteousness)
+    })
 }
 
 func (model *CombatModel) CreateHolyWeaponProjectileEffect() func(*ArmyUnit) {
