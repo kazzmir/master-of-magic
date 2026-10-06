@@ -5010,6 +5010,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateRegenerationProjectile(target))
         case "Resist Elements":
             model.AddProjectile(spellSystem.CreateResistElementsProjectile(target))
+        case "Stone Skin":
+            model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
     }
 }
 
@@ -5829,10 +5831,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Stone Skin":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateStoneSkinProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 // if a target has iron skin they cannot also have stone skin
                 if target.HasEnchantment(data.UnitEnchantmentIronSkin) || target.HasEnchantment(data.UnitEnchantmentStoneSkin) {
                     return false
@@ -7306,9 +7305,10 @@ func (model *CombatModel) CreateIronSkinProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateStoneSkinProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentStoneSkin)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentStoneSkin)
+    })
 }
 
 func (model *CombatModel) CreateRegenerationProjectileEffect() func(*ArmyUnit) {
