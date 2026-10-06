@@ -5038,6 +5038,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
         case "Wraith Form":
             model.AddProjectile(spellSystem.CreateWraithFormProjectile(target))
+        case "Flame Strike":
+            model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
     }
 }
 
@@ -5160,9 +5162,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Warp Lightning":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpLightningTarget)
         case "Flame Strike":
-            // TODO: remote
             model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
+                model.doUnitTargetSpell(spellSystem, target, spell, unitCaster, army)
+                model.RemoteUnitTargetSpell(target, spell, unitCaster, army)
             }, targetAny)
             castedCallback(true)
         case "Life Drain":
