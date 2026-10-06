@@ -5996,11 +5996,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             model.Events <- &CombatCreateWallOfFire{
             }
             castedCallback(true)
+            model.RemoteWall(RemoteWallFire)
         case "Wall of Darkness":
             model.Events <- &CombatCreateWallOfDarkness{
             }
             castedCallback(true)
-
+            model.RemoteWall(RemoteWallDarkness)
         default:
             log.Error("Unhandled spell %v", spell.Name)
     }
@@ -6653,6 +6654,15 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 model.SwitchTeams(unit)
             }
 
+        case RemoteWallType:
+            event := event.(*RemoteWallEvent)
+            switch event.Kind {
+                case RemoteWallFire:
+                    model.Events <- &CombatCreateWallOfFire{}
+                case RemoteWallDarkness:
+                    model.Events <- &CombatCreateWallOfDarkness{}
+            }
+
         case RemoteUnitTargetSpellType:
             spellSystem.With(func (spellSystem SpellSystem) {
                 event := event.(*RemoteUnitTargetSpellEvent)
@@ -6935,6 +6945,24 @@ func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment
         err := model.Remote.SendEvent(&event)
         if err != nil {
             log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteWall(kind RemoteWallKind) error {
+    if model.Remote != nil {
+        event := RemoteWallEvent{
+            Type: RemoteWallType,
+            Kind: kind,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote wall event: %v", err)
         }
 
         return err

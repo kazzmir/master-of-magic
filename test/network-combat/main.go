@@ -215,8 +215,11 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
     defendingPlayer.AddCity(defendingFortressCity)
 
-    defendingPlayer.CastingSkillPower = 1000
+    defendingPlayer.CastingSkillPower = 50000
     defendingPlayer.Mana = 1000
+
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Fire"))
+    defendingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wall of Darkness"))
 
     var defendingArmy *combat.Army
 
@@ -267,7 +270,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     cancel()
     waiter.Wait()
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: defendingFortressCity}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
 
     player := attackingPlayer
     if !isServer {
