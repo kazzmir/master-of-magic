@@ -5000,6 +5000,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
         case "True Sight":
             model.AddProjectile(spellSystem.CreateTrueSightProjectile(target))
+        case "Elemental Armor":
+            model.AddProjectile(spellSystem.CreateElementalArmorProjectile(target))
     }
 }
 
@@ -5778,10 +5780,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Elemental Armor":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateElementalArmorProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentElementalArmor) {
                     return false
                 }
@@ -7290,9 +7289,10 @@ func (model *CombatModel) CreateTrueSightProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateElementalArmorProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentElementalArmor)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentElementalArmor)
+    })
 }
 
 func (model *CombatModel) CreateGiantStrengthProjectileEffect() func(*ArmyUnit) {
