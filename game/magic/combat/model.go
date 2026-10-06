@@ -5034,6 +5034,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateImmolationProjectile(target))
         case "Berserk":
             model.AddProjectile(spellSystem.CreateBerserkProjectile(target))
+        case "Cloak of Fear":
+            model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
     }
 }
 
@@ -5964,10 +5966,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Cloak of Fear":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateCloakOfFearProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentCloakOfFear) {
                     return false
                 }
@@ -7406,9 +7405,10 @@ func (model *CombatModel) CreateBerserkProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateCloakOfFearProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentCloakOfFear)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentCloakOfFear)
+    })
 }
 
 func (model *CombatModel) CreateWraithFormProjectileEffect() func(*ArmyUnit) {
