@@ -1665,6 +1665,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createMagicImmunityProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateMagicImmunityProjectileEffect())
             },
+            createResistMagicProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateResistMagicProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2096,4 +2099,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Haste", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHaste))
     doSpellTest("Invisiblity", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentInvisibility))
     doSpellTest("Magic Immunity", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentMagicImmunity))
+    doSpellTest("Resist Magic", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentResistMagic))
 }

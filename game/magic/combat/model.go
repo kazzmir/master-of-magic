@@ -5022,6 +5022,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateInvisibilityProjectile(target))
         case "Magic Immunity":
             model.AddProjectile(spellSystem.CreateMagicImmunityProjectile(target))
+        case "Resist Magic":
+            model.AddProjectile(spellSystem.CreateResistMagicProjectile(target))
     }
 }
 
@@ -5892,10 +5894,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Resist Magic":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateResistMagicProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.HasEnchantment(data.UnitEnchantmentResistMagic) {
                     return false
                 }
@@ -7370,9 +7369,10 @@ func (model *CombatModel) CreateMagicImmunityProjectileEffect() func(*ArmyUnit) 
 }
 
 func (model *CombatModel) CreateResistMagicProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentResistMagic)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentResistMagic)
+    })
 }
 
 func (model *CombatModel) CreateSpellLockProjectileEffect() func(*ArmyUnit) {
