@@ -4998,6 +4998,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateLionHeartProjectile(target))
         case "Righteousness":
             model.AddProjectile(spellSystem.CreateRighteousnessProjectile(target))
+        case "True Sight":
+            model.AddProjectile(spellSystem.CreateTrueSightProjectile(target))
     }
 }
 
@@ -5764,10 +5766,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "True Sight":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateTrueSightProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
                 }
@@ -7284,9 +7283,10 @@ func (model *CombatModel) CreateLionHeartProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateTrueSightProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentTrueSight)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentTrueSight)
+    })
 }
 
 func (model *CombatModel) CreateElementalArmorProjectileEffect() func(*ArmyUnit) {
