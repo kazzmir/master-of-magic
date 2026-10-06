@@ -1686,6 +1686,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createCloakOfFearProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateCloakOfFearProjectileEffect())
             },
+            createWraithFormProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateWraithFormProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2124,4 +2127,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Immolation", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentImmolation))
     doSpellTest("Berserk", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentBerserk))
     doSpellTest("Cloak of Fear", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentCloakOfFear))
+    doSpellTest("Wraith Form", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentWraithForm))
 }
