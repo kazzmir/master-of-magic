@@ -3,6 +3,7 @@ package combat
 import (
     "log"
     "net"
+    "sync"
     "context"
     "time"
     "testing"
@@ -1495,7 +1496,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         // the defender's remote, which represents the attacker, so true for isAttacker
         remoteDefender := MakeRemote(true, true, peer2)
 
-        go remoteDefender.RunReceiveLoop(quit)
+        var wait sync.WaitGroup
+
+        wait.Go(func(){ remoteDefender.RunReceiveLoop(quit) })
 
         finish := make(chan struct{})
 
@@ -1504,7 +1507,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             expectedId = attackingFriend.Id
         }
 
-        go func() {
+        wait.Go(func() {
             for quit.Err() == nil {
                 select {
                     case <-quit.Done():
@@ -1518,7 +1521,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                     break
                 }
             }
-        }()
+        })
 
         spellSystem := proxySpellSystem{
             createFireballProjectile: func(target *ArmyUnit, cost int) *Projectile {
@@ -1676,6 +1679,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         }
 
         expecter.Assertions(test, spellName)
+
+        cancel()
+        wait.Wait()
     }
 
     enemyDamageUnitSpells := []string{
