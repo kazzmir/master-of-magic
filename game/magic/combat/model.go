@@ -4992,6 +4992,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateHolyArmorProjectile(target))
         case "Holy Weapon":
             model.AddProjectile(spellSystem.CreateHolyWeaponProjectile(target))
+        case "Invulnerability":
+            model.AddProjectile(spellSystem.CreateInvulnerabilityProjectile(target))
     }
 }
 
@@ -5722,10 +5724,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Invulnerability":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateInvulnerabilityProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRealm() == data.DeathMagic {
                     return false
                 }
@@ -7273,9 +7272,10 @@ func (model *CombatModel) CreateHolyArmorProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateInvulnerabilityProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentInvulnerability)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentInvulnerability)
+    })
 }
 
 func (model *CombatModel) CreateLionHeartProjectileEffect() func(*ArmyUnit) {

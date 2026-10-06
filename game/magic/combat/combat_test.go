@@ -1617,6 +1617,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createHolyWeaponProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateHolyWeaponProjectileEffect())
             },
+            createInvulnerabilityProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateInvulnerabilityProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2030,4 +2033,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Heroism", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHeroism))
     doSpellTest("Holy Armor", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHolyArmor))
     doSpellTest("Holy Weapon", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentHolyWeapon))
+    doSpellTest("Invulnerability", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentInvulnerability))
 }
