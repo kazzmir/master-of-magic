@@ -5026,6 +5026,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateResistMagicProjectile(target))
         case "Spell Lock":
             model.AddProjectile(spellSystem.CreateSpellLockProjectile(target))
+        case "Eldritch Weapon":
+            model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
     }
 }
 
@@ -5912,10 +5914,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Eldritch Weapon":
-            model.DoTargetUnitSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateEldritchWeaponProjectile(target))
-                castedCallback(true)
-            }, func (target *ArmyUnit) bool {
+            model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.GetRace() == data.RaceFantastic {
                     return false
                 }
@@ -7382,9 +7381,10 @@ func (model *CombatModel) CreateSpellLockProjectileEffect() func(*ArmyUnit) {
 }
 
 func (model *CombatModel) CreateEldritchWeaponProjectileEffect() func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         unit.AddEnchantment(data.UnitEnchantmentEldritchWeapon)
-    }
+        model.RemoteEnchantment(unit, data.UnitEnchantmentEldritchWeapon)
+    })
 }
 
 func (model *CombatModel) CreateFlameBladeProjectileEffect() func(*ArmyUnit) {

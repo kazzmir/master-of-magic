@@ -61,6 +61,7 @@ type TestSpellSystem struct {
     createMagicImmunityProjectile func(target *ArmyUnit) *Projectile
     createResistMagicProjectile func(target *ArmyUnit) *Projectile
     createSpellLockProjectile func(target *ArmyUnit) *Projectile
+    createEldritchWeaponProjectile func(target *ArmyUnit) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -423,6 +424,9 @@ func (system *TestSpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Proj
 }
 
 func (system *TestSpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    if system.createEldritchWeaponProjectile != nil {
+        return system.createEldritchWeaponProjectile(target)
+    }
     return nil
 }
 

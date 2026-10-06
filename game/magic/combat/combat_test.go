@@ -1671,6 +1671,9 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
             createSpellLockProjectile: func(target *ArmyUnit) *Projectile {
                 return makeProjectile(target, model.CreateSpellLockProjectileEffect())
             },
+            createEldritchWeaponProjectile: func(target *ArmyUnit) *Projectile {
+                return makeProjectile(target, model.CreateEldritchWeaponProjectileEffect())
+            },
         }
 
         model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
@@ -2104,4 +2107,5 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Magic Immunity", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentMagicImmunity))
     doSpellTest("Resist Magic", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentResistMagic))
     doSpellTest("Spell Lock", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentSpellLock))
+    doSpellTest("Eldritch Weapon", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentEldritchWeapon))
 }
