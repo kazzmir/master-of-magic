@@ -5040,6 +5040,8 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateWraithFormProjectile(target))
         case "Flame Strike":
             model.AddProjectile(spellSystem.CreateFlameStrikeProjectile(target))
+        case "Holy Word":
+            model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
     }
 }
 
@@ -5129,10 +5131,17 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
     doomBoltTarget := targetNotImmune
     disintegrateTarget := targetNotImmune
 
+    calledCallback := false
+
     standardUnitTarget := func(target *ArmyUnit){
         model.doUnitTargetSpell(spellSystem, target, spell, unitCaster, army)
         model.RemoteUnitTargetSpell(target, spell, unitCaster, army)
-        castedCallback(true)
+
+        // make sure callback is called once
+        if !calledCallback {
+            castedCallback(true)
+            calledCallback = true
+        }
     }
 
     targetFantasticDeathOrChaos := func (target *ArmyUnit) bool {
@@ -5162,11 +5171,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Warp Lightning":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, warpLightningTarget)
         case "Flame Strike":
-            model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.doUnitTargetSpell(spellSystem, target, spell, unitCaster, army)
-                model.RemoteUnitTargetSpell(target, spell, unitCaster, army)
-            }, targetAny)
-            castedCallback(true)
+            model.DoAllUnitsSpell(army, spell, TargetEnemy, standardUnitTarget, targetAny)
         case "Life Drain":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Dispel Evil":
@@ -5174,11 +5179,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Healing":
             model.DoTargetUnitSpell(army, spell, TargetFriend, standardUnitTarget, healingTarget)
         case "Holy Word":
-            // TODO: remote
-            model.DoAllUnitsSpell(army, spell, TargetEnemy, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHolyWordProjectile(target, getSpellSave(unitCaster)))
-            }, targetFantastic)
-            castedCallback(true)
+            model.DoAllUnitsSpell(army, spell, TargetEnemy, standardUnitTarget, targetFantastic)
         case "Recall Hero":
             // TODO: remote
             // FIXME:  check planar seal and summoning circle?
@@ -7243,13 +7244,14 @@ func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, 
 }
 
 func (model *CombatModel) CreateFlameStrikeProjectileEffect(damageIndicator AddDamageIndicators) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         hurt := model.ApplyImmolationDamage(unit, 15)
         damageIndicator.AddDamageIndicator(unit, hurt)
+        model.RemoteDamageIndicator(unit, hurt)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateRecallHeroProjectileEffect() func(*ArmyUnit) {
@@ -7579,7 +7581,7 @@ func (model *CombatModel) CreatePetrifyProjectileEffect(damageIndicator AddDamag
 }
 
 func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDamageIndicators, reduceResistance int) func(*ArmyUnit) {
-    return func(unit *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         if unit.HasEnchantment(data.UnitEnchantmentSpellLock) {
             return
         }
@@ -7599,11 +7601,13 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
         }
 
         damageIndicator.AddDamageIndicator(unit, damage)
+        model.RemoteDamageIndicator(unit, damage)
         unit.TakeDamage(damage, DamageIrreversable)
+        model.RemoteDamage(unit, DamageIrreversable, damage)
         if unit.GetHealth() <= 0 {
             model.KillUnit(unit)
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {

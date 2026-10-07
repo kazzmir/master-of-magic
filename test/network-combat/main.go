@@ -255,6 +255,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Chaos"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disintegrate"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Strike"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Word"))
 
     var attackingArmy *combat.Army
 
@@ -291,11 +292,17 @@ func MakeScenario3(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.OrcSpearmen, 3)
 }
 
+func MakeScenario4(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.ArchAngel, 3)
+}
+
+
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
     switch scenario {
         case 1: return MakeScenario1(isServer, remote)
         case 2: return MakeScenario2(isServer, remote)
         case 3: return MakeScenario3(isServer, remote)
+        case 4: return MakeScenario4(isServer, remote)
         default: return MakeScenario1(isServer, remote)
     }
 }
