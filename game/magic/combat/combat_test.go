@@ -895,6 +895,62 @@ func TestLeadershipBonusMultiple(test *testing.T){
 
 }
 
+func TestHolyBonus(test *testing.T){
+    defendingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    attackingArmy := Army{
+        Player: playerlib.MakePlayer(setup.WizardCustom{}, false, 1, 1, map[herolib.HeroType]string{}, &playerlib.NoGlobalEnchantments{}),
+    }
+
+    // melee only
+    attacker1 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    // valana has regular leadership
+
+    // arch angel has holy bonus +2
+    archAngelUnit := units.MakeOverworldUnitFromUnit(units.ArchAngel, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+
+    units1 := attackingArmy.AddUnit(attacker1)
+    units2 := attackingArmy.AddUnit(archAngelUnit)
+
+    model := CombatModel{
+        SelectedUnit: nil,
+        Tiles: makeTiles(30, 30, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}),
+        Turn: TeamDefender,
+        DefendingArmy: &defendingArmy,
+        AttackingArmy: &attackingArmy,
+    }
+
+    model.Initialize(spellbook.Spells{}, 0, 0)
+
+    holyBonus := 2
+
+    if units1.GetMeleeAttackPower() != units.LizardSpearmen.MeleeAttackPower + holyBonus {
+        test.Errorf("Error: spearmen melee attack power should be %d, got %d", units.LizardSpearmen.MeleeAttackPower + holyBonus, units1.GetMeleeAttackPower())
+    }
+
+    if units1.GetDefense() != units.LizardSpearmen.Defense + holyBonus {
+        test.Errorf("Error: spearmen defense should be %d, got %d", units.LizardSpearmen.Defense + holyBonus, units1.GetDefense())
+    }
+
+    if units1.GetResistance() != units.LizardSpearmen.Resistance + holyBonus {
+        test.Errorf("Error: spearmen resistance should be %d, got %d", units.LizardSpearmen.Resistance + holyBonus, units1.GetResistance())
+    }
+
+    if units2.GetMeleeAttackPower() != units.ArchAngel.MeleeAttackPower + holyBonus {
+        test.Errorf("Error: arch angel melee attack power should be %d, got %d", units.ArchAngel.MeleeAttackPower + holyBonus, units2.GetMeleeAttackPower())
+    }
+
+    if units2.GetDefense() != units.ArchAngel.Defense + holyBonus {
+        test.Errorf("Error: arch angel defense should be %d, got %d", units.ArchAngel.Defense + holyBonus, units2.GetDefense())
+    }
+
+    if units2.GetResistance() != units.ArchAngel.Resistance + holyBonus {
+        test.Errorf("Error: arch angel resistance should be %d, got %d", units.ArchAngel.Resistance + holyBonus, units2.GetResistance())
+    }
+}
+
 type FakeDamageIndicator struct {}
 func (f *FakeDamageIndicator) AddDamageIndicator(attacker *ArmyUnit, damage int){
 }

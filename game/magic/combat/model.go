@@ -1188,6 +1188,8 @@ func (unit *ArmyUnit) GetResistance() int {
         modifier += unit.Unit.ResistanceEnchantmentBonus(enchantment)
     }
 
+    modifier += unit.GetHolyBonusModifier()
+
     for _, curse := range unit.Curses {
         switch curse {
             case data.UnitCurseMindStorm: modifier -= 5
@@ -1275,6 +1277,8 @@ func (unit *ArmyUnit) GetDefense() int {
         modifier += unit.Unit.DefenseEnchantmentBonus(enchantment)
     }
 
+    modifier += unit.GetHolyBonusModifier()
+
     warpCreatureDefense := false
 
     for _, curse := range unit.Curses {
@@ -1361,6 +1365,19 @@ func (unit *ArmyUnit) GetRangedAttackPower() int {
     return max(0, final)
 }
 
+func (unit *ArmyUnit) GetHolyBonusModifier() int {
+    holyBonus := 0
+    army := unit.Model.GetArmy(unit)
+    for _, unit := range army.GetUnits() {
+        if unit.HasAbility(data.AbilityHolyBonus) {
+            value := int(unit.GetAbilityValue(data.AbilityHolyBonus))
+            holyBonus = max(holyBonus, value)
+        }
+    }
+
+    return holyBonus
+}
+
 func (unit *ArmyUnit) GetMeleeAttackPower() int {
     modifier := 0
 
@@ -1372,6 +1389,8 @@ func (unit *ArmyUnit) GetMeleeAttackPower() int {
     for _, enchantment := range unit.Enchantments {
         modifier += unit.Unit.MeleeEnchantmentBonus(enchantment)
     }
+
+    modifier += unit.GetHolyBonusModifier()
 
     shattered := false
     warpCreatureMelee := false
