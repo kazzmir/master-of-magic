@@ -4951,7 +4951,7 @@ func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *Arm
             model.AddProjectile(spellSystem.CreateLifeDrainProjectile(target, spell.SpentAdditionalCost(false) / 5 + getSpellSave(unitCaster), army.Player, unitCaster))
         case "Dispel Evil":
             model.AddProjectile(spellSystem.CreateDispelEvilProjectile(target, getSpellSave(unitCaster)))
-        case "Healing":
+        case "Healing", "Mass Healing":
             model.AddProjectile(spellSystem.CreateHealingProjectile(target))
         case "Cracks Call":
             model.AddProjectile(spellSystem.CreateCracksCallProjectile(target))
@@ -5207,11 +5207,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 castedCallback(true)
             }, targetHero)
         case "Mass Healing":
-            // TODO: remote
-            model.DoAllUnitsSpell(army, spell, TargetFriend, func(target *ArmyUnit){
-                model.AddProjectile(spellSystem.CreateHealingProjectile(target))
-            }, targetNonDeath)
-            castedCallback(true)
+            model.DoAllUnitsSpell(army, spell, TargetFriend, standardUnitTarget, targetNonDeath)
         case "Cracks Call":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, func (target *ArmyUnit) bool {
                 if target.IsFlying() {
