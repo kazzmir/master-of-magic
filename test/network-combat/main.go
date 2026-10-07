@@ -257,6 +257,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Flame Strike"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Holy Word"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Mass Healing"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Death Spell"))
 
     var attackingArmy *combat.Army
 
