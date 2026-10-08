@@ -7626,7 +7626,6 @@ func (model *CombatModel) CreateHolyWordProjectileEffect(damageIndicator AddDama
 func (model *CombatModel) CreateWebProjectileEffect() func(*ArmyUnit) {
     return model.createRemoteProjectileEffect(func(unit *ArmyUnit) {
         model.ApplyCurse(unit, data.UnitCurseWeb)
-
         model.RemoteCurse(unit, data.UnitCurseWeb)
     })
 }

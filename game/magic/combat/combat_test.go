@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/set"
 )
 
 func TestAngle(test *testing.T){
@@ -1515,36 +1516,48 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         // the attacker's remote, which represents the defender, so false for isAttacker
         remote := MakeRemote(false, false, peer1)
 
-        defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
-        attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
+        makeDefendingArmy := func() *Army {
+            defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-        // default is hell hounds: fantastic chaos unit
-        defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+            // default is hell hounds: fantastic chaos unit
+            defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
-        // allow a test to override defending unit
-        for _, option := range testOptions {
-            if option.MakeUnit != nil {
-                defendingOverworld = option.MakeUnit()
+            // allow a test to override defending unit
+            for _, option := range testOptions {
+                if option.MakeUnit != nil {
+                    defendingOverworld = option.MakeUnit()
+                }
             }
+
+            defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+
+            // an enchantment that can be removed via dispel magic
+            defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
+            return defendingArmy
         }
 
-        defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+        makeAttackingArmy := func() *Army {
+            attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-        // an enchantment that can be removed via dispel magic
-        defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+            // attacking army has a unit that can range attack. grant very high tohit
+            attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+            attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
 
-        // attacking army has a unit that can range attack. grant very high tohit
-        attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
-        attackingUnit := attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+            // a different unit that can be healed
+            attacker2 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+            attackingFriend := attackingArmy.AddUnit(attacker2)
+            // set health to half so we can test healing
+            attackingFriend.TakeDamage(attackingFriend.GetMaxHealth() / 2, DamageNormal)
+            return attackingArmy
+        }
 
-        // a different unit that can be healed
-        attacker2 := units.MakeOverworldUnitFromUnit(units.LizardSpearmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
-        attackingFriend := attackingArmy.AddUnit(attacker2)
-        // set health to half so we can test healing
-        attackingFriend.TakeDamage(attackingFriend.GetMaxHealth() / 2, DamageNormal)
+        attackerModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+        attackerModel.CracksCallChance = 100
 
-        model := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
-        model.CracksCallChance = 100
+        defenderModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+        // probably don't really need this
+        defenderModel.CracksCallChance = 100
 
         quit, cancel := context.WithCancel(context.Background())
         defer cancel()
@@ -1558,9 +1571,10 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
 
         finish := make(chan struct{})
 
-        expectedId := defendingUnit.Id
+        expectedId := defenderModel.DefendingArmy.GetUnits()[0].Id
         if !defender {
-            expectedId = attackingFriend.Id
+            // a bit of a hack, but when casting a friendly spell we target the second unit
+            expectedId = attackerModel.AttackingArmy.GetUnits()[1].Id
         }
 
         wait.Go(func() {
@@ -1569,7 +1583,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                     case <-quit.Done():
                         return
                     case event := <-remoteDefender.Events:
-                        expecter.HandleEvent(event, expectedId, spellName, model)
+                        expecter.HandleEvent(event, expectedId, spellName, defenderModel)
                 }
 
                 if expecter.Finished() {
@@ -1581,176 +1595,179 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
 
         spellSystem := proxySpellSystem{
             createFireballProjectile: func(target *ArmyUnit, cost int) *Projectile {
-                return makeProjectile(target, model.CreateFireballProjectileEffect(1000, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateFireballProjectileEffect(1000, &FakeDamageIndicator{}))
             },
             createIceBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
-                return makeProjectile(target, model.CreateIceBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateIceBoltProjectileEffect(1000, &FakeDamageIndicator{}))
             },
             createStarFiresProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateStarFiresProjectileEffect(&FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateStarFiresProjectileEffect(&FakeDamageIndicator{}))
             },
             createPsionicBlastProjectile: func(target *ArmyUnit, cost int) *Projectile {
-                return makeProjectile(target, model.CreatePsionicBlastProjectileEffect(1000, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreatePsionicBlastProjectileEffect(1000, &FakeDamageIndicator{}))
             },
             createDoomBoltProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateDoomBoltProjectileEffect(&FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateDoomBoltProjectileEffect(&FakeDamageIndicator{}))
             },
             createFireBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
-                return makeProjectile(target, model.CreateFireBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateFireBoltProjectileEffect(1000, &FakeDamageIndicator{}))
             },
             createLightningBoltProjectile: func(target *ArmyUnit, cost int) *Projectile {
-                return makeProjectile(target, model.CreateLightningBoltProjectileEffect(1000, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateLightningBoltProjectileEffect(1000, &FakeDamageIndicator{}))
             },
             createWarpLightningProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateWarpLightningProjectileEffect(&FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateWarpLightningProjectileEffect(&FakeDamageIndicator{}))
             },
             createLifeDrainProjectile: func(target *ArmyUnit, cost int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateLifeDrainProjectileEffect(1000, player, unitCaster, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateLifeDrainProjectileEffect(1000, player, unitCaster, &FakeDamageIndicator{}))
             },
             createDispelEvilProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateDispelEvilProjectileEffect(&FakeDamageIndicator{}, reduce))
+                return makeProjectile(target, attackerModel.CreateDispelEvilProjectileEffect(&FakeDamageIndicator{}, reduce))
             },
             createHealingProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateHealingProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateHealingProjectileEffect())
             },
             createCracksCallProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateCracksCallProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateCracksCallProjectileEffect())
             },
             createWebProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateWebProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateWebProjectileEffect())
             },
             createBanishProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateBanishProjectileEffect(reduce, &FakeDamageIndicator{}))
+                return makeProjectile(target, attackerModel.CreateBanishProjectileEffect(reduce, &FakeDamageIndicator{}))
             },
             createDispelMagicProjectile: func(target *ArmyUnit, caster ArmyPlayer, strength int) *Projectile {
-                return makeProjectile(target, model.CreateDispelMagicProjectileEffect(caster, strength + 10000))
+                return makeProjectile(target, attackerModel.CreateDispelMagicProjectileEffect(caster, strength + 10000))
             },
             createDisintegrateProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateDisintegrateProjectileEffect(reduce))
+                return makeProjectile(target, attackerModel.CreateDisintegrateProjectileEffect(reduce))
             },
             createWarpWoodProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateWarpWoodProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateWarpWoodProjectileEffect())
             },
             createWordOfDeathProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateWordOfDeathProjectileEffect(&FakeDamageIndicator{}, 100))
+                return makeProjectile(target, attackerModel.CreateWordOfDeathProjectileEffect(&FakeDamageIndicator{}, 100))
             },
             createCreatureBindingProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateCreatureBindingProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateCreatureBindingProjectileEffect(reduce + 100))
             },
             createMindStormProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateMindStormProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateMindStormProjectileEffect())
             },
             createBlessProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateBlessProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateBlessProjectileEffect())
             },
             createWeaknessProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateWeaknessProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateWeaknessProjectileEffect(reduce + 100))
             },
             createBlackSleepProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateBlackSleepProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateBlackSleepProjectileEffect(reduce + 100))
             },
             createVertigoProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateVertigoProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateVertigoProjectileEffect(reduce + 100))
             },
             createShatterProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateShatterProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateShatterProjectileEffect(reduce + 100))
             },
             createWarpCreatureProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateWarpCreatureProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateWarpCreatureProjectileEffect(reduce + 100))
             },
             createConfusionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreateConfusionProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreateConfusionProjectileEffect(reduce + 100))
             },
             createPossessionProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreatePossessionProjectileEffect(reduce + 100))
+                return makeProjectile(target, attackerModel.CreatePossessionProjectileEffect(reduce + 100))
             },
             createPetrifyProjectile: func(target *ArmyUnit, reduce int) *Projectile {
-                return makeProjectile(target, model.CreatePetrifyProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
+                return makeProjectile(target, attackerModel.CreatePetrifyProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
             },
             createHeroismProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateHeroismProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateHeroismProjectileEffect())
             },
             createHolyArmorProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateHolyArmorProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateHolyArmorProjectileEffect())
             },
             createHolyWeaponProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateHolyWeaponProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateHolyWeaponProjectileEffect())
             },
             createInvulnerabilityProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateInvulnerabilityProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateInvulnerabilityProjectileEffect())
             },
             createLionHeartProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateLionHeartProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateLionHeartProjectileEffect())
             },
             createRighteousnessProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateRighteousnessProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateRighteousnessProjectileEffect())
             },
             createTrueSightProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateTrueSightProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateTrueSightProjectileEffect())
             },
             createElementalArmorProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateElementalArmorProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateElementalArmorProjectileEffect())
             },
             createGiantStrengthProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateGiantStrengthProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateGiantStrengthProjectileEffect())
             },
             createIronSkinProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateIronSkinProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateIronSkinProjectileEffect())
             },
             createRegenerationProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateRegenerationProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateRegenerationProjectileEffect())
             },
             createResistElementsProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateResistElementsProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateResistElementsProjectileEffect())
             },
             createStoneSkinProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateStoneSkinProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateStoneSkinProjectileEffect())
             },
             createFlightProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateFlightProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateFlightProjectileEffect())
             },
             createGuardianWindProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateGuardianWindProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateGuardianWindProjectileEffect())
             },
             createHasteProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateHasteProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateHasteProjectileEffect())
             },
             createInvisibilityProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateInvisibilityProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateInvisibilityProjectileEffect())
             },
             createMagicImmunityProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateMagicImmunityProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateMagicImmunityProjectileEffect())
             },
             createResistMagicProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateResistMagicProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateResistMagicProjectileEffect())
             },
             createSpellLockProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateSpellLockProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateSpellLockProjectileEffect())
             },
             createEldritchWeaponProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateEldritchWeaponProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateEldritchWeaponProjectileEffect())
             },
             createFlameBladeProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateFlameBladeProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateFlameBladeProjectileEffect())
             },
             createImmolationProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateImmolationProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateImmolationProjectileEffect())
             },
             createBerserkProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateBerserkProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateBerserkProjectileEffect())
             },
             createCloakOfFearProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateCloakOfFearProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateCloakOfFearProjectileEffect())
             },
             createWraithFormProjectile: func(target *ArmyUnit) *Projectile {
-                return makeProjectile(target, model.CreateWraithFormProjectileEffect())
+                return makeProjectile(target, attackerModel.CreateWraithFormProjectileEffect())
+            },
+            createDeathSpellProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+                return makeProjectile(target, attackerModel.CreateDeathSpellProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
             },
         }
 
-        model.InvokeSpell(&spellSystem, attackingArmy, attackingUnit, spellbook.Spell{Name: spellName}, func(success bool) { })
+        attackerModel.InvokeSpell(&spellSystem, attackerModel.AttackingArmy, attackerModel.AttackingArmy.GetUnits()[0], spellbook.Spell{Name: spellName}, func(success bool) { })
 
         var counter uint64
-        for model.UpdateProjectiles(counter, &FakeDamageIndicator{}, &spellSystem) && counter < 10000 {
+        for attackerModel.UpdateProjectiles(counter, &FakeDamageIndicator{}, &spellSystem) && counter < 10000 {
             counter += 1
         }
 
@@ -2184,4 +2201,70 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     doSpellTest("Berserk", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentBerserk))
     doSpellTest("Cloak of Fear", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentCloakOfFear))
     doSpellTest("Wraith Form", false, makeUnitEnchantmentExpecter(data.UnitEnchantmentWraithForm))
+
+    makeAllUnitsHarmExpecter := func() Expecter {
+        didCastSpell := false
+        didDamage := false
+        didFinishProjectile := false
+        didTargetAll := false
+
+        seenIds := set.NewSet[uint64]()
+
+        var harm Expecter
+        harm.HandleEvent = func(event RemoteEvent, expectedId uint64, spellName string, model *CombatModel) {
+            switch event.GetType() {
+                case RemoteUnitTargetSpellType:
+                    event := event.(*RemoteUnitTargetSpellEvent)
+                    if event.Spell == spellName {
+                        didCastSpell = true
+                        seenIds.Insert(event.TargetId)
+
+                        log.Printf("Get army for id %v", event.TargetId)
+                        army := model.GetArmy(model.GetUnitById(event.TargetId))
+                        if len(army.GetUnits()) == seenIds.Size() {
+                            didTargetAll = true
+                            for _, unit := range army.GetUnits() {
+                                if !seenIds.Contains(unit.Id) {
+                                    didTargetAll = false
+                                }
+                            }
+                        }
+                    }
+                case RemoteDamageType:
+                    event := event.(*RemoteDamageEvent)
+                    // one of the units should be damaged
+                    if event.Id == expectedId {
+                        didDamage = true
+                    }
+                case RemoteProjectileFinishedType:
+                    didFinishProjectile = true
+            }
+        }
+
+        harm.Finished = func() bool {
+            return didCastSpell && didDamage && didFinishProjectile && didTargetAll
+        }
+
+        harm.Assertions = func(test *testing.T, spellName string) {
+            if !didDamage {
+                test.Errorf("Error: remote did not receive damage event for %v", spellName)
+            }
+
+            if !didCastSpell {
+                test.Errorf("Error: remote did not receive cast spell for %v", spellName)
+            }
+
+            if !didFinishProjectile {
+                test.Errorf("Error: remote did not receive projectile finished event for %v", spellName)
+            }
+
+            if !didTargetAll {
+                test.Errorf("Error: remote did not target all units for %v", spellName)
+            }
+        }
+
+        return harm
+    }
+
+    doSpellTest("Death Spell", true, makeAllUnitsHarmExpecter())
 }
