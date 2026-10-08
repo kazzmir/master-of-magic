@@ -1651,6 +1651,9 @@ func makeSpellSystem(model *CombatModel) proxySpellSystem {
         createDeathSpellProjectile: func(target *ArmyUnit, reduce int) *Projectile {
             return makeProjectile(target, model.CreateDeathSpellProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
         },
+        createHolyWordProjectile: func(target *ArmyUnit, reduce int) *Projectile {
+            return makeProjectile(target, model.CreateHolyWordProjectileEffect(&FakeDamageIndicator{}, reduce + 100))
+        },
     }
 }
 
@@ -1692,20 +1695,26 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         makeDefendingArmy := func() *Army {
             defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
-            // default is hell hounds: fantastic chaos unit
-            defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+            if len(testOptions) == 0 {
+                // default is hell hounds: fantastic chaos unit
+                defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
 
-            // allow a test to override defending unit
-            for _, option := range testOptions {
-                if option.MakeUnit != nil {
-                    defendingOverworld = option.MakeUnit()
+                defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+
+                // an enchantment that can be removed via dispel magic
+                defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+            } else {
+
+                // allow a test to override defending unit
+                for _, option := range testOptions {
+                    if option.MakeUnit != nil {
+                        defendingOverworld := option.MakeUnit()
+                        defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+                        defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+                    }
                 }
+
             }
-
-            defendingUnit := defendingArmy.AddUnit(defendingOverworld)
-
-            // an enchantment that can be removed via dispel magic
-            defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
 
             return defendingArmy
         }
@@ -2223,7 +2232,6 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
                         didCastSpell = true
                         seenIds.Insert(event.TargetId)
 
-                        log.Printf("Get army for id %v", event.TargetId)
                         army := model.GetArmy(model.GetUnitById(event.TargetId))
                         if len(army.GetUnits()) == seenIds.Size() {
                             didTargetAll = true
@@ -2270,5 +2278,23 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         return harm
     }
 
-    doSpellTest("Death Spell", true, makeAllUnitsHarmExpecter())
+    makeOrcBowmen := func() *units.OverworldUnit {
+        return units.MakeOverworldUnitFromUnit(units.OrcBowmen, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    }
+
+    doSpellTest("Death Spell", true, makeAllUnitsHarmExpecter(), TestOptions{
+        MakeUnit: makeOrcBowmen,
+    }, TestOptions{
+        MakeUnit: makeOrcBowmen,
+    })
+
+    makeArchAngel := func() *units.OverworldUnit {
+        return units.MakeOverworldUnitFromUnit(units.ArchAngel, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    }
+
+    doSpellTest("Holy Word", true, makeAllUnitsHarmExpecter(), TestOptions{
+        MakeUnit: makeArchAngel,
+    }, TestOptions{
+        MakeUnit: makeArchAngel,
+    })
 }
