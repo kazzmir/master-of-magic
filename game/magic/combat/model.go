@@ -5227,9 +5227,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 return true
             })
         case "Earth to Mud":
-            // TODO: remote
-            model.DoTargetTileSpell(army, spell, func (x int, y int) bool { return true}, func (x int, y int){
+            model.DoTargetTileSpell(army, spell, func (x int, y int) bool { return true }, func (x int, y int){
                 model.CreateEarthToMud(x, y)
+                model.RemoteEarthToMud(x, y)
                 castedCallback(true)
             })
         case "Web":
@@ -6063,6 +6063,25 @@ func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
     return nil
 }
 
+func (model *CombatModel) RemoteEarthToMud(x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteEarthToMudEvent{
+            Type: RemoteEarthToMudType,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote earth to mud spell event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteUnitTargetSpell(target *ArmyUnit, spell spellbook.Spell, caster *ArmyUnit, army *Army) error {
     if model.Remote != nil {
         // a little ugly but this means there is no caster
@@ -6618,6 +6637,10 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 model.ApplyCurse(unit, curse)
             }
+        case RemoteEarthToMudType:
+            event := event.(*RemoteEarthToMudEvent)
+            model.CreateEarthToMud(event.X, event.Y)
+
         case RemoteEnchantmentUnitType:
             event := event.(*RemoteEnchantmentUnitEvent)
             unit := model.GetUnitById(event.Id)
