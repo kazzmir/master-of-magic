@@ -5310,41 +5310,23 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Phantom Warriors":
             model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.PhantomWarrior))
         case "Phantom Beast":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.PhantomBeast, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.PhantomBeast))
         case "Summon Demons":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.Demon, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.Demon))
         case "Earth Elemental":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.EarthElemental, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.EarthElemental))
         case "Air Elemental":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.AirElemental, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.AirElemental))
         case "Fire Elemental":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.FireElemental, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.FireElemental))
         case "Summon Demon":
-            // TODO: remote
+            // the position is automatically chosen for the user
             x, y, err := model.FindEmptyTile(MapSideMiddle)
             if err == nil {
                 spellSystem.CreateSummoningCircle(x, y)
+                model.RemoteSummoningCircle(x, y)
                 model.summonUnit(army, x, y, units.Demon, units.FacingDown, true)
+                model.RemoteSummonUnit(army, x, y, units.Demon)
                 castedCallback(true)
             }
         case "Disenchant Area", "Disenchant True":
@@ -6098,6 +6080,26 @@ func (model *CombatModel) RemoteDestroyWall(x int, y int) error {
 }
 
 
+func (model *CombatModel) RemoteSummoningCircle(x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteSummoningCircleEvent{
+            Type: RemoteSummoningCircleType,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote earth to mud spell event: %v", err)
+        }
+
+        return err
+
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteSummonUnit(army *Army, x int, y int, unit units.Unit) error {
     if model.Remote != nil {
         event := RemoteSummonUnitEvent{
@@ -6118,7 +6120,6 @@ func (model *CombatModel) RemoteSummonUnit(army *Army, x int, y int, unit units.
     }
 
     return nil
-
 }
 
 func (model *CombatModel) RemoteTileTargetSpell(spell spellbook.Spell, x int, y int) error {
@@ -6383,6 +6384,7 @@ func (model *CombatModel) DoSummoningSpell(spellSystem SpellSystem, army *Army, 
     // FIXME: pass in a canTarget function that only allows summoning on an empty tile on the casting wizards side of the battlefield
     model.DoTargetTileSpell(army, spell, allowed, func (x int, y int){
         model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
+        model.RemoteSummoningCircle(x, y)
         // FIXME: there should be a delay between the summoning circle appearing and when the unit appears
         onTarget(x, y)
     })
@@ -6697,6 +6699,12 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 model.ApplyCurse(unit, curse)
             }
+
+        case RemoteSummoningCircleType:
+            event := event.(*RemoteSummoningCircleEvent)
+            spellSystem.With(func (spellSystem SpellSystem) {
+                model.AddProjectile(spellSystem.CreateSummoningCircle(event.X, event.Y))
+            })
 
         case RemoteSummonUnitType:
             event := event.(*RemoteSummonUnitEvent)

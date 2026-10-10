@@ -43,6 +43,7 @@ const (
     RemoteTileTargetSpellType = "tile_target_spell"
     RemoteDestroyWallType = "destroy_wall"
     RemoteSummonUnitType = "summon_unit"
+    RemoteSummoningCircleType = "summoning_circle"
 )
 
 type RemoteWallKind int
@@ -199,6 +200,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteTileTargetSpellType: return convert[*RemoteTileTargetSpellEvent](data)
         case RemoteDestroyWallType: return convert[*RemoteDestroyWallEvent](data)
         case RemoteSummonUnitType: return convert[*RemoteSummonUnitEvent](data)
+        case RemoteSummoningCircleType: return convert[*RemoteSummoningCircleEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -476,5 +478,15 @@ type RemoteSummonUnitEvent struct {
 }
 
 func (remote *RemoteSummonUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSummoningCircleEvent struct {
+    Type string `json:"type"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteSummoningCircleEvent) GetType() string {
     return remote.Type
 }
