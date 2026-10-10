@@ -5183,6 +5183,14 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         return false
     }
 
+    standardSummonUnit := func (unit units.Unit) func(int, int) {
+        return func(x int, y int){
+            model.summonUnit(army, x, y, unit, units.FacingDown, true)
+            model.RemoteSummonUnit(army, x, y, unit)
+            castedCallback(true)
+        }
+    }
+
     switch spell.Name {
         case "Fireball":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
@@ -5300,11 +5308,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Word of Death":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, targetNotImmune)
         case "Phantom Warriors":
-            // TODO: remote
-            model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
-                model.summonUnit(army, x, y, units.PhantomWarrior, units.FacingDown, true)
-                castedCallback(true)
-            })
+            model.DoSummoningSpell(spellSystem, army, spell, standardSummonUnit(units.PhantomWarrior))
         case "Phantom Beast":
             // TODO: remote
             model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
@@ -6093,6 +6097,30 @@ func (model *CombatModel) RemoteDestroyWall(x int, y int) error {
 
 }
 
+
+func (model *CombatModel) RemoteSummonUnit(army *Army, x int, y int, unit units.Unit) error {
+    if model.Remote != nil {
+        event := RemoteSummonUnitEvent{
+            Type: RemoteSummonUnitType,
+            ArmyId: army.Id,
+            X: x,
+            Y: y,
+            Unit: unit.GetId(),
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote earth to mud spell event: %v", err)
+        }
+
+        return err
+
+    }
+
+    return nil
+
+}
+
 func (model *CombatModel) RemoteTileTargetSpell(spell spellbook.Spell, x int, y int) error {
     if model.Remote != nil {
         event := RemoteTileTargetSpellEvent{
@@ -6668,6 +6696,18 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             curse := event.Curse
             if unit != nil {
                 model.ApplyCurse(unit, curse)
+            }
+
+        case RemoteSummonUnitType:
+            event := event.(*RemoteSummonUnitEvent)
+            army := model.GetArmyById(event.ArmyId)
+            if army != nil {
+                unit := units.GetUnitById(event.Unit)
+                if !unit.IsNone() {
+                    model.summonUnit(army, event.X, event.Y, unit, units.FacingDown, true)
+                } else {
+                    log.Error("Remote summon unit event with invalid unit id %v", event.Unit)
+                }
             }
 
         case RemoteTileTargetSpellType:

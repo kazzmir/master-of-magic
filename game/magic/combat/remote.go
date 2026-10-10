@@ -42,6 +42,7 @@ const (
     RemoteCreateWallType = "wall"
     RemoteTileTargetSpellType = "tile_target_spell"
     RemoteDestroyWallType = "destroy_wall"
+    RemoteSummonUnitType = "summon_unit"
 )
 
 type RemoteWallKind int
@@ -197,6 +198,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteCreateWallType: return convert[*RemoteCreateWallEvent](data)
         case RemoteTileTargetSpellType: return convert[*RemoteTileTargetSpellEvent](data)
         case RemoteDestroyWallType: return convert[*RemoteDestroyWallEvent](data)
+        case RemoteSummonUnitType: return convert[*RemoteSummonUnitEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -462,5 +464,17 @@ type RemoteDestroyWallEvent struct {
 }
 
 func (remote *RemoteDestroyWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSummonUnitEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+    Unit units.UnitId `json:"unit"`
+}
+
+func (remote *RemoteSummonUnitEvent) GetType() string {
     return remote.Type
 }
