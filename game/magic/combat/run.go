@@ -274,7 +274,7 @@ func (system *ProxySpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit
 func (system *ProxySpellSystem) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreatePetrifyProjectileEffect(reduceResistance),
+        Effect: system.Model.CreatePetrifyProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
