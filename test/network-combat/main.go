@@ -213,6 +213,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 
     defendingFortressCity := citylib.MakeCity("xyz", 10, 10, defendingPlayer.Wizard.Race, nil, &BasicCatchment{}, nil, defendingPlayer)
     defendingFortressCity.Buildings.Insert(buildinglib.BuildingFortress)
+    defendingFortressCity.Buildings.Insert(buildinglib.BuildingCityWalls)
     defendingPlayer.AddCity(defendingFortressCity)
 
     defendingPlayer.CastingSkillPower = 50000
@@ -259,6 +260,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Mass Healing"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Death Spell"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Earth to Mud"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
 
     var attackingArmy *combat.Army
 

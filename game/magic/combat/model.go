@@ -4929,6 +4929,15 @@ func getSpellSave(caster *ArmyUnit) int {
     return caster.GetSpellSave()
 }
 
+func (model *CombatModel) doTileTargetSpell(spellSystem SpellSystem, spell spellbook.Spell, x int, y int) {
+    switch spell.Name{
+        case "Earth to Mud":
+            model.CreateEarthToMud(x, y)
+        case "Disrupt":
+            model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
+    }
+}
+
 func (model *CombatModel) doUnitTargetSpell(spellSystem SpellSystem, target *ArmyUnit, spell spellbook.Spell, unitCaster *ArmyUnit, army *Army) {
     switch spell.Name {
         case "Fireball":
@@ -5229,7 +5238,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Earth to Mud":
             model.DoTargetTileSpell(army, spell, func (x int, y int) bool { return true }, func (x int, y int){
                 model.CreateEarthToMud(x, y)
-                model.RemoteEarthToMud(x, y)
+                model.RemoteTileTargetSpell(spell, x, y)
                 castedCallback(true)
             })
         case "Web":
@@ -5258,9 +5267,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Disintegrate":
             model.DoTargetUnitSpell(army, spell, TargetEnemy, standardUnitTarget, disintegrateTarget)
         case "Disrupt":
-            // TODO: remote
             model.DoTargetTileSpell(army, spell, model.ContainsWall, func (x int, y int){
                 model.AddProjectile(spellSystem.CreateDisruptProjectile(x, y))
+                model.RemoteTileTargetSpell(spell, x, y)
                 castedCallback(true)
             })
         case "Magic Vortex":
@@ -6063,10 +6072,10 @@ func (model *CombatModel) RemoteSpellFailed(spell spellbook.Spell) error {
     return nil
 }
 
-func (model *CombatModel) RemoteEarthToMud(x int, y int) error {
+func (model *CombatModel) RemoteDestroyWall(x int, y int) error {
     if model.Remote != nil {
-        event := RemoteEarthToMudEvent{
-            Type: RemoteEarthToMudType,
+        event := RemoteDestroyWallEvent{
+            Type: RemoteDestroyWallType,
             X: x,
             Y: y,
         }
@@ -6077,6 +6086,29 @@ func (model *CombatModel) RemoteEarthToMud(x int, y int) error {
         }
 
         return err
+
+    }
+
+    return nil
+
+}
+
+func (model *CombatModel) RemoteTileTargetSpell(spell spellbook.Spell, x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteTileTargetSpellEvent{
+            Type: RemoteTileTargetSpellType,
+            Spell: spell.Name,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote earth to mud spell event: %v", err)
+        }
+
+        return err
+
     }
 
     return nil
@@ -6637,9 +6669,13 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 model.ApplyCurse(unit, curse)
             }
-        case RemoteEarthToMudType:
-            event := event.(*RemoteEarthToMudEvent)
-            model.CreateEarthToMud(event.X, event.Y)
+
+        case RemoteTileTargetSpellType:
+            event := event.(*RemoteTileTargetSpellEvent)
+            spellSystem.With(func (spellSystem SpellSystem) {
+                spell := model.AllSpells.FindByName(event.Spell)
+                model.doTileTargetSpell(spellSystem, spell, event.X, event.Y)
+            })
 
         case RemoteEnchantmentUnitType:
             event := event.(*RemoteEnchantmentUnitEvent)
@@ -6658,6 +6694,10 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 unit.RemoveEnchantment(enchantment)
             }
+
+        case RemoteDestroyWallType:
+            event := event.(*RemoteDestroyWallEvent)
+            model.DestroyWall(event.X, event.Y)
 
         case RemoteRemoveUnitCurseType:
             event := event.(*RemoteRemoveUnitCurseEvent)
@@ -7730,14 +7770,15 @@ func (model *CombatModel) CreateDispelMagicProjectileEffect(caster ArmyPlayer, d
 }
 
 func (model *CombatModel) CreateDisruptProjectileEffect(x int, y int) func(*ArmyUnit) {
-    return func(_ *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(_ *ArmyUnit) {
         if model.DestroyWall(x, y) {
+            model.RemoteDestroyWall(x, y)
             if model.SelectedUnit != nil {
                 // have to reset paths
                 model.SelectedUnit.Paths = make(map[image.Point]pathfinding.Path)
             }
         }
-    }
+    })
 }
 
 func (model *CombatModel) CreateCracksCallProjectileEffect() func(*ArmyUnit) {

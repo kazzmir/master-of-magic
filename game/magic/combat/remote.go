@@ -40,7 +40,8 @@ const (
     RemoteSetRangedAttacksType = "set_ranged_attacks"
     RemoteEnchantmentUnitType = "enchantment_unit"
     RemoteWallType = "wall"
-    RemoteEarthToMudType = "earth_to_mud"
+    RemoteTileTargetSpellType = "tile_target_spell"
+    RemoteDestroyWallType = "destroy_wall"
 )
 
 type RemoteWallKind int
@@ -194,7 +195,8 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteSwitchTeamsType: return convert[*RemoteSwitchTeamsEvent](data)
         case RemoteSetRangedAttacksType: return convert[*RemoteSetRangedAttacksEvent](data)
         case RemoteWallType: return convert[*RemoteWallEvent](data)
-        case RemoteEarthToMudType: return convert[*RemoteEarthToMudEvent](data)
+        case RemoteTileTargetSpellType: return convert[*RemoteTileTargetSpellEvent](data)
+        case RemoteDestroyWallType: return convert[*RemoteDestroyWallEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -442,12 +444,23 @@ func (remote *RemoteWallEvent) GetType() string {
     return remote.Type
 }
 
-type RemoteEarthToMudEvent struct {
+type RemoteTileTargetSpellEvent struct {
+    Type string `json:"type"`
+    X int `json:"x"`
+    Y int `json:"y"`
+    Spell string `json:"spell"`
+}
+
+func (remote *RemoteTileTargetSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDestroyWallEvent struct {
     Type string `json:"type"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteEarthToMudEvent) GetType() string {
+func (remote *RemoteDestroyWallEvent) GetType() string {
     return remote.Type
 }
