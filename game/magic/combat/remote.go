@@ -39,7 +39,7 @@ const (
     RemoteSwitchTeamsType = "switch_teams"
     RemoteSetRangedAttacksType = "set_ranged_attacks"
     RemoteEnchantmentUnitType = "enchantment_unit"
-    RemoteWallType = "wall"
+    RemoteCreateWallType = "wall"
     RemoteTileTargetSpellType = "tile_target_spell"
     RemoteDestroyWallType = "destroy_wall"
 )
@@ -194,7 +194,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteRemoveUnitCurseType: return convert[*RemoteRemoveUnitCurseEvent](data)
         case RemoteSwitchTeamsType: return convert[*RemoteSwitchTeamsEvent](data)
         case RemoteSetRangedAttacksType: return convert[*RemoteSetRangedAttacksEvent](data)
-        case RemoteWallType: return convert[*RemoteWallEvent](data)
+        case RemoteCreateWallType: return convert[*RemoteCreateWallEvent](data)
         case RemoteTileTargetSpellType: return convert[*RemoteTileTargetSpellEvent](data)
         case RemoteDestroyWallType: return convert[*RemoteDestroyWallEvent](data)
         default:
@@ -435,12 +435,12 @@ func (remote *RemoteEnchantmentUnitEvent) GetType() string {
     return remote.Type
 }
 
-type RemoteWallEvent struct {
+type RemoteCreateWallEvent struct {
     Type string `json:"type"`
     Kind RemoteWallKind `json:"kind"`
 }
 
-func (remote *RemoteWallEvent) GetType() string {
+func (remote *RemoteCreateWallEvent) GetType() string {
     return remote.Type
 }
 

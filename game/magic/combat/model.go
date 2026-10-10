@@ -6021,12 +6021,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             model.Events <- &CombatCreateWallOfFire{
             }
             castedCallback(true)
-            model.RemoteWall(RemoteWallFire)
+            model.RemoteCreateWall(RemoteWallFire)
         case "Wall of Darkness":
             model.Events <- &CombatCreateWallOfDarkness{
             }
             castedCallback(true)
-            model.RemoteWall(RemoteWallDarkness)
+            model.RemoteCreateWall(RemoteWallDarkness)
         default:
             log.Error("Unhandled spell %v", spell.Name)
     }
@@ -6733,8 +6733,8 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 model.SwitchTeams(unit)
             }
 
-        case RemoteWallType:
-            event := event.(*RemoteWallEvent)
+        case RemoteCreateWallType:
+            event := event.(*RemoteCreateWallEvent)
             switch event.Kind {
                 case RemoteWallFire:
                     model.Events <- &CombatCreateWallOfFire{}
@@ -7032,10 +7032,10 @@ func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment
     return nil
 }
 
-func (model *CombatModel) RemoteWall(kind RemoteWallKind) error {
+func (model *CombatModel) RemoteCreateWall(kind RemoteWallKind) error {
     if model.Remote != nil {
-        event := RemoteWallEvent{
-            Type: RemoteWallType,
+        event := RemoteCreateWallEvent{
+            Type: RemoteCreateWallType,
             Kind: kind,
         }
 
