@@ -1677,6 +1677,10 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     // spell
     spellPage := 0
     elements = append(elements, makeButton(1, 23, 0, 0, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
         // cannot cast if the player is selecting a unit/tile
         if combat.IsSelectingSpell() {
             return
@@ -1700,6 +1704,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
                     // player mana and skill should go down accordingly
                     combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
+                        // TODO: remote
                         army.Casted = true
                         army.ManaPool -= spellCost
                         player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
@@ -1796,6 +1801,10 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // wait
     elements = append(elements, makeButton(2, 24, 1, 0, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
         combat.Model.NextUnit()
     }))
 
@@ -1811,6 +1820,10 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton2(4, 26, 1, 1, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
         if combat.ExtraControl {
             combat.Events <- &CombatDoSingleAuto{}
             return
@@ -1845,9 +1858,17 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // done
     elements = append(elements, makeButton(3, 28, 1, 2, func(){
-        // FIXME: this call should be in the model, its ugly to reference the selected unit here
-        combat.Model.RemoteDoneTurn(combat.Model.SelectedUnit)
-        combat.Model.DoneTurn()
+        if !combat.Model.InControl(player) {
+            return
+        }
+
+        selectedUnit := combat.Model.SelectedUnit
+
+        if selectedUnit != nil {
+            // FIXME: this call should be in the model, its ugly to reference the selected unit here
+            combat.Model.RemoteDoneTurn(selectedUnit)
+            combat.Model.DoneTurn()
+        }
     }))
 
     ui.SetElementsFromArray(elements)

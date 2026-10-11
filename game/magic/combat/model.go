@@ -695,12 +695,14 @@ func (unit *ArmyUnit) CanRangeAttack() bool {
     return unit.RangedAttacks > 0
 }
 
-func (unit *ArmyUnit) UseRangeAttack() {
+func (unit *ArmyUnit) UseRangeAttack() RemoteEvent {
     if unit.GetRangedAttackDamageType() == units.DamageRangedMagical && unit.CastingSkill >= 3 {
         unit.CastingSkill = max(0, unit.CastingSkill - 3)
     } else if unit.RangedAttacks > 0 {
         unit.RangedAttacks -= 1
     }
+
+    return nil
 }
 
 func (unit *ArmyUnit) GetDamageSource() DamageSource {
@@ -4460,6 +4462,18 @@ func (model *CombatModel) IsRemoteUnit(unit *ArmyUnit) bool {
     } else {
         return (remoteAttacker && !isConfused) || (remoteDefender && isConfused)
     }
+}
+
+func (model *CombatModel) PlayerControls(unit *ArmyUnit, player ArmyPlayer) bool {
+    return model.GetArmyForPlayer(player) == model.GetArmy(unit)
+}
+
+func (model *CombatModel) InControl(player ArmyPlayer) bool {
+    if model.SelectedUnit != nil {
+        return model.PlayerControls(model.SelectedUnit, player)
+    }
+
+    return false
 }
 
 func (model *CombatModel) IsAIControlled(unit *ArmyUnit) bool {
