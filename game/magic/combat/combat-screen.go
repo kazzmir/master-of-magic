@@ -3121,7 +3121,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     updates := combat.ProcessEvents(yield)
 
-    if len(combat.Model.Projectiles) > 0 {
+    if len(combat.Model.Projectiles) > 0 || combat.Model.RemoteProjectiles > 0 {
         combat.doProjectiles(yield)
     }
 

@@ -2806,9 +2806,9 @@ func (model *CombatModel) IsTeamAlive(team Team) bool {
 // one side finished its turn
 func (model *CombatModel) FinishTurn(team Team) {
     if model.IsTeamAlive(team) && model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, team) {
-        switch team {
-            case TeamDefender: model.doCallLightning(model.AttackingArmy)
-            case TeamAttacker: model.doCallLightning(model.DefendingArmy)
+        switch {
+            case team == TeamDefender && model.IsLocalTeam(team): model.doCallLightning(model.AttackingArmy)
+            case team == TeamAttacker && model.IsLocalTeam(team): model.doCallLightning(model.DefendingArmy)
         }
     }
 }
@@ -4462,6 +4462,18 @@ func (model *CombatModel) IsRemoteUnit(unit *ArmyUnit) bool {
     } else {
         return (remoteAttacker && !isConfused) || (remoteDefender && isConfused)
     }
+}
+
+func (model *CombatModel) IsLocalTeam(team Team) bool {
+    if model.Remote != nil {
+        if model.Remote.Attacker {
+            return team == TeamDefender
+        }
+
+        return team == TeamAttacker
+    }
+
+    return true
 }
 
 func (model *CombatModel) PlayerControls(unit *ArmyUnit, player ArmyPlayer) bool {
@@ -6598,6 +6610,68 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
         return
     }
 
+    // not sure exactly where this should be
+    if model.Remote != nil {
+        select {
+            case event := <-model.Remote.Events:
+                switch event.GetType() {
+                    case RemoteMoveType:
+                        event := event.(*RemoteMoveEvent)
+                        path := event.Path
+                        id := event.Id
+                        unit := model.GetUnitById(id)
+                        if unit != nil {
+                            actions.MoveUnit(unit, path)
+                        }
+                    case RemoteRangeAttackType:
+                        event := event.(*RemoteRangeAttackEvent)
+                        attackerId := event.AttackerId
+                        defenderId := event.DefenderId
+                        attacker := model.GetUnitById(attackerId)
+                        defender := model.GetUnitById(defenderId)
+
+                        if attacker != nil && defender != nil {
+                            actions.RangeAttack(attacker, defender)
+                        }
+
+                    case RemoteRangeAttackWallType:
+                        event := event.(*RemoteRangeAttackWallEvent)
+                        unit := model.GetUnitById(event.AttackerId)
+                        if unit != nil {
+                           actions.RangeAttack(unit, &WallTarget{X: event.X, Y: event.Y})
+                        }
+
+                    case RemoteMeleeAttackWallType:
+                        event := event.(*RemoteMeleeAttackWallEvent)
+                        unit := model.GetUnitById(event.AttackerId)
+                        if unit != nil {
+                            actions.MeleeAttackWall(unit, event.X, event.Y)
+                        }
+
+                    case RemoteMeleeAttackType:
+                        event := event.(*RemoteMeleeAttackEvent)
+                        attackerId := event.AttackerId
+                        defenderId := event.DefenderId
+                        attacker := model.GetUnitById(attackerId)
+                        defender := model.GetUnitById(defenderId)
+                        if attacker != nil && defender != nil {
+                            actions.MeleeAttack(attacker, defender)
+                        }
+                    case RemoteTeleportType:
+                        event := event.(*RemoteTeleportEvent)
+                        id := event.Id
+                        unit := model.GetUnitById(id)
+                        if unit != nil {
+                            actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
+                        }
+                    default:
+                        model.HandleRemoteEvent(optional.Of(spellSystem), optional.Empty[AddDamageIndicators](), event)
+
+                }
+            default:
+        }
+    }
+
     if model.SelectedUnit != nil && (model.IsAIControlled(model.SelectedUnit) || actions.SingleAuto()) {
         aiUnit := model.SelectedUnit
 
@@ -6605,65 +6679,6 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
 
         // remote side will send an update
         if model.IsAIControlled(aiUnit) && model.IsRemoteUnit(aiUnit) {
-            select {
-                case event := <-model.Remote.Events:
-                    switch event.GetType() {
-                        case RemoteMoveType:
-                            event := event.(*RemoteMoveEvent)
-                            path := event.Path
-                            id := event.Id
-                            unit := model.GetUnitById(id)
-                            if unit != nil {
-                                actions.MoveUnit(unit, path)
-                            }
-                        case RemoteRangeAttackType:
-                            event := event.(*RemoteRangeAttackEvent)
-                            attackerId := event.AttackerId
-                            defenderId := event.DefenderId
-                            attacker := model.GetUnitById(attackerId)
-                            defender := model.GetUnitById(defenderId)
-
-                            if attacker != nil && defender != nil {
-                                actions.RangeAttack(attacker, defender)
-                            }
-
-                        case RemoteRangeAttackWallType:
-                            event := event.(*RemoteRangeAttackWallEvent)
-                            unit := model.GetUnitById(event.AttackerId)
-                            if unit != nil {
-                               actions.RangeAttack(unit, &WallTarget{X: event.X, Y: event.Y})
-                            }
-
-                        case RemoteMeleeAttackWallType:
-                            event := event.(*RemoteMeleeAttackWallEvent)
-                            unit := model.GetUnitById(event.AttackerId)
-                            if unit != nil {
-                                actions.MeleeAttackWall(unit, event.X, event.Y)
-                            }
-
-                        case RemoteMeleeAttackType:
-                            event := event.(*RemoteMeleeAttackEvent)
-                            attackerId := event.AttackerId
-                            defenderId := event.DefenderId
-                            attacker := model.GetUnitById(attackerId)
-                            defender := model.GetUnitById(defenderId)
-                            if attacker != nil && defender != nil {
-                                actions.MeleeAttack(attacker, defender)
-                            }
-                        case RemoteTeleportType:
-                            event := event.(*RemoteTeleportEvent)
-                            id := event.Id
-                            unit := model.GetUnitById(id)
-                            if unit != nil {
-                                actions.Teleport(unit, event.X, event.Y, unit.HasAbility(data.AbilityMerging))
-                            }
-                        default:
-                            model.HandleRemoteEvent(optional.Of(spellSystem), optional.Empty[AddDamageIndicators](), event)
-
-                    }
-                default:
-            }
-
             return
         }
 
