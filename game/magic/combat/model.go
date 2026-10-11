@@ -4381,12 +4381,7 @@ func (model *CombatModel) meleeAttack(attacker *ArmyUnit, defender *ArmyUnit) (i
     return totalAttackerDamage, totalDefenderDamage
 }
 
-// killed units go into a killed units list so they can possibly be revived later
-func (model *CombatModel) KillUnit(unit *ArmyUnit){
-    if model.IsRemoteUnit(unit) {
-        model.RemoteKillUnit(unit)
-    }
-
+func (model *CombatModel) doKillUnit(unit *ArmyUnit) {
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
         model.DefendingArmy.KillUnit(unit)
@@ -4396,6 +4391,13 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     }
 
     model.setTileUnit(unit.X, unit.Y, nil)
+}
+
+// killed units go into a killed units list so they can possibly be revived later
+func (model *CombatModel) KillUnit(unit *ArmyUnit){
+    model.RemoteKillUnit(unit)
+
+    model.doKillUnit(unit)
 
     if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
         model.NextUnit()
@@ -6707,7 +6709,7 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             event := event.(*RemoteKillUnitEvent)
             unit := model.GetUnitById(event.Id)
             if unit != nil {
-                model.KillUnit(unit)
+                model.doKillUnit(unit)
             }
         case RemoteUnitCastSpellType:
             event := event.(*RemoteUnitCastSpellEvent)
