@@ -49,6 +49,7 @@ const (
     RemoteAddArmyEnchantmentType = "add_army_enchantment"
     RemoteCounterMagicType = "counter_magic"
     RemoteRaiseDeadUnitType = "raise_dead_unit"
+    RemoteCreateLightningBoltType = "create_lightning_bolt"
 )
 
 type RemoteWallKind int
@@ -211,6 +212,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteAddArmyEnchantmentType: return convert[*RemoteAddArmyEnchantmentEvent](data)
         case RemoteCounterMagicType: return convert[*RemoteCounterMagicEvent](data)
         case RemoteRaiseDeadUnitType: return convert[*RemoteRaiseDeadUnitEvent](data)
+        case RemoteCreateLightningBoltType: return convert[*RemoteCreateLightningBoltEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -551,5 +553,14 @@ type RemoteRaiseDeadUnitEvent struct {
 }
 
 func (remote *RemoteRaiseDeadUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCreateLightningBoltEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteCreateLightningBoltEvent) GetType() string {
     return remote.Type
 }

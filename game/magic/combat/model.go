@@ -2825,8 +2825,6 @@ func (model *CombatModel) doCallLightning(army *Army) {
 
     count := rand.N(3) + 3
 
-    // TODO: remote
-
     for range count {
         choice := rand.N(len(army.units))
 
@@ -2834,6 +2832,8 @@ func (model *CombatModel) doCallLightning(army *Army) {
             Target: army.units[choice],
             Strength: 8,
         }
+
+        model.RemoteCreateLightningBolt(army.units[choice])
     }
 }
 
@@ -6735,6 +6735,21 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             army := model.GetArmyById(event.ArmyId)
             army.CounterMagic = event.Value
 
+        case RemoteCreateLightningBoltType:
+            event := event.(*RemoteCreateLightningBoltEvent)
+
+            unit := model.GetUnitById(event.Id)
+
+            if unit != nil {
+                spellSystem.With(func (spellSystem SpellSystem) {
+                    // create a projectile that has no effect
+                    // the remote side will produce a projectile that causes damage
+                    projectile := spellSystem.CreateLightningBoltProjectile(unit, 0)
+                    projectile.Effect = model.createRemoteProjectileEffect(func (_ *ArmyUnit) {})
+                    model.AddProjectile(projectile)
+                })
+            }
+
         case RemoteSummoningCircleType:
             event := event.(*RemoteSummoningCircleEvent)
             spellSystem.With(func (spellSystem SpellSystem) {
@@ -7200,6 +7215,25 @@ func (model *CombatModel) RemoteRaiseDeadUnit(army *Army, unit *ArmyUnit, x int,
             ArmyId: army.Id,
             X: x,
             Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+
+func (model *CombatModel) RemoteCreateLightningBolt(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteCreateLightningBoltEvent{
+            Type: RemoteCreateLightningBoltType,
+            Id: unit.Id,
         }
 
         err := model.Remote.SendEvent(&event)
