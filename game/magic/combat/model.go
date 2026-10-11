@@ -2807,8 +2807,8 @@ func (model *CombatModel) IsTeamAlive(team Team) bool {
 func (model *CombatModel) FinishTurn(team Team) {
     if model.IsTeamAlive(team) && model.IsEnchantmentActive(data.CombatEnchantmentCallLightning, team) {
         switch {
-            case team == TeamDefender && model.IsLocalTeam(team): model.doCallLightning(model.AttackingArmy)
-            case team == TeamAttacker && model.IsLocalTeam(team): model.doCallLightning(model.DefendingArmy)
+            case team == TeamDefender && model.IsServer(): model.doCallLightning(model.AttackingArmy)
+            case team == TeamAttacker && model.IsServer(): model.doCallLightning(model.DefendingArmy)
         }
     }
 }
@@ -4462,6 +4462,14 @@ func (model *CombatModel) IsRemoteUnit(unit *ArmyUnit) bool {
     } else {
         return (remoteAttacker && !isConfused) || (remoteDefender && isConfused)
     }
+}
+
+func (model *CombatModel) IsServer() bool {
+    if model.Remote != nil {
+        return !model.Remote.IsServer
+    }
+
+    return true
 }
 
 func (model *CombatModel) IsLocalTeam(team Team) bool {
