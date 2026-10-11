@@ -312,6 +312,9 @@ func MakeScenario4(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.ArchAngel, 3)
 }
 
+func MakeScenario5(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
+    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.Colossus, 3)
+}
 
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
     switch scenario {
@@ -319,6 +322,7 @@ func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.C
         case 2: return MakeScenario2(isServer, remote)
         case 3: return MakeScenario3(isServer, remote)
         case 4: return MakeScenario4(isServer, remote)
+        case 5: return MakeScenario5(isServer, remote)
         default: return MakeScenario1(isServer, remote)
     }
 }
