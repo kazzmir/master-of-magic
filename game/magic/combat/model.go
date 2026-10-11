@@ -5377,9 +5377,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Counter Magic":
             model.CastEnchantment(army, data.CombatEnchantmentCounterMagic, castedCallback)
             // set counter magic counter for the player to be the spell strength
-            // TODO: remote
             army.CounterMagic = spell.Cost(false)
-
             model.RemoteCounterMagic(army, army.CounterMagic)
 
         case "Mass Invisibility":
