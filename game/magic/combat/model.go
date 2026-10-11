@@ -3201,6 +3201,15 @@ func (model *CombatModel) addNewUnit(player ArmyPlayer, x int, y int, unit units
     return &newUnit
 }
 
+func (model *CombatModel) GetKilledUnitById(id uint64) *ArmyUnit {
+    unit := model.DefendingArmy.GetKilledUnitById(id)
+    if unit != nil {
+        return unit
+    }
+
+    return model.AttackingArmy.GetKilledUnitById(id)
+}
+
 func (model *CombatModel) GetArmyById(id uint64) *Army {
     if model.DefendingArmy.Id == id {
         return model.DefendingArmy
@@ -5680,7 +5689,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 }
             }
         case "Animate Dead":
-            // TODO: remote
             // first filter possible candidates to revive
             allKilledUnits := slices.DeleteFunc(slices.Clone(append(model.AttackingArmy.KilledUnits, model.DefendingArmy.KilledUnits...)), func (unit *ArmyUnit) bool {
                 if unit.Unit.IsHero() {
@@ -5712,6 +5720,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 model.RemoteSummoningCircle(x, y)
 
                 model.doAnimateDeadUnit(army, killedUnit, x, y)
+                model.RemoteAnimateDeadUnit(army, killedUnit, x, y)
             }
 
             if len(allKilledUnits) > 0 {
@@ -6741,6 +6750,16 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             army := model.GetArmyById(event.ArmyId)
             army.CounterMagic = event.Value
 
+        case RemoteAnimateDeadUnitType:
+            event := event.(*RemoteAnimateDeadUnitEvent)
+
+            army := model.GetArmyById(event.ArmyId)
+            unit := model.GetKilledUnitById(event.UnitId)
+
+            if army != nil && unit != nil {
+                model.doAnimateDeadUnit(army, unit, event.X, event.Y)
+            }
+
         case RemoteCreateLightningBoltType:
             event := event.(*RemoteCreateLightningBoltEvent)
 
@@ -7240,6 +7259,27 @@ func (model *CombatModel) RemoteCreateLightningBolt(unit *ArmyUnit) error {
         event := RemoteCreateLightningBoltEvent{
             Type: RemoteCreateLightningBoltType,
             Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteAnimateDeadUnit(army *Army, killedUnit *ArmyUnit, x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteAnimateDeadUnitEvent{
+            Type: RemoteAnimateDeadUnitType,
+            UnitId: killedUnit.Id,
+            ArmyId: army.Id,
+            X: x,
+            Y: y,
         }
 
         err := model.Remote.SendEvent(&event)
