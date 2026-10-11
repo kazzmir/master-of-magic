@@ -45,6 +45,7 @@ const (
     RemoteSummonUnitType = "summon_unit"
     RemoteSummoningCircleType = "summoning_circle"
     RemoteGlobalSpellType = "global_spell"
+    RemoteRemoveArmyEnchantmentType = "remove_army_enchantment"
 )
 
 type RemoteWallKind int
@@ -203,6 +204,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteSummonUnitType: return convert[*RemoteSummonUnitEvent](data)
         case RemoteSummoningCircleType: return convert[*RemoteSummoningCircleEvent](data)
         case RemoteGlobalSpellType: return convert[*RemoteGlobalSpellEvent](data)
+        case RemoteRemoveArmyEnchantmentType: return convert[*RemoteRemoveArmyEnchantmentEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -501,5 +503,15 @@ type RemoteGlobalSpellEvent struct {
 }
 
 func (remote *RemoteGlobalSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveArmyEnchantmentEvent struct {
+    Type string `json:"type"`
+    Enchantment data.CombatEnchantment `json:"enchantment"`
+    ArmyId uint64 `json:"army_id"`
+}
+
+func (remote *RemoteRemoveArmyEnchantmentEvent) GetType() string {
     return remote.Type
 }

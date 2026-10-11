@@ -7,7 +7,6 @@ import (
     "math"
     "math/rand/v2"
     "time"
-    "context"
 
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/set"
@@ -2565,10 +2564,12 @@ func (model *CombatModel) Initialize(allSpells spellbook.Spells, overworldX int,
         model.setTileUnit(unit.X, unit.Y, unit)
     }
 
+    /*
     if model.Remote != nil {
         // FIXME: pass in quit context from combat screen
         go model.Remote.RunReceiveLoop(context.Background())
     }
+    */
 }
 
 func (model *CombatModel) withinMeleeRange(attacker *ArmyUnit, defender *ArmyUnit) bool {
@@ -3007,6 +3008,7 @@ func (model *CombatModel) DoDisenchantArea(allSpells spellbook.Spells, caster Ar
 
     for _, enchantment := range removedEnchantments {
         targetArmy.RemoveEnchantment(enchantment)
+        model.RemoteRemoveEnchantmentArmy(targetArmy, enchantment)
     }
 
     // enemy unit enchantments
@@ -6772,6 +6774,12 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 unit.AddEnchantment(enchantment)
             }
 
+        case RemoteRemoveArmyEnchantmentType:
+            event := event.(*RemoteRemoveArmyEnchantmentEvent)
+            army := model.GetArmyById(event.ArmyId)
+            enchantment := event.Enchantment
+            army.RemoveEnchantment(enchantment)
+
         case RemoteRemoveUnitEnchantmentType:
             event := event.(*RemoteRemoveUnitEnchantmentEvent)
 
@@ -7060,6 +7068,26 @@ func (model *CombatModel) RemoteRemoveCurse(unit *ArmyUnit, curse data.UnitEncha
     }
 
     return nil
+}
+
+func (model *CombatModel) RemoteRemoveEnchantmentArmy(army *Army, enchantment data.CombatEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteRemoveArmyEnchantmentEvent{
+            Type: RemoteRemoveArmyEnchantmentType,
+            Enchantment: enchantment,
+            ArmyId: army.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove enchantment event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+
 }
 
 func (model *CombatModel) RemoteRemoveEnchantment(unit *ArmyUnit, enchantment data.UnitEnchantment) error {

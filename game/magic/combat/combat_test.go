@@ -1737,15 +1737,15 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         attackerModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
         attackerModel.CracksCallChance = 100
 
-        defenderModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+        // the defender's remote, which represents the attacker, so true for isAttacker
+        remoteDefender := MakeRemote(true, true, peer2)
+
+        defenderModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remoteDefender)
         // probably don't really need this
         defenderModel.CracksCallChance = 100
 
         quit, cancel := context.WithCancel(context.Background())
         defer cancel()
-
-        // the defender's remote, which represents the attacker, so true for isAttacker
-        remoteDefender := MakeRemote(true, true, peer2)
 
         var wait sync.WaitGroup
 
@@ -2297,4 +2297,87 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }, TestOptions{
         MakeUnit: makeArchAngel,
     })
+}
+
+func TestDisenchantArea(test *testing.T) {
+    var allSpells spellbook.Spells
+
+    peer1, peer2 := net.Pipe()
+
+    defer peer1.Close()
+    defer peer2.Close()
+
+    // the attacker's remote, which represents the defender, so false for isAttacker
+    attackerRemote := MakeRemote(false, false, peer1)
+    defenderRemote := MakeRemote(true, true, peer2)
+
+    defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+
+    // default is hell hounds: fantastic chaos unit
+    defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+    // an enchantment that can be removed via dispel magic
+    defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
+    defendingArmy.AddEnchantment(data.CombatEnchantmentMetalFires)
+
+    attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
+    // attacking army has a unit that can range attack. grant very high tohit
+    attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+    attackerModel := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), attackerRemote)
+    // defenderModel := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), defenderRemote)
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    var wait sync.WaitGroup
+
+    wait.Go(func(){ defenderRemote.RunReceiveLoop(quit) })
+
+    spellSystem := makeSpellSystem(attackerModel)
+
+    attackerModel.InvokeSpell(&spellSystem, attackerModel.AttackingArmy, attackerModel.AttackingArmy.GetUnits()[0], spellbook.Spell{Name: "Disenchant Area", OverrideCost: 1000, Magic: data.ArcaneMagic}, func(success bool) { })
+
+    done := make(chan struct{})
+
+    globalSpell := false
+    removeEnchantment := false
+
+    wait.Go(func() {
+        defer close(done)
+
+
+        for quit.Err() == nil {
+            select {
+                case <-quit.Done():
+                    break
+                case event := <-defenderRemote.Events:
+                    switch event.GetType() {
+                        case RemoteGlobalSpellType:
+                            globalSpell = true
+                        case RemoteRemoveArmyEnchantmentType:
+                            removeEnchantment = true
+                    }
+            }
+
+            if globalSpell && removeEnchantment {
+                break
+            }
+        }
+    })
+
+    select {
+        case <-time.After(500 * time.Millisecond):
+            test.Errorf("Error: did not receive expected events for Disenchant Area")
+        case <-done:
+            if !globalSpell {
+                test.Errorf("Error: remote did not receive global spell event for Disenchant Area")
+            }
+
+            if !removeEnchantment {
+                test.Errorf("Error: remote did not receive remove army enchantment event for Disenchant Area")
+            }
+    }
 }
