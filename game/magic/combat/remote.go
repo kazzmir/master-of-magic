@@ -53,6 +53,7 @@ const (
     RemoteAnimateDeadUnitType = "animate_dead_unit"
     RemoteManaPoolType = "mana_pool"
     RemoteRangeAttackWallType = "range_attack_wall"
+    RemoteMeleeAttackWallType = "melee_attack_wall"
 )
 
 type RemoteWallKind int
@@ -249,6 +250,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteAnimateDeadUnitType: return convert[*RemoteAnimateDeadUnitEvent](data)
         case RemoteManaPoolType: return convert[*RemoteManaPoolEvent](data)
         case RemoteRangeAttackWallType: return convert[*RemoteRangeAttackWallEvent](data)
+        case RemoteMeleeAttackWallType: return convert[*RemoteMeleeAttackWallEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -631,5 +633,16 @@ type RemoteRangeAttackWallEvent struct {
 }
 
 func (remote *RemoteRangeAttackWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMeleeAttackWallEvent struct {
+    Type string `json:"type"`
+    AttackerId uint64 `json:"attacker_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteMeleeAttackWallEvent) GetType() string {
     return remote.Type
 }
