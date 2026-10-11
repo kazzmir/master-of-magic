@@ -2348,7 +2348,6 @@ func TestDisenchantArea(test *testing.T) {
     wait.Go(func() {
         defer close(done)
 
-
         for quit.Err() == nil {
             select {
                 case <-quit.Done():

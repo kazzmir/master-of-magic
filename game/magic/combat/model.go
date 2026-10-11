@@ -2389,6 +2389,7 @@ type CombatModel struct {
     CracksCallChance int
 }
 
+// note: the caller is required to invoke remote.RunReceiveLoop() in order to receive remote events
 func MakeCombatModel(allSpells spellbook.Spells, defendingArmy *Army, attackingArmy *Army, landscape CombatLandscape, plane data.Plane, zone ZoneType, influence data.MagicType, overworldX int, overworldY int, events chan CombatEvent, remote *Remote) *CombatModel {
     model := &CombatModel{
         Turn: TeamDefender,
@@ -2813,6 +2814,8 @@ func (model *CombatModel) doCallLightning(army *Army) {
     }
 
     count := rand.N(3) + 3
+
+    // TODO: remote
 
     for range count {
         choice := rand.N(len(army.units))
@@ -5334,7 +5337,6 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Disenchant Area", "Disenchant True":
             // show some animation and play sound
 
-            // TODO: remote
             model.Events <- &CombatEventGlobalSpell{
                 Caster: army.Player,
                 Magic: spell.Magic,
@@ -5358,51 +5360,37 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             castedCallback(true)
 
         case "High Prayer":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentHighPrayer, castedCallback)
         case "Prayer":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentPrayer, castedCallback)
         case "True Light":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentTrueLight, castedCallback)
         case "Call Lightning":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentCallLightning, castedCallback)
         case "Entangle":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentEntangle, castedCallback)
         case "Blur":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentBlur, castedCallback)
         case "Counter Magic":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentCounterMagic, castedCallback)
             // set counter magic counter for the player to be the spell strength
+            // TODO: remote
             army.CounterMagic = spell.Cost(false)
         case "Mass Invisibility":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentMassInvisibility, castedCallback)
         case "Metal Fires":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentMetalFires, castedCallback)
         case "Warp Reality":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentWarpReality, castedCallback)
         case "Black Prayer":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentBlackPrayer, castedCallback)
         case "Darkness":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentDarkness, castedCallback)
         case "Mana Leak":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentManaLeak, castedCallback)
         case "Terror":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentTerror, castedCallback)
         case "Wrack":
-            // TODO: remote
             model.CastEnchantment(army, data.CombatEnchantmentWrack, castedCallback)
 
         case "Creature Binding":
@@ -6422,6 +6410,8 @@ func (model *CombatModel) CastEnchantment(army *Army, enchantment data.CombatEnc
             Magic: enchantment.Magic(),
             Name: enchantment.Name(),
         }
+        model.RemoteGlobalSpell(army, enchantment.Magic(), enchantment.Name())
+        model.RemoteAddArmyEnchantment(army, enchantment)
         castedCallback(true)
     } else {
         if !army.IsAI() {
@@ -6780,6 +6770,12 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             enchantment := event.Enchantment
             army.RemoveEnchantment(enchantment)
 
+        case RemoteAddArmyEnchantmentType:
+            event := event.(*RemoteAddArmyEnchantmentEvent)
+            army := model.GetArmyById(event.ArmyId)
+            enchantment := event.Enchantment
+            army.AddEnchantment(enchantment)
+
         case RemoteRemoveUnitEnchantmentType:
             event := event.(*RemoteRemoveUnitEnchantmentEvent)
 
@@ -7070,6 +7066,25 @@ func (model *CombatModel) RemoteRemoveCurse(unit *ArmyUnit, curse data.UnitEncha
     return nil
 }
 
+func (model *CombatModel) RemoteAddArmyEnchantment(army *Army, enchantment data.CombatEnchantment) error {
+    if model.Remote != nil {
+        event := RemoteAddArmyEnchantmentEvent{
+            Type: RemoteAddArmyEnchantmentType,
+            Enchantment: enchantment,
+            ArmyId: army.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove enchantment event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteRemoveEnchantmentArmy(army *Army, enchantment data.CombatEnchantment) error {
     if model.Remote != nil {
         event := RemoteRemoveArmyEnchantmentEvent{
@@ -7087,7 +7102,6 @@ func (model *CombatModel) RemoteRemoveEnchantmentArmy(army *Army, enchantment da
     }
 
     return nil
-
 }
 
 func (model *CombatModel) RemoteRemoveEnchantment(unit *ArmyUnit, enchantment data.UnitEnchantment) error {

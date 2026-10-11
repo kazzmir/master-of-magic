@@ -265,6 +265,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disrupt"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Phantom Warriors"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Disenchant Area"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("High Prayer"))
 
     var attackingArmy *combat.Army
 
