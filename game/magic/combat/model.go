@@ -2716,31 +2716,37 @@ func (model *CombatModel) NextTurn() {
     for _, unit := range model.DefendingArmy.units {
         unit.ResetTurnData()
 
-        if defenderLeakMana {
-            // FIXME: magic ranged attacks should go down by 1 as well
-            unit.CastingSkill = max(0, unit.CastingSkill - 5)
-        }
+        if model.IsServer() {
 
-        if defenderTerror {
-            if rand.N(10) + 1 > unit.GetResistance() + 1 {
-                unit.MovesLeft = fraction.Zero()
+            if defenderLeakMana {
+                unit.CastingSkill = max(0, unit.CastingSkill - 5)
+                model.RemoteUnitCastSkill(unit, -5)
             }
-        }
 
-        if unit.HasAbility(data.AbilityRegeneration) {
-            unit.Heal(1)
-        }
-
-        if defenderWrack {
-            damage := 0
-            for range unit.Figures() {
+            if defenderTerror {
                 if rand.N(10) + 1 > unit.GetResistance() + 1 {
-                    damage += 1
+                    unit.MovesLeft = fraction.Zero()
+                    model.RemoteUnitMovesLeft(unit, fraction.Zero())
                 }
             }
-            unit.TakeDamage(damage, DamageNormal)
-            if unit.GetHealth() <= 0 {
-                model.KillUnit(unit)
+
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(1)
+                model.RemoteHeal(unit, 1)
+            }
+
+            if defenderWrack {
+                damage := 0
+                for range unit.Figures() {
+                    if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                        damage += 1
+                    }
+                }
+                unit.TakeDamage(damage, DamageNormal)
+                model.RemoteDamage(unit, DamageNormal, damage)
+                if unit.GetHealth() <= 0 {
+                    model.KillUnit(unit)
+                }
             }
         }
     }
@@ -2764,31 +2770,37 @@ func (model *CombatModel) NextTurn() {
 
         unit.ResetTurnData()
 
-        if attackerLeakMana {
-            // FIXME: magic ranged attacks should go down by 1 as well
-            unit.CastingSkill = max(0, unit.CastingSkill - 5)
-        }
+        if model.IsServer() {
 
-        if attackerTerror {
-            if rand.N(10) + 1 > unit.GetResistance() + 1 {
-                unit.MovesLeft = fraction.Zero()
+            if attackerLeakMana {
+                unit.CastingSkill = max(0, unit.CastingSkill - 5)
+                model.RemoteUnitCastSkill(unit, -5)
             }
-        }
 
-        if unit.HasAbility(data.AbilityRegeneration) {
-            unit.Heal(1)
-        }
-
-        if attackerWrack {
-            damage := 0
-            for range unit.Figures() {
+            if attackerTerror {
                 if rand.N(10) + 1 > unit.GetResistance() + 1 {
-                    damage += 1
+                    unit.MovesLeft = fraction.Zero()
+                    model.RemoteUnitMovesLeft(unit, fraction.Zero())
                 }
             }
-            unit.TakeDamage(damage, DamageNormal)
-            if unit.GetHealth() <= 0 {
-                model.KillUnit(unit)
+
+            if unit.HasAbility(data.AbilityRegeneration) {
+                unit.Heal(1)
+                model.RemoteHeal(unit, 1)
+            }
+
+            if attackerWrack {
+                damage := 0
+                for range unit.Figures() {
+                    if rand.N(10) + 1 > unit.GetResistance() + 1 {
+                        damage += 1
+                    }
+                }
+                unit.TakeDamage(damage, DamageNormal)
+                model.RemoteDamage(unit, DamageNormal, damage)
+                if unit.GetHealth() <= 0 {
+                    model.KillUnit(unit)
+                }
             }
         }
     }
@@ -4412,8 +4424,8 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     model.doKillUnit(unit)
 
     if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
-        model.NextUnit()
         model.RemoteDoneTurn(unit)
+        model.NextUnit()
     }
 }
 
@@ -4437,8 +4449,8 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     model.setTileUnit(unit.X, unit.Y, nil)
 
     if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
-        model.NextUnit()
         model.RemoteDoneTurn(unit)
+        model.NextUnit()
     }
 }
 
@@ -6763,6 +6775,12 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 model.DoneTurn()
             }
+        case RemoteNextUnitType:
+            event := event.(*RemoteNextUnitEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                model.NextUnit()
+            }
         case RemoteDamageType:
             event := event.(*RemoteDamageEvent)
             unit := model.GetUnitById(event.Id)
@@ -6799,6 +6817,27 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             curse := event.Curse
             if unit != nil {
                 model.ApplyCurse(unit, curse)
+            }
+
+        case RemoteUseManaType:
+            event := event.(*RemoteUseManaEvent)
+            army := model.GetArmyById(event.ArmyId)
+            if army != nil {
+                army.ManaPool = max(0, army.ManaPool - event.Mana)
+                army.Player.UseMana(event.Mana)
+            }
+
+        case RemoteUnitCastSkillType:
+            event := event.(*RemoteUnitCastSkillEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.CastingSkill = max(0, unit.CastingSkill + float32(event.Delta))
+            }
+        case RemoteUnitMovesLeftType:
+            event := event.(*RemoteUnitMovesLeftEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.MovesLeft = event.Moves
             }
 
         case RemoteCounterMagicType:
@@ -7040,6 +7079,24 @@ func (model *CombatModel) RemoteKillUnit(unit *ArmyUnit) error {
         err := model.Remote.SendEvent(&event)
         if err != nil {
             log.Error("Failed to send remote kill unit event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteNextUnit(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteNextUnitEvent{
+            Type: RemoteNextUnitType,
+            Id: unit.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote done turn event: %v", err)
         }
 
         return err
@@ -7400,6 +7457,63 @@ func (model *CombatModel) RemoteAnimateDeadUnit(army *Army, killedUnit *ArmyUnit
             ArmyId: army.Id,
             X: x,
             Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteUnitMovesLeft(unit *ArmyUnit, moves fraction.Fraction) error {
+    if model.Remote != nil {
+        event := RemoteUnitMovesLeftEvent{
+            Type: RemoteUnitMovesLeftType,
+            Id: unit.Id,
+            Moves: moves,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteUseMana(army *Army, mana int) error {
+    if model.Remote != nil {
+        event := RemoteUseManaEvent{
+            Type: RemoteUseManaType,
+            ArmyId: army.Id,
+            Mana: mana,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteUnitCastSkill(unit *ArmyUnit, delta int) error {
+    if model.Remote != nil {
+        event := RemoteUnitCastSkillEvent{
+            Type: RemoteUnitCastSkillType,
+            Id: unit.Id,
+            Delta: delta,
         }
 
         err := model.Remote.SendEvent(&event)

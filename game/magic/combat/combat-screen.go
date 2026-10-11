@@ -1805,6 +1805,7 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             return
         }
 
+        combat.Model.RemoteNextUnit(combat.Model.SelectedUnit)
         combat.Model.NextUnit()
     }))
 

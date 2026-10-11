@@ -270,6 +270,8 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Call Lightning"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Animate Dead"))
     attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Life Drain"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Wrack"))
+    attackingPlayer.KnownSpells.AddSpell(allSpells.FindByName("Terror"))
 
     var attackingArmy *combat.Army
 
@@ -305,7 +307,7 @@ func MakeScenario2(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 }
 
 func MakeScenario3(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
-    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.OrcSpearmen, 3)
+    return makeGenericScenario(isServer, remote, units.GnollSpearmen, 3, units.OrcSpearmen, 3)
 }
 
 func MakeScenario4(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {

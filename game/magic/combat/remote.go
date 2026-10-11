@@ -14,6 +14,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
 const (
@@ -54,6 +55,10 @@ const (
     RemoteManaPoolType = "mana_pool"
     RemoteRangeAttackWallType = "range_attack_wall"
     RemoteMeleeAttackWallType = "melee_attack_wall"
+    RemoteUnitCastSkillType = "unit_cast_skill"
+    RemoteUnitMovesLeftType = "unit_moves_left"
+    RemoteUseManaType = "use_mana"
+    RemoteNextUnitType = "next_unit"
 )
 
 type RemoteWallKind int
@@ -251,6 +256,10 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteManaPoolType: return convert[*RemoteManaPoolEvent](data)
         case RemoteRangeAttackWallType: return convert[*RemoteRangeAttackWallEvent](data)
         case RemoteMeleeAttackWallType: return convert[*RemoteMeleeAttackWallEvent](data)
+        case RemoteUnitCastSkillType: return convert[*RemoteUnitCastSkillEvent](data)
+        case RemoteUnitMovesLeftType: return convert[*RemoteUnitMovesLeftEvent](data)
+        case RemoteUseManaType: return convert[*RemoteUseManaEvent](data)
+        case RemoteNextUnitType: return convert[*RemoteNextUnitEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -644,5 +653,44 @@ type RemoteMeleeAttackWallEvent struct {
 }
 
 func (remote *RemoteMeleeAttackWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitCastSkillEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Delta int `json:"delta"`
+}
+
+func (remote *RemoteUnitCastSkillEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitMovesLeftEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Moves fraction.Fraction `json:"moves"`
+}
+
+func (remote *RemoteUnitMovesLeftEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUseManaEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    Mana int `json:"mana"`
+}
+
+func (remote *RemoteUseManaEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteNextUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteNextUnitEvent) GetType() string {
     return remote.Type
 }
