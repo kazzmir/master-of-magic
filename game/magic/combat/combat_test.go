@@ -20,6 +20,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/util"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/lib/set"
 )
 
@@ -2297,6 +2298,131 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     }, TestOptions{
         MakeUnit: makeArchAngel,
     })
+}
+
+func TestRemoteRaiseDead(test *testing.T) {
+    for _, team := range []Team{TeamAttacker, TeamDefender} {
+        name := "attacker"
+        if team == TeamDefender {
+            name = "defender"
+        }
+        test.Run(name, func(test *testing.T) {
+            peer1, peer2 := net.Pipe()
+            defer peer1.Close()
+            defer peer2.Close()
+            // Bound synchronous sends as well as event waits if synchronization breaks.
+            peer1.SetWriteDeadline(time.Now().Add(5 * time.Second))
+            peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
+
+            attackerRemote := MakeRemote(false, false, peer1)
+            defenderRemote := MakeRemote(true, true, peer2)
+            makeModel := func(remote *Remote) *CombatModel {
+                makeArmy := func() *Army {
+                    army := &Army{Player: makeTestCombatPlayer(false)}
+                    // Keep another unit alive, and avoid killing the selected unit.
+                    for range 2 {
+                        army.AddUnit(units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+                    }
+                    return army
+                }
+                return MakeCombatModel(spellbook.Spells{}, makeArmy(), makeArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+            }
+            attackerModel := makeModel(attackerRemote)
+            defenderModel := makeModel(defenderRemote)
+            source, receiver := attackerModel, defenderModel
+            if team == TeamDefender {
+                source, receiver = defenderModel, attackerModel
+            }
+
+            quit, cancel := context.WithCancel(context.Background())
+            receiveDone := make(chan struct{})
+            go func() {
+                defer close(receiveDone)
+                receiver.Remote.RunReceiveLoop(quit)
+            }()
+            defer func() {
+                cancel()
+                <-receiveDone
+            }()
+
+            receiverSpells := &ProxySpellSystem{Model: receiver}
+            receiveThrough := func(wanted string) {
+                test.Helper()
+                timeout := time.NewTimer(5 * time.Second)
+                defer timeout.Stop()
+                for {
+                    select {
+                        case event := <-receiver.Remote.Events:
+                            receiver.HandleRemoteEvent(optional.Of[SpellSystem](receiverSpells), optional.Empty[AddDamageIndicators](), event)
+                            if event.GetType() == wanted {
+                                return
+                            }
+                        case <-timeout.C:
+                            test.Fatalf("Timed out waiting for %s", wanted)
+                    }
+                }
+            }
+
+            sourceArmy := source.GetArmyForTeam(team)
+            unit := sourceArmy.units[1]
+            id := unit.Id
+            // Kill a locally controlled unit: this must still notify the other peer.
+            if source.IsRemoteUnit(unit) {
+                test.Fatal("Expected the casting peer to control the unit")
+            }
+            damage := unit.GetHealth()
+            unit.TakeDamage(damage, DamageNormal)
+            if err := source.RemoteDamage(unit, DamageNormal, damage); err != nil {
+                test.Fatal(err)
+            }
+            source.KillUnit(unit)
+            receiveThrough(RemoteKillUnitType)
+            for _, model := range []*CombatModel{attackerModel, defenderModel} {
+                army := model.GetArmyForTeam(team)
+                if army.GetKilledUnitById(id) == nil {
+                    test.Fatal("Dead unit missing from a peer's killed-unit list")
+                }
+                if model.GetUnitById(id) != nil {
+                    test.Fatal("Dead unit still in a peer's active army")
+                }
+            }
+
+            casted := false
+            source.InvokeSpell(&ProxySpellSystem{Model: source}, sourceArmy, nil, spellbook.Spell{Name: "Raise Dead", Magic: data.LifeMagic}, func(success bool) {
+                casted = success
+            })
+            if !casted {
+                test.Fatal("Raise Dead did not succeed")
+            }
+            receiveThrough(RemoteRaiseDeadUnitType)
+
+            for _, peer := range []struct {
+                name string
+                model *CombatModel
+            }{{"attacker", attackerModel}, {"defender", defenderModel}} {
+                army := peer.model.GetArmyForTeam(team)
+                revived := peer.model.GetUnitById(id)
+                if revived == nil {
+                    test.Fatalf("%s model: revived unit missing from active army", peer.name)
+                }
+                if revived.GetHealth() <= 0 || revived.GetHealth() != unit.GetHealth() {
+                    test.Errorf("%s model: revived health = %d, want %d", peer.name, revived.GetHealth(), unit.GetHealth())
+                }
+                if army.GetKilledUnitById(id) != nil {
+                    test.Errorf("%s model: revived unit still in killed-unit list", peer.name)
+                }
+                if revived.X != unit.X || revived.Y != unit.Y {
+                    test.Errorf("%s model: revived unit has different coordinates", peer.name)
+                }
+                if peer.model.GetUnit(revived.X, revived.Y) != revived {
+                    test.Errorf("%s model: revived unit missing from tile", peer.name)
+                }
+                if len(army.units) != 2 {
+                    test.Errorf("%s model: active army has %d units, want 2", peer.name, len(army.units))
+                }
+            }
+        })
+    }
 }
 
 func TestDisenchantArea(test *testing.T) {
