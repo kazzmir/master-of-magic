@@ -5120,6 +5120,24 @@ func (model *CombatModel) doUnitCast(caster *ArmyUnit, spell spellbook.Spell) {
     // model.DoneTurn()
 }
 
+func (model *CombatModel) doAnimateDeadUnit(army *Army, killedUnit *ArmyUnit, x int, y int) {
+    ownerArmy := model.GetArmy(killedUnit)
+    ownerArmy.KilledUnits = slices.DeleteFunc(ownerArmy.KilledUnits, func (unit *ArmyUnit) bool {
+        return unit == killedUnit
+    })
+    army.AddArmyUnit(killedUnit)
+    killedUnit.Unit.SetUndead()
+    killedUnit.Heal(killedUnit.GetMaxHealth())
+    killedUnit.X = x
+    killedUnit.Y = y
+    killedUnit.Team = model.GetTeamForArmy(army)
+    killedUnit.Model = model
+    killedUnit.Enchantments = nil
+    killedUnit.Curses = nil
+    killedUnit.WebHealth = 0
+    model.setTileUnit(x, y, killedUnit)
+}
+
 // playerCasted is true if the player cast the spell, or false if a unit cast the spell
 func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitCaster *ArmyUnit, spell spellbook.Spell, castedCallback func(bool)){
 
@@ -5691,21 +5709,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                     return
                 }
                 model.AddProjectile(spellSystem.CreateSummoningCircle(x, y))
-                ownerArmy := model.GetArmy(killedUnit)
-                ownerArmy.KilledUnits = slices.DeleteFunc(ownerArmy.KilledUnits, func (unit *ArmyUnit) bool {
-                    return unit == killedUnit
-                })
-                army.AddArmyUnit(killedUnit)
-                killedUnit.Unit.SetUndead()
-                killedUnit.Heal(killedUnit.GetMaxHealth())
-                killedUnit.X = x
-                killedUnit.Y = y
-                killedUnit.Team = model.GetTeamForArmy(army)
-                killedUnit.Model = model
-                killedUnit.Enchantments = nil
-                killedUnit.Curses = nil
-                killedUnit.WebHealth = 0
-                model.setTileUnit(x, y, killedUnit)
+                model.RemoteSummoningCircle(x, y)
+
+                model.doAnimateDeadUnit(army, killedUnit, x, y)
             }
 
             if len(allKilledUnits) > 0 {
