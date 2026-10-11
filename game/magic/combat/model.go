@@ -4676,8 +4676,11 @@ func (model *CombatModel) CheckDispel(spell spellbook.Spell, caster ArmyPlayer) 
         chance := spellbook.ComputeDispelChance(opposite.CounterMagic, spell.Cost(false), spell.Magic, caster.GetWizard())
         opposite.CounterMagic = max(0, opposite.CounterMagic - 5)
 
+        model.RemoteCounterMagic(opposite, opposite.CounterMagic)
+
         if opposite.CounterMagic == 0 {
             opposite.RemoveEnchantment(data.CombatEnchantmentCounterMagic)
+            model.RemoteRemoveEnchantmentArmy(opposite, data.CombatEnchantmentCounterMagic)
         }
 
         return spellbook.RollDispelChance(chance)
@@ -5376,6 +5379,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             // set counter magic counter for the player to be the spell strength
             // TODO: remote
             army.CounterMagic = spell.Cost(false)
+
+            model.RemoteCounterMagic(army, army.CounterMagic)
+
         case "Mass Invisibility":
             model.CastEnchantment(army, data.CombatEnchantmentMassInvisibility, castedCallback)
         case "Metal Fires":
@@ -6715,6 +6721,11 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 model.ApplyCurse(unit, curse)
             }
 
+        case RemoteCounterMagicType:
+            event := event.(*RemoteCounterMagicEvent)
+            army := model.GetArmyById(event.ArmyId)
+            army.CounterMagic = event.Value
+
         case RemoteSummoningCircleType:
             event := event.(*RemoteSummoningCircleEvent)
             spellSystem.With(func (spellSystem SpellSystem) {
@@ -7072,6 +7083,26 @@ func (model *CombatModel) RemoteAddArmyEnchantment(army *Army, enchantment data.
             Type: RemoteAddArmyEnchantmentType,
             Enchantment: enchantment,
             ArmyId: army.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote remove enchantment event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+// set counter magic value of army
+func (model *CombatModel) RemoteCounterMagic(army *Army, value int) error {
+    if model.Remote != nil {
+        event := RemoteCounterMagicEvent{
+            Type: RemoteCounterMagicType,
+            ArmyId: army.Id,
+            Value: value,
         }
 
         err := model.Remote.SendEvent(&event)
