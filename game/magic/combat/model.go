@@ -2713,7 +2713,7 @@ func (model *CombatModel) NextTurn() {
     defenderWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamAttacker)
 
     /* reset movement */
-    for _, unit := range model.DefendingArmy.units {
+    for _, unit := range slices.Clone(model.DefendingArmy.units) {
         unit.ResetTurnData()
 
         if model.IsServer() {
@@ -2762,7 +2762,7 @@ func (model *CombatModel) NextTurn() {
     attackerTerror := model.IsEnchantmentActive(data.CombatEnchantmentTerror, TeamDefender)
     attackerWrack := model.IsEnchantmentActive(data.CombatEnchantmentWrack, TeamDefender)
 
-    for _, unit := range model.AttackingArmy.units {
+    for _, unit := range slices.Clone(model.AttackingArmy.units) {
         // increase collateral damage to the town for each unit that is within the town area
         if model.InsideTown(unit.X, unit.Y) {
             model.CollateralDamage += 1

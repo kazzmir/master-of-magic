@@ -2300,6 +2300,239 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     })
 }
 
+func TestRemoteTurnEnchantments(test *testing.T) {
+    scenarios := []struct {
+        name string
+        enchantment data.CombatEnchantment
+        mana int
+        lethal bool
+    }{
+        {name: "wrack", enchantment: data.CombatEnchantmentWrack, mana: 20},
+        {name: "wrack_low_health", enchantment: data.CombatEnchantmentWrack, mana: 20, lethal: true},
+        {name: "terror", enchantment: data.CombatEnchantmentTerror, mana: 20},
+        {name: "mana_leak", enchantment: data.CombatEnchantmentManaLeak, mana: 20},
+        {name: "mana_leak_clamped", enchantment: data.CombatEnchantmentManaLeak, mana: 3},
+    }
+    for _, scenario := range scenarios {
+        for _, affectedTeam := range []Team{TeamAttacker, TeamDefender} {
+            for _, authorityTeam := range []Team{TeamAttacker, TeamDefender} {
+                teamName := func(team Team) string {
+                    if team == TeamAttacker {
+                        return "attacker"
+                    }
+                    return "defender"
+                }
+                test.Run(scenario.name+"/affected_"+teamName(affectedTeam)+"/authority_"+teamName(authorityTeam), func(test *testing.T) {
+                    peer1, peer2 := net.Pipe()
+                    defer peer1.Close()
+                    defer peer2.Close()
+                    peer1.SetWriteDeadline(time.Now().Add(5 * time.Second))
+                    peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
+                    // Remote.IsServer is inverted by CombatModel.IsServer().
+                    attackerRemote := MakeRemote(authorityTeam != TeamAttacker, false, peer1)
+                    defenderRemote := MakeRemote(authorityTeam != TeamDefender, true, peer2)
+                    makeModel := func(remote *Remote) *CombatModel {
+                        makeArmy := func() *Army {
+                            army := &Army{Player: makeTestCombatPlayer(false)}
+                            for _, resistance := range []int{-1, 100} {
+                                template := units.Warlocks
+                                template.Resistance = resistance
+                                template.Count = 2
+                                template.HitPoints = 5
+                                army.AddUnit(units.MakeOverworldUnitFromUnit(template, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+                            }
+                            return army
+                        }
+                        return MakeCombatModel(spellbook.Spells{}, makeArmy(), makeArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+                    }
+                    attackerModel := makeModel(attackerRemote)
+                    defenderModel := makeModel(defenderRemote)
+                    source, receiver := attackerModel, defenderModel
+                    if authorityTeam == TeamDefender {
+                        source, receiver = defenderModel, attackerModel
+                    }
+                    if !source.IsServer() || receiver.IsServer() {
+                        test.Fatal("Incorrect authority setup")
+                    }
+
+                    quit, cancel := context.WithCancel(context.Background())
+                    var receiveWait sync.WaitGroup
+                    for _, remote := range []*Remote{attackerRemote, defenderRemote} {
+                        receiveWait.Go(func() { remote.RunReceiveLoop(quit) })
+                    }
+                    defer func() {
+                        cancel()
+                        receiveWait.Wait()
+                    }()
+
+                    // A marker on the same stream bounds the events for each round.
+                    // Process model mutations on the test goroutine, not the receive loop.
+                    flush := func(from, to *CombatModel) map[string]int {
+                        test.Helper()
+                        if err := from.Remote.SendEvent(&RemoteGlobalSpellEvent{Type: RemoteGlobalSpellType, Name: "turn-test-marker"}); err != nil {
+                            test.Fatal(err)
+                        }
+                        counts := make(map[string]int)
+                        timeout := time.NewTimer(5 * time.Second)
+                        defer timeout.Stop()
+                        for {
+                            select {
+                                case event := <-to.Remote.Events:
+                                    if marker, ok := event.(*RemoteGlobalSpellEvent); ok && marker.Name == "turn-test-marker" {
+                                        return counts
+                                    }
+                                    counts[event.GetType()] += 1
+                                    to.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+                                case <-timeout.C:
+                                    test.Fatal("Timed out receiving turn-effect events")
+                            }
+                        }
+                    }
+
+                    ids := []uint64{}
+                    for _, unit := range source.GetArmyForTeam(affectedTeam).units {
+                        ids = append(ids, unit.Id)
+                    }
+                    initialHealth := source.GetUnitById(ids[0]).GetHealth()
+                    for _, model := range []*CombatModel{attackerModel, defenderModel} {
+                        affected := model.GetArmyForTeam(affectedTeam)
+                        caster := model.GetArmyForTeam(oppositeTeam(affectedTeam))
+                        caster.AddEnchantment(scenario.enchantment)
+                        affected.ManaPool = scenario.mana
+                        affected.Player.(*playerlib.Player).Mana = scenario.mana
+                        affected.units[0].CastingSkill = 12
+                        affected.units[1].CastingSkill = 3
+                        caster.ManaPool = 37
+                        caster.Player.(*playerlib.Player).Mana = 37
+                        for _, unit := range caster.units {
+                            unit.CastingSkill = 9
+                        }
+                        // Keep lethal Wrack from triggering unrelated selected-unit advancement.
+                        model.SelectedUnit = caster.units[0]
+                        if scenario.lethal {
+                            unit := affected.units[0]
+                            unit.Unit.AdjustHealth(1 - unit.GetHealth())
+                        }
+                        if affected.units[0].GetResistance() != 0 || affected.units[1].GetResistance() < 10 {
+                            test.Fatal("Incorrect low/high resistance setup")
+                        }
+                    }
+
+                    // Resistance is clamped at zero, so low-resistance rolls can
+                    // still succeed. Check the actual authoritative outcome rather
+                    // than assuming a random roll must fail.
+                    for round := 1; round <= 2; round++ {
+                        // Reset receiver movement first, before authoritative Terror events.
+                        receiver.NextTurn()
+                        if counts := flush(receiver, source); len(counts) != 0 {
+                            test.Fatalf("Non-authoritative peer emitted turn effects: %v", counts)
+                        }
+                        activeBefore := len(source.GetArmyForTeam(affectedTeam).units)
+                        vulnerable := source.GetUnitById(ids[0])
+                        healthBefore, figuresBefore := 0, 0
+                        if vulnerable != nil {
+                            healthBefore, figuresBefore = vulnerable.GetHealth(), vulnerable.Figures()
+                        }
+                        source.NextTurn()
+                        counts := flush(source, receiver)
+                        expected := make(map[string]int)
+                        switch scenario.enchantment {
+                            case data.CombatEnchantmentWrack:
+                                expected[RemoteDamageType] = activeBefore
+                                if killed := activeBefore - len(source.GetArmyForTeam(affectedTeam).units); killed > 0 {
+                                    expected[RemoteKillUnitType] = killed
+                                }
+                                if vulnerable != nil {
+                                    damage := healthBefore - vulnerable.GetHealth()
+                                    if damage < 0 || damage > figuresBefore {
+                                        test.Errorf("Wrack damage = %d, want between 0 and %d", damage, figuresBefore)
+                                    }
+                                }
+                            case data.CombatEnchantmentTerror:
+                                if source.GetUnitById(ids[0]).MovesLeft.Equals(fraction.Zero()) {
+                                    expected[RemoteUnitMovesLeftType] = 1
+                                }
+                            case data.CombatEnchantmentManaLeak:
+                                expected[RemoteUnitCastSkillType] = 2
+                        }
+                        if len(counts) != len(expected) {
+                            test.Errorf("Round %d: event counts = %v, want %v", round, counts, expected)
+                        }
+                        for kind, count := range expected {
+                            if counts[kind] != count {
+                                test.Errorf("Round %d: %s count = %d, want %d", round, kind, counts[kind], count)
+                            }
+                        }
+
+                        for _, model := range []*CombatModel{attackerModel, defenderModel} {
+                            affected := model.GetArmyForTeam(affectedTeam)
+                            expectedMana := scenario.mana
+                            if scenario.enchantment == data.CombatEnchantmentManaLeak {
+                                expectedMana = max(0, expectedMana - 5 * round)
+                            }
+                            if affected.ManaPool != expectedMana || affected.Player.GetMana() != expectedMana {
+                                test.Errorf("Round %d: affected mana pool/player = %d/%d, want %d", round, affected.ManaPool, affected.Player.GetMana(), expectedMana)
+                            }
+                            for index, id := range ids {
+                                unit := model.GetUnitById(id)
+                                if scenario.lethal && index == 0 && source.GetUnitById(id) == nil {
+                                    corpse := affected.GetKilledUnitById(id)
+                                    if unit != nil || corpse == nil || corpse.GetHealth() != 0 {
+                                        test.Error("Lethal Wrack did not move the dead unit into the killed-unit list")
+                                    }
+                                    if corpse != nil && model.GetUnit(corpse.X, corpse.Y) != nil {
+                                        test.Error("Lethal Wrack left the dead unit on its tile")
+                                    }
+                                    continue
+                                }
+                                if unit == nil {
+                                    test.Fatalf("Unit %d unexpectedly removed", id)
+                                }
+                                expectedHealth := initialHealth
+                                if scenario.enchantment == data.CombatEnchantmentWrack && index == 0 {
+                                    expectedHealth = source.GetUnitById(id).GetHealth()
+                                }
+                                if unit.GetHealth() != expectedHealth {
+                                    test.Errorf("Round %d, unit %d: health = %d, want %d", round, id, unit.GetHealth(), expectedHealth)
+                                }
+                                expectedMoves := unit.GetMovementSpeed()
+                                if scenario.enchantment == data.CombatEnchantmentTerror && index == 0 {
+                                    expectedMoves = source.GetUnitById(id).MovesLeft
+                                }
+                                if !unit.MovesLeft.Equals(expectedMoves) {
+                                    test.Errorf("Round %d, unit %d: moves = %v, want %v", round, id, unit.MovesLeft, expectedMoves)
+                                }
+                                expectedSkill := float32(12)
+                                if index == 1 {
+                                    expectedSkill = 3
+                                }
+                                if scenario.enchantment == data.CombatEnchantmentManaLeak {
+                                    expectedSkill = max(0, expectedSkill - float32(5 * round))
+                                }
+                                if unit.CastingSkill != expectedSkill {
+                                    test.Errorf("Round %d, unit %d: casting skill = %v, want %v", round, id, unit.CastingSkill, expectedSkill)
+                                }
+                            }
+                            caster := model.GetArmyForTeam(oppositeTeam(affectedTeam))
+                            if caster.ManaPool != 37 || caster.Player.GetMana() != 37 {
+                                test.Error("Enchantment drained its own army's mana")
+                            }
+                            for _, unit := range caster.units {
+                                if unit.GetHealth() != initialHealth || unit.CastingSkill != 9 || !unit.MovesLeft.Equals(unit.GetMovementSpeed()) {
+                                    test.Error("Enchantment affected its own army's units")
+                                }
+                            }
+                            if model.CurrentTurn != 1 + round {
+                                test.Errorf("Current turn = %d, want %d", model.CurrentTurn, 1 + round)
+                            }
+                        }
+                    }
+                })
+            }
+        }
+    }
+}
+
 func TestRemoteRaiseDead(test *testing.T) {
     for _, team := range []Team{TeamAttacker, TeamDefender} {
         name := "attacker"
