@@ -6626,6 +6626,14 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                             if attacker != nil && defender != nil {
                                 actions.RangeAttack(attacker, defender)
                             }
+
+                        case RemoteRangeAttackWallType:
+                            event := event.(*RemoteRangeAttackWallEvent)
+                            unit := model.GetUnitById(event.AttackerId)
+                            if unit != nil {
+                               actions.RangeAttack(unit, &WallTarget{X: event.X, Y: event.Y})
+                            }
+
                         case RemoteMeleeAttackType:
                             event := event.(*RemoteMeleeAttackEvent)
                             attackerId := event.AttackerId
@@ -6700,6 +6708,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                    attacker.Paths = make(map[image.Point]pathfinding.Path)
                }
            } else if attacker.GetRangedAttacks() > 0 && attacker.CanDestroyWallsRangedAttack() && model.ContainsWall(actionTileX, actionTileY) {
+               model.RemoteRangeAttackWall(attacker, actionTileX, actionTileY)
                actions.RangeAttack(attacker, &WallTarget{X: actionTileX, Y: actionTileY})
            } else if attacker.GetMeleeAttackPower() > 0 && attacker.HasAbility(data.AbilityWallCrusher) && model.ContainsWall(actionTileX, actionTileY) && computeTileDistance(attacker.X, attacker.Y, actionTileX, actionTileY) == 1 {
                actions.MeleeAttackWall(attacker, actionTileX, actionTileY)
@@ -6751,6 +6760,7 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                     model.doUnitCast(unit, spell)
                 }
             }
+
         case RemoteCurseUnitType:
             event := event.(*RemoteCurseUnitEvent)
 
@@ -7036,6 +7046,26 @@ func (model *CombatModel) RemoteMeleeAttack(attacker *ArmyUnit, defender *ArmyUn
         err := model.Remote.SendEvent(&event)
         if err != nil {
             log.Error("Failed to send remote melee attack event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteRangeAttackWall(attacker *ArmyUnit, x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteRangeAttackWallEvent{
+            Type: RemoteRangeAttackWallType,
+            AttackerId: attacker.Id,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote range attack event: %v", err)
         }
 
         return err
