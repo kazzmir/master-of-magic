@@ -6750,6 +6750,11 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             army := model.GetArmyById(event.ArmyId)
             army.CounterMagic = event.Value
 
+        case RemoteManaPoolType:
+            event := event.(*RemoteManaPoolEvent)
+            army := model.GetArmyById(event.ArmyId)
+            army.ManaPool += event.Amount
+
         case RemoteAnimateDeadUnitType:
             event := event.(*RemoteAnimateDeadUnitEvent)
 
@@ -7071,6 +7076,25 @@ func (model *CombatModel) RemoteDamageIndicator(unit *ArmyUnit, damage int) erro
         err := model.Remote.SendEvent(&event)
         if err != nil {
             log.Error("Failed to send remote damage indicator event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteManaPool(army *Army, amount int) error {
+    if model.Remote != nil {
+        event := RemoteManaPoolEvent{
+            Type: RemoteManaPoolType,
+            ArmyId: army.Id,
+            Amount: amount,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote damage event: %v", err)
         }
 
         return err
@@ -7589,7 +7613,7 @@ func (model *CombatModel) CreateLifeDrainProjectileEffect(reduceResistance int, 
             } else {
                 army := model.GetArmyForPlayer(player)
                 army.ManaPool += damage * 3
-                // FIXME: send remote mana event
+                model.RemoteManaPool(army, damage * 3)
             }
 
             if unit.GetHealth() <= 0 {
