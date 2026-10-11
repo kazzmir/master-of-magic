@@ -5339,6 +5339,8 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 Name: spell.Name,
             }
 
+            model.RemoteGlobalSpell(army, spell.Magic, spell.Name)
+
             disenchantStrength := spell.Cost(false)
             if spell.Name == "Disenchant True" {
                 // strength is 3x mana spent
@@ -6079,6 +6081,27 @@ func (model *CombatModel) RemoteDestroyWall(x int, y int) error {
 
 }
 
+func (model *CombatModel) RemoteGlobalSpell(army *Army, magic data.MagicType, name string) error {
+    if model.Remote != nil {
+        event := RemoteGlobalSpellEvent{
+            Type: RemoteGlobalSpellType,
+            Army: army.Id,
+            Magic: magic,
+            Name: name,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote earth to mud spell event: %v", err)
+        }
+
+        return err
+
+    }
+
+    return nil
+
+}
 
 func (model *CombatModel) RemoteSummoningCircle(x int, y int) error {
     if model.Remote != nil {
@@ -6724,6 +6747,22 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 spell := model.AllSpells.FindByName(event.Spell)
                 model.doTileTargetSpell(spellSystem, spell, event.X, event.Y)
             })
+
+        case RemoteGlobalSpellType:
+            event := event.(*RemoteGlobalSpellEvent)
+
+            army := model.GetArmyById(event.Army)
+
+            combatEvent := CombatEventGlobalSpell{
+                Caster: army.Player,
+                Magic: event.Magic,
+                Name: event.Name,
+            }
+
+            select {
+                case model.Events <- &combatEvent:
+                default:
+            }
 
         case RemoteEnchantmentUnitType:
             event := event.(*RemoteEnchantmentUnitEvent)
