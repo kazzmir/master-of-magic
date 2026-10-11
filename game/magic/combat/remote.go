@@ -111,16 +111,37 @@ func (remote *Remote) SendEvent(event RemoteEvent) error {
 }
 
 type RateLimiter struct {
-    WindowSize int
+    WindowSize time.Duration
     MaxEvents int
     count int
     windowStart time.Time
+}
+
+func (limiter *RateLimiter) AddAndLimit(quit context.Context) {
+    limiter.count += 1
+    if time.Now().Sub(limiter.windowStart) > limiter.WindowSize {
+        limiter.windowStart = time.Now()
+        limiter.count = 1
+    }
+
+    if limiter.count > limiter.MaxEvents {
+        select {
+            case <-quit.Done():
+            // sleep for the duration of the window
+            case <-time.After(limiter.WindowSize - time.Now().Sub(limiter.windowStart)):
+        }
+    }
 }
 
 // caller should run this in a goroutine
 func (remote *Remote) RunReceiveLoop(quit context.Context) {
 
     defer remote.Peer.SetReadDeadline(time.Time{}) // clear read deadline on exit
+
+    limiter := RateLimiter{
+        WindowSize: 1 * time.Second,
+        MaxEvents: 300,
+    }
 
     for quit.Err() == nil {
         done := make(chan struct{})
@@ -151,6 +172,8 @@ func (remote *Remote) RunReceiveLoop(quit context.Context) {
         }
 
         remote.Events <- event
+
+        limiter.AddAndLimit(quit)
     }
 }
 
