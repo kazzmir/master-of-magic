@@ -2338,7 +2338,9 @@ func TestDisenchantArea(test *testing.T) {
 
     spellSystem := makeSpellSystem(attackerModel)
 
-    attackerModel.InvokeSpell(&spellSystem, attackerModel.AttackingArmy, attackerModel.AttackingArmy.GetUnits()[0], spellbook.Spell{Name: "Disenchant Area", OverrideCost: 1000, Magic: data.ArcaneMagic}, func(success bool) { })
+    disenchantAreaSpell := spellbook.Spell{Name: "Disenchant Area", OverrideCost: 1000, Magic: data.ArcaneMagic}
+
+    attackerModel.InvokeSpell(&spellSystem, attackerModel.AttackingArmy, nil, disenchantAreaSpell, func(success bool) { })
 
     done := make(chan struct{})
 
@@ -2377,6 +2379,95 @@ func TestDisenchantArea(test *testing.T) {
 
             if !removeEnchantment {
                 test.Errorf("Error: remote did not receive remove army enchantment event for Disenchant Area")
+            }
+    }
+}
+
+func TestCounterMagic(test *testing.T) {
+    var allSpells spellbook.Spells
+
+    peer1, peer2 := net.Pipe()
+
+    defer peer1.Close()
+    defer peer2.Close()
+
+    // the attacker's remote, which represents the defender, so false for isAttacker
+    attackerRemote := MakeRemote(false, false, peer1)
+    defenderRemote := MakeRemote(true, true, peer2)
+
+    defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
+
+    // default is hell hounds: fantastic chaos unit
+    defendingOverworld := units.MakeOverworldUnitFromUnit(units.HellHounds, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    defendingUnit := defendingArmy.AddUnit(defendingOverworld)
+    // an enchantment that can be removed via dispel magic
+    defendingUnit.AddEnchantment(data.UnitEnchantmentGiantStrength)
+
+    defendingArmy.AddEnchantment(data.CombatEnchantmentMetalFires)
+
+    attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
+    // attacking army has a unit that can range attack. grant very high tohit
+    attacker := units.MakeOverworldUnitFromUnit(units.Warlocks, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{})
+    attackingArmy.AddUnit(&OverrideToHitMelee{attacker})
+
+    attackerModel := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), attackerRemote)
+    // defenderModel := MakeCombatModel(allSpells, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), defenderRemote)
+
+    quit, cancel := context.WithCancel(context.Background())
+    defer cancel()
+
+    var wait sync.WaitGroup
+
+    wait.Go(func(){ defenderRemote.RunReceiveLoop(quit) })
+
+    spellSystem := makeSpellSystem(attackerModel)
+
+    counterMagicLevel := 1000
+
+    counterMagicSpell := spellbook.Spell{Name: "Counter Magic", OverrideCost: counterMagicLevel, Magic: data.SorceryMagic}
+
+    attackerModel.InvokeSpell(&spellSystem, attackerModel.AttackingArmy, nil, counterMagicSpell, func(success bool) { })
+
+    done := make(chan struct{})
+
+    globalSpell := false
+    counterMagic := false
+
+    wait.Go(func() {
+        defer close(done)
+
+        for quit.Err() == nil {
+            select {
+                case <-quit.Done():
+                    break
+                case event := <-defenderRemote.Events:
+                    switch event.GetType() {
+                        case RemoteGlobalSpellType:
+                            globalSpell = true
+                        case RemoteCounterMagicType:
+                            event := event.(*RemoteCounterMagicEvent)
+                            if event.Value == counterMagicLevel {
+                                counterMagic = true
+                            }
+                    }
+            }
+
+            if globalSpell && counterMagic {
+                break
+            }
+        }
+    })
+
+    select {
+        case <-time.After(500 * time.Millisecond):
+            test.Errorf("Error: did not receive expected events for counter magic")
+        case <-done:
+            if !globalSpell {
+                test.Errorf("Error: remote did not receive global spell event for counter magic")
+            }
+
+            if !counterMagic {
+                test.Errorf("Error: remote did not receive counter magic event")
             }
     }
 }
