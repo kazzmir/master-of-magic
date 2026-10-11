@@ -2264,6 +2264,16 @@ func (army *Army) LayoutUnits(team Team, legalLocation LegalLocation){
     }
 }
 
+func (army *Army) GetKilledUnitById(id uint64) *ArmyUnit {
+    for _, unit := range army.KilledUnits {
+        if unit.Id == id {
+            return unit
+        }
+    }
+
+    return nil
+}
+
 func (army *Army) RaiseDeadUnit(unit *ArmyUnit, x int, y int){
     unit.RaiseFromDead()
     unit.X = x
@@ -5597,13 +5607,12 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
         case "Raise Dead":
             failed := true
 
-            // TODO: remote
-
             doRaiseDead := func (killedUnit *ArmyUnit){
                 model.DoSummoningSpell(spellSystem, army, spell, func(x int, y int){
                     // shouldn't really be necessary because the model should already be set, but just in case
                     killedUnit.Model = model
                     army.RaiseDeadUnit(killedUnit, x, y)
+                    model.RemoteRaiseDeadUnit(army, killedUnit, x, y)
                     model.setTileUnit(x, y, killedUnit)
                     castedCallback(true)
                 })
@@ -6749,6 +6758,15 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 model.doTileTargetSpell(spellSystem, spell, event.X, event.Y)
             })
 
+        case RemoteRaiseDeadUnitType:
+            event := event.(*RemoteRaiseDeadUnitEvent)
+
+            army := model.GetArmyById(event.ArmyId)
+            unit := army.GetKilledUnitById(event.Id)
+            if unit != nil {
+                army.RaiseDeadUnit(unit, event.X, event.Y)
+            }
+
         case RemoteGlobalSpellType:
             event := event.(*RemoteGlobalSpellEvent)
 
@@ -7169,6 +7187,28 @@ func (model *CombatModel) RemoteEnchantment(unit *ArmyUnit, enchantment data.Uni
     }
 
     return nil
+}
+
+func (model *CombatModel) RemoteRaiseDeadUnit(army *Army, unit *ArmyUnit, x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteRaiseDeadUnitEvent{
+            Type: RemoteRaiseDeadUnitType,
+            Id: unit.Id,
+            ArmyId: army.Id,
+            X: x,
+            Y: y,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+
 }
 
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
