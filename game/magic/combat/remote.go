@@ -544,7 +544,7 @@ func (remote *RemoteCounterMagicEvent) GetType() string {
 
 type RemoteRaiseDeadUnitEvent struct {
     Type string `json:"type"`
-    Id uint64 `json:"id"`
+    UnitId uint64 `json:"id"`
     ArmyId uint64 `json:"army"`
     X int `json:"x"`
     Y int `json:"y"`

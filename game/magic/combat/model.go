@@ -6762,9 +6762,10 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             event := event.(*RemoteRaiseDeadUnitEvent)
 
             army := model.GetArmyById(event.ArmyId)
-            unit := army.GetKilledUnitById(event.Id)
+            unit := army.GetKilledUnitById(event.UnitId)
             if unit != nil {
                 army.RaiseDeadUnit(unit, event.X, event.Y)
+                model.setTileUnit(event.X, event.Y, unit)
             }
 
         case RemoteGlobalSpellType:
@@ -7193,7 +7194,7 @@ func (model *CombatModel) RemoteRaiseDeadUnit(army *Army, unit *ArmyUnit, x int,
     if model.Remote != nil {
         event := RemoteRaiseDeadUnitEvent{
             Type: RemoteRaiseDeadUnitType,
-            Id: unit.Id,
+            UnitId: unit.Id,
             ArmyId: army.Id,
             X: x,
             Y: y,
@@ -7208,7 +7209,6 @@ func (model *CombatModel) RemoteRaiseDeadUnit(army *Army, unit *ArmyUnit, x int,
     }
 
     return nil
-
 }
 
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
