@@ -110,6 +110,13 @@ func (remote *Remote) SendEvent(event RemoteEvent) error {
     return err
 }
 
+type RateLimiter struct {
+    WindowSize int
+    MaxEvents int
+    count int
+    windowStart time.Time
+}
+
 // caller should run this in a goroutine
 func (remote *Remote) RunReceiveLoop(quit context.Context) {
 
