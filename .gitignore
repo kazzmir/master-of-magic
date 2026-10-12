@@ -22,3 +22,16 @@ profile.mem.*
 
 # Output from lbxdump
 **/*.lbx_output/
+
+# Android build products and locally supplied proprietary game resources
+/android/.gradle/
+/android/.tools/
+/android/**/build/
+/android/app/libs/*.aar
+/android/app/libs/*-sources.jar
+/android/**/*.jks
+/android/**/*.keystore
+/android/local.properties
+/game/arena/mobile/assets/
+/dist/
+/Master of Magic.zip
