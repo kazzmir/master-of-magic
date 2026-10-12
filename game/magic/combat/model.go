@@ -8415,14 +8415,16 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
                         if !immune {
                             doomDamage := 5
                             unit.TakeDamage(doomDamage, DamageNormal)
+                            model.RemoteDamage(unit, DamageNormal, doomDamage)
                             damageIndicators.AddDamageIndicator(unit, doomDamage)
+                            model.RemoteDamageIndicator(unit, doomDamage)
                         }
-                    default:
-                        if chance(33) {
-                            // strength 5 magic armor piercing attack, assume tohit=30
-                            appliedDamge, _ := ApplyDamage(unit, []int{ComputeRoll(5, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
-                            damageIndicators.AddDamageIndicator(unit, appliedDamge)
-                        }
+                    case chance(33):
+                        // strength 5 magic armor piercing attack, assume tohit=30
+                        appliedDamge, _ := ApplyDamage(unit, []int{ComputeRoll(5, 30)}, units.DamageRangedMagical, DamageSourceSpell, DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
+                        model.RemoteDamage(unit, DamageNormal, appliedDamge)
+                        damageIndicators.AddDamageIndicator(unit, appliedDamge)
+                        model.RemoteDamageIndicator(unit, appliedDamge)
                 }
 
 
