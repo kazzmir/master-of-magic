@@ -4093,7 +4093,7 @@ func (model *CombatModel) meleeAttackWall(attacker *ArmyUnit, x int, y int) {
         attacker.MovesLeft = fraction.FromInt(0)
     }
 
-    if attacker.HasAbility(data.AbilityWallCrusher) && rand.N(2) == 0 {
+    if model.IsServer() && attacker.HasAbility(data.AbilityWallCrusher) && rand.N(2) == 0 {
         if model.DestroyWall(x, y) {
             model.RemoteDestroyWall(x, y)
             // since a wall went away, new paths need to be computed if the attacker still has moves left
@@ -8573,12 +8573,12 @@ func (model *CombatModel) CreateRangeAttackEffect(attacker *ArmyUnit, damageIndi
 }
 
 func (model *CombatModel) CreateRangeAttackWallEffect(attacker *ArmyUnit, x int, y int) func(*ArmyUnit) {
-    return func(_ *ArmyUnit) {
+    return model.createRemoteProjectileEffect(func(_ *ArmyUnit) {
         if attacker.CanDestroyWallsRangedAttack() && rand.N(4) == 0 {
             model.DestroyWall(x, y)
             model.RemoteDestroyWall(x, y)
         }
-    }
+    })
 }
 
 func (model *CombatModel) Teleport(mover *ArmyUnit, x int, y int) {
