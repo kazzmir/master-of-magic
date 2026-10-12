@@ -6823,7 +6823,7 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             event := event.(*RemoteUseManaEvent)
             army := model.GetArmyById(event.ArmyId)
             if army != nil {
-                army.ManaPool = max(0, army.ManaPool - event.Mana)
+                army.ManaPool = max(0, army.ManaPool - event.Skill)
                 army.Player.UseMana(event.Mana)
             }
 
@@ -7489,11 +7489,12 @@ func (model *CombatModel) RemoteUnitMovesLeft(unit *ArmyUnit, moves fraction.Fra
     return nil
 }
 
-func (model *CombatModel) RemoteUseMana(army *Army, mana int) error {
+func (model *CombatModel) RemoteUseMana(army *Army, skill int, mana int) error {
     if model.Remote != nil {
         event := RemoteUseManaEvent{
             Type: RemoteUseManaType,
             ArmyId: army.Id,
+            Skill: mana,
             Mana: mana,
         }
 

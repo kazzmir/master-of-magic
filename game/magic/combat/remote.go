@@ -679,6 +679,7 @@ func (remote *RemoteUnitMovesLeftEvent) GetType() string {
 type RemoteUseManaEvent struct {
     Type string `json:"type"`
     ArmyId uint64 `json:"army_id"`
+    Skill int `json:"skill"`
     Mana int `json:"mana"`
 }
 

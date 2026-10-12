@@ -1702,12 +1702,13 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
+                    combat.Model.InvokeSpell(combat, army, nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
-                        // TODO: remote
                         army.Casted = true
                         army.ManaPool -= spellCost
-                        player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
+                        mana := int(float64(spellCost) * army.Range.ToFloat())
+                        player.UseMana(mana)
+                        combat.Model.RemoteUseMana(army, spellCost, mana)
                         if success {
                             combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
                             combat.PlaySound(spell)
