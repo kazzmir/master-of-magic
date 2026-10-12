@@ -2308,6 +2308,7 @@ type MagicVortex struct {
     Team Team
     X int
     Y int
+    Id uint64
 
     MoveX float64
     MoveY float64
@@ -2395,6 +2396,7 @@ type CombatModel struct {
     RemoteProjectiles int
 
     LastUnitId uint64
+    LastMagicVortexId uint64
 
     // if this is 0 then it is treated as 25, otherwise
     // whatever this is set to is the chance that cracks call will fire
@@ -3252,6 +3254,12 @@ func (model *CombatModel) GetUnitById(id uint64) *ArmyUnit {
     // FIXME: check killed units?
 
     return nil
+}
+
+func (model *CombatModel) NextMagicVortexId() uint64 {
+    value := model.LastMagicVortexId
+    model.LastMagicVortexId += 1
+    return value
 }
 
 func (model *CombatModel) NextUnitId() uint64 {
@@ -5388,7 +5396,9 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
             }
 
             model.DoTargetTileSpell(army, spell, unoccupied, func (x int, y int){
-                model.MagicVortexes = append(model.MagicVortexes, spellSystem.CreateMagicVortex(model.GetTeamForArmy(army), x, y))
+                vortex := spellSystem.CreateMagicVortex(model.GetTeamForArmy(army), x, y)
+                vortex.Id = model.NextMagicVortexId()
+                model.MagicVortexes = append(model.MagicVortexes, vortex)
                 castedCallback(true)
             })
         case "Warp Wood":
