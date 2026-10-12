@@ -5399,6 +5399,7 @@ func (model *CombatModel) InvokeSpell(spellSystem SpellSystem, army *Army, unitC
                 vortex := spellSystem.CreateMagicVortex(model.GetTeamForArmy(army), x, y)
                 vortex.Id = model.NextMagicVortexId()
                 model.MagicVortexes = append(model.MagicVortexes, vortex)
+                model.RemoteCreateMagicVortex(vortex.Team, x, y)
                 castedCallback(true)
             })
         case "Warp Wood":
@@ -6856,6 +6857,14 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 unit.MovesLeft = event.Moves
             }
 
+        case RemoteCreateMagicVortexType:
+            event := event.(*RemoteCreateMagicVortexEvent)
+            spellSystem.With(func (spellSystem SpellSystem) {
+                vortex := spellSystem.CreateMagicVortex(event.Team, event.X, event.Y)
+                vortex.Id = model.NextMagicVortexId()
+                model.MagicVortexes = append(model.MagicVortexes, vortex)
+            })
+
         case RemoteCounterMagicType:
             event := event.(*RemoteCounterMagicEvent)
             army := model.GetArmyById(event.ArmyId)
@@ -7531,6 +7540,26 @@ func (model *CombatModel) RemoteUnitCastSkill(unit *ArmyUnit, delta int) error {
             Type: RemoteUnitCastSkillType,
             Id: unit.Id,
             Delta: delta,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteCreateMagicVortex(team Team, x int, y int) error {
+    if model.Remote != nil {
+        event := RemoteCreateMagicVortexEvent{
+            Type: RemoteCreateMagicVortexType,
+            Team: team,
+            X: x,
+            Y: y,
         }
 
         err := model.Remote.SendEvent(&event)

@@ -59,6 +59,7 @@ const (
     RemoteUnitMovesLeftType = "unit_moves_left"
     RemoteUseManaType = "use_mana"
     RemoteNextUnitType = "next_unit"
+    RemoteCreateMagicVortexType = "create_magic_vortex"
 )
 
 type RemoteWallKind int
@@ -260,6 +261,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteUnitMovesLeftType: return convert[*RemoteUnitMovesLeftEvent](data)
         case RemoteUseManaType: return convert[*RemoteUseManaEvent](data)
         case RemoteNextUnitType: return convert[*RemoteNextUnitEvent](data)
+        case RemoteCreateMagicVortexType: return convert[*RemoteCreateMagicVortexEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -693,5 +695,16 @@ type RemoteNextUnitEvent struct {
 }
 
 func (remote *RemoteNextUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCreateMagicVortexEvent struct {
+    Type string `json:"type"`
+    Team Team `json:"team"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteCreateMagicVortexEvent) GetType() string {
     return remote.Type
 }
