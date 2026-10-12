@@ -4429,14 +4429,7 @@ func (model *CombatModel) KillUnit(unit *ArmyUnit){
     }
 }
 
-// removing a unit removes it outright from battle, with no chance to be brought back
-func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
-    log.Debug("Remove unit %v (%v), is remote %v", unit.Unit.GetName(), unit.Id, model.IsRemoteUnit(unit))
-
-    if model.IsRemoteUnit(unit) {
-        model.RemoteRemoveUnit(unit)
-    }
-
+func (model *CombatModel) doRemoveUnit(unit *ArmyUnit) {
     // FIXME: should defeated defenders/attackers always go up by 1?
     if unit.Team == TeamDefender {
         model.DefeatedDefenders += 1
@@ -4447,6 +4440,15 @@ func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
     }
 
     model.setTileUnit(unit.X, unit.Y, nil)
+}
+
+// removing a unit removes it outright from battle, with no chance to be brought back
+func (model *CombatModel) RemoveUnit(unit *ArmyUnit){
+    log.Debug("Remove unit %v (%v), is remote %v", unit.Unit.GetName(), unit.Id, model.IsRemoteUnit(unit))
+
+    model.RemoteRemoveUnit(unit)
+
+    model.doRemoveUnit(unit)
 
     if unit == model.SelectedUnit && !model.IsRemoteUnit(unit) {
         model.RemoteDoneTurn(unit)
@@ -6974,7 +6976,7 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             unit := model.GetUnitById(event.Id)
 
             if unit != nil {
-                model.RemoveUnit(unit)
+                model.doRemoveUnit(unit)
             }
 
         case RemoteSetRangedAttacksType:
