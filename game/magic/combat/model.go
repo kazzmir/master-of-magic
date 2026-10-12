@@ -3898,9 +3898,13 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
 }
 
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) int {
-    hurt := model.ApplyImmolationDamage(defender, 5)
-    model.Observer.WallOfFire(defender, 5)
-    return hurt
+    if model.IsServer() {
+        hurt := model.ApplyImmolationDamage(defender, 5)
+        model.Observer.WallOfFire(defender, 5)
+        return hurt
+    } else {
+        return 0
+    }
 }
 
 func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
