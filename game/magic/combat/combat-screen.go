@@ -3073,21 +3073,64 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
     selectedUnit := combat.Model.SelectedUnit
     combat.Model.SelectedUnit = nil
     defer func(){
+        // FIXME: the selected unit could have been killed here while moving the vortex
+        // check if it is still alive before restoring it?
         combat.Model.SelectedUnit = selectedUnit
     }()
 
     for _, vortex := range combat.Model.MagicVortexes {
         if !vortex.Moved {
-            combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
 
-            army := combat.Model.GetArmyForTeam(vortex.Team)
+            if combat.Model.IsLocalTeam(vortex.Team) {
+                combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
 
-            // FIXME: consider letting AI direct the magic vortex towards an enemy
-            // only prompt for manual movement if this army is human-controlled; AI
-            // (including watch mode, where the player's army is AI) moves randomly.
-            if !army.IsAI() {
-                x, y := combat.GetMagicVortexMoveTile(yield, vortex)
-                combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
+                army := combat.Model.GetArmyForTeam(vortex.Team)
+
+                // FIXME: consider letting AI direct the magic vortex towards an enemy
+                // only prompt for manual movement if this army is human-controlled; AI
+                // (including watch mode, where the player's army is AI) moves randomly.
+                if !army.IsAI() {
+                    x, y := combat.GetMagicVortexMoveTile(yield, vortex)
+                    combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
+                }
+
+                combat.Model.RemoteMagicVortexFinished(vortex)
+            } else {
+
+                // expect remote events until magic vortex finished arrives
+                finished := false
+                for !finished {
+                    combat.ProcessInput()
+                    combat.UpdateDamageIndicators()
+                    combat.UpdateAnimations()
+
+                    if combat.Model.Remote != nil {
+                        select {
+                            case event := <-combat.Model.Remote.Events:
+                                switch event.GetType() {
+                                    case RemoteMagicVortexMoveType:
+                                        event := event.(*RemoteMagicVortexMoveEvent)
+                                        if event.VortexId == vortex.Id {
+                                            actions.MoveMagicVortex(vortex, event.Path)
+                                        }
+                                    case RemoteMagicVortexFinishedType:
+                                        event := event.(*RemoteMagicVortexFinishedEvent)
+                                        if event.VortexId == vortex.Id {
+                                            finished = true
+                                        }
+                                    // check for magic vortex finished event
+                                    default:
+                                        combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+                                }
+
+                            default:
+                        }
+                    }
+
+                    if yield() != nil {
+                        return
+                    }
+                }
             }
 
             vortex.Moved = true

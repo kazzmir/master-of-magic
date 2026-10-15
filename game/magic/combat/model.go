@@ -7573,6 +7573,43 @@ func (model *CombatModel) RemoteCreateMagicVortex(team Team, x int, y int) error
     return nil
 }
 
+func (model *CombatModel) RemoteMagicVortexFinished(vortex *MagicVortex) error {
+    if model.Remote != nil {
+        event := RemoteMagicVortexFinishedEvent{
+            Type: RemoteMagicVortexFinishedType,
+            VortexId: vortex.Id,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
+func (model *CombatModel) RemoteMoveMagicVortex(vortex *MagicVortex, path pathfinding.Path) error {
+    if model.Remote != nil {
+        event := RemoteMagicVortexMoveEvent{
+            Type: RemoteMagicVortexMoveType,
+            VortexId: vortex.Id,
+            Path: path,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+}
+
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {
     if model.Remote != nil {
         event := RemoteCurseUnitEvent{
@@ -8381,12 +8418,14 @@ func (target *WallTarget) GetY() int {
 }
 
 func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitActionsInterface, damageIndicators AddDamageIndicators, doMove bool, moveX int, moveY int) {
+    // this is when the player/ai chooses an explicit tile to move the vortex to
     if doMove {
         path := pathfinding.Path{
             image.Pt(moveX, moveY),
         }
 
         actions.MoveMagicVortex(vortex, path)
+        model.RemoteMoveMagicVortex(vortex, path)
         model.ApplyMagicVortexDamage(vortex, damageIndicators)
         return
     }
@@ -8394,6 +8433,7 @@ func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitAct
     lastX := -1
     lastY := -1
 
+    // otherwise let the vortex move randomly 3 times, but not back to the last position
     for range 3 {
         // move in one of the 4 cardinal directions
         choices := []image.Point{image.Pt(-1,0), image.Pt(1,0), image.Pt(0,-1), image.Pt(0,1)}
@@ -8427,6 +8467,7 @@ func (model *CombatModel) MoveMagicVortex(vortex *MagicVortex, actions AIUnitAct
         lastY = vortex.Y
 
         actions.MoveMagicVortex(vortex, path)
+        model.RemoteMoveMagicVortex(vortex, path)
 
         model.ApplyMagicVortexDamage(vortex, damageIndicators)
     }
