@@ -3100,6 +3100,7 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
                 // expect remote events until magic vortex finished arrives
                 finished := false
                 for !finished {
+                    combat.Counter += 1
                     combat.ProcessInput()
                     combat.UpdateDamageIndicators()
                     combat.UpdateAnimations()

@@ -8516,6 +8516,7 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
     }
 
     if model.InsideTown(vortex.X, vortex.Y) {
+        // TODO: remote
         model.CollateralDamage += 5
     }
 }
