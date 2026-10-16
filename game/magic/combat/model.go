@@ -6837,6 +6837,13 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
                 }
             }
 
+        case RemoteConfusionActionType:
+            event := event.(*RemoteConfusionActionEvent)
+            unit := model.GetUnitById(event.Id)
+            if unit != nil {
+                unit.ConfusionAction = event.Action
+            }
+
         case RemoteCurseUnitType:
             event := event.(*RemoteCurseUnitEvent)
 
