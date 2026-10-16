@@ -1618,7 +1618,7 @@ func (unit *ArmyUnit) GetMovementSpeed() fraction.Fraction {
     return fraction.Zero().Max(base.Add(modifier))
 }
 
-func (unit *ArmyUnit) ResetTurnData() {
+func (unit *ArmyUnit) ResetTurnData(model *CombatModel) {
     unit.MovesLeft = unit.GetMovementSpeed()
     unit.Paths = make(map[image.Point]pathfinding.Path)
     unit.Casted = false
@@ -1626,11 +1626,12 @@ func (unit *ArmyUnit) ResetTurnData() {
 
     unit.ConfusionAction = ConfusionActionNone
 
-    if unit.HasCurse(data.UnitCurseConfusion) {
+    if unit.HasCurse(data.UnitCurseConfusion) && model.IsLocalUnit(unit) {
         actions := []ConfusionAction{ConfusionActionDoNothing, ConfusionActionMoveRandomly, ConfusionActionEnemyControl, ConfusionActionNone}
         unit.ConfusionAction = actions[rand.N(len(actions))]
-    }
 
+        model.RemoteConfusionAction(unit, unit.ConfusionAction)
+    }
 }
 
 type DamageModifiers struct {
@@ -2716,7 +2717,7 @@ func (model *CombatModel) NextTurn() {
 
     /* reset movement */
     for _, unit := range slices.Clone(model.DefendingArmy.units) {
-        unit.ResetTurnData()
+        unit.ResetTurnData(model)
 
         if model.IsServer() {
 
@@ -2770,7 +2771,7 @@ func (model *CombatModel) NextTurn() {
             model.CollateralDamage += 1
         }
 
-        unit.ResetTurnData()
+        unit.ResetTurnData(model)
 
         if model.IsServer() {
 
@@ -4496,6 +4497,10 @@ func (model *CombatModel) IsServer() bool {
     }
 
     return true
+}
+
+func (model *CombatModel) IsLocalUnit(unit *ArmyUnit) bool {
+    return model.IsLocalTeam(unit.Team)
 }
 
 func (model *CombatModel) IsLocalTeam(team Team) bool {
@@ -6632,6 +6637,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                     path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
                     path = path[1:]
 
+                    model.RemoteMove(confusedUnit, path)
                     actions.MoveUnit(confusedUnit, path)
 
                     moved = true
@@ -6645,6 +6651,7 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
             }
         }
 
+        model.RemoteDoneTurn(model.SelectedUnit)
         model.DoneTurn()
 
         return
@@ -6735,8 +6742,8 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
             doAI(model, spellSystem, actions, aiUnit)
         }
 
-        aiUnit.LastTurn = model.CurrentTurn
-        model.NextUnit()
+        model.RemoteDoneTurn(aiUnit)
+        model.DoneTurn()
         return
     }
 
@@ -7611,6 +7618,26 @@ func (model *CombatModel) RemoteMoveMagicVortex(vortex *MagicVortex, path pathfi
     }
 
     return nil
+}
+
+func (model *CombatModel) RemoteConfusionAction(unit *ArmyUnit, action ConfusionAction) error {
+    if model.Remote != nil {
+        event := RemoteConfusionActionEvent{
+            Type: RemoteConfusionActionType,
+            Id: unit.Id,
+            Action: action,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+
 }
 
 func (model *CombatModel) RemoteCurse(unit *ArmyUnit, curse data.UnitEnchantment) error {

@@ -62,6 +62,7 @@ const (
     RemoteCreateMagicVortexType = "create_magic_vortex"
     RemoteMagicVortexMoveType = "magic_vortex_move"
     RemoteMagicVortexFinishedType = "magic_vortex_finished"
+    RemoteConfusionActionType = "confusion_action"
 )
 
 type RemoteWallKind int
@@ -266,6 +267,7 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteCreateMagicVortexType: return convert[*RemoteCreateMagicVortexEvent](data)
         case RemoteMagicVortexMoveType: return convert[*RemoteMagicVortexMoveEvent](data)
         case RemoteMagicVortexFinishedType: return convert[*RemoteMagicVortexFinishedEvent](data)
+        case RemoteConfusionActionType: return convert[*RemoteConfusionActionEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -729,5 +731,15 @@ type RemoteMagicVortexFinishedEvent struct {
 }
 
 func (remote *RemoteMagicVortexFinishedEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteConfusionActionEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Action ConfusionAction `json:"action"`
+}
+
+func (remote *RemoteConfusionActionEvent) GetType() string {
     return remote.Type
 }
