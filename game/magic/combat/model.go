@@ -6756,8 +6756,12 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
             doAI(model, spellSystem, actions, aiUnit)
         }
 
-        model.RemoteDoneTurn(aiUnit)
-        model.DoneTurn()
+        // the aiunit might have died by now
+        if aiUnit == model.SelectedUnit {
+            model.RemoteDoneTurn(aiUnit)
+            model.DoneTurn()
+        }
+
         return
     }
 

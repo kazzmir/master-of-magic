@@ -2339,6 +2339,80 @@ func (actions *confusedFireMovementActions) MoveUnit(unit *ArmyUnit, path pathfi
     actions.test.Fatal("Wall of Fire rolled zero damage on 100 consecutive crossings")
 }
 
+func TestAIUnitDeathDoesNotFinishNextUnitsTurn(test *testing.T) {
+    for _, team := range []Team{TeamAttacker, TeamDefender} {
+        name := "attacker"
+        if team == TeamDefender {
+            name = "defender"
+        }
+        test.Run(name, func(test *testing.T) {
+            aiArmy := &Army{Player: makeTestCombatPlayer(false)}
+            weak := units.LizardSpearmen
+            weak.Count = 1
+            weak.HitPoints = 1
+            weak.Defense = 0
+            weak.MeleeAttackPower = 1
+            weak.MovementSpeed = 2
+            aiUnit := aiArmy.AddUnit(units.MakeOverworldUnitFromUnit(weak, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+            next := aiArmy.AddUnit(units.MakeOverworldUnitFromUnit(weak, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+
+            enemyArmy := &Army{Player: makeTestCombatPlayer(true)}
+            strong := weak
+            strong.HitPoints = 100
+            strong.MeleeAttackPower = 100
+            // The enemy survives the opening attack and always hits on its
+            // counterattack, killing the one-HP AI unit without random retries.
+            enemy := enemyArmy.AddUnit(&OverrideToHitMelee{units.MakeOverworldUnitFromUnit(strong, 0, 0, data.PlaneArcanus, data.BannerBlue, &units.NoExperienceInfo{}, &units.NoEnchantments{})})
+            attackingArmy, defendingArmy := aiArmy, enemyArmy
+            if team == TeamDefender {
+                attackingArmy, defendingArmy = enemyArmy, aiArmy
+            }
+            model := MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
+            for _, unit := range []*ArmyUnit{aiUnit, next, enemy} {
+                model.setTileUnit(unit.X, unit.Y, nil)
+            }
+            aiUnit.X, aiUnit.Y = 10, 10
+            enemy.X, enemy.Y = 11, 10
+            next.X, next.Y = 8, 10
+            for _, unit := range []*ArmyUnit{aiUnit, next, enemy} {
+                model.setTileUnit(unit.X, unit.Y, unit)
+            }
+            model.Turn = team
+            model.SelectedUnit = aiUnit
+            initialTurn := model.CurrentTurn
+            nextLastTurn, nextMoves := next.LastTurn, next.MovesLeft
+            enemyLastTurn := enemy.LastTurn
+            if !model.IsAIControlled(aiUnit) || !model.canMeleeAttack(aiUnit, enemy, true) {
+                test.Fatal("Expected a locally controlled AI unit able to melee the adjacent enemy")
+            }
+
+            model.Update(&ProxySpellSystem{Model: model}, &ProxyActions{Model: model}, false, 0, 0)
+
+            if aiUnit.GetHealth() != 0 || model.GetUnitById(aiUnit.Id) != nil || aiArmy.GetKilledUnitById(aiUnit.Id) != aiUnit {
+                test.Fatal("Expected the acting AI unit to die to the melee counterattack")
+            }
+            if enemy.GetHealth() <= 0 || enemy.Attacked != 1 {
+                test.Error("Expected the adjacent enemy to survive one melee attack")
+            }
+            if model.GetUnit(10, 10) != nil {
+                test.Error("Dead AI unit still occupies its tile")
+            }
+            if model.SelectedUnit != next {
+                test.Error("AI unit's death skipped the next unit instead of leaving it selected")
+            }
+            if next.LastTurn != nextLastTurn || !next.MovesLeft.Equals(nextMoves) {
+                test.Error("DoneTurn consumed the next unit's turn or movement after the AI unit died")
+            }
+            if model.CurrentTurn != initialTurn || model.Turn != team {
+                test.Error("AI unit's death incorrectly advanced the army/round")
+            }
+            if enemy.LastTurn != enemyLastTurn {
+                test.Error("AI unit's death incorrectly consumed the enemy's turn")
+            }
+        })
+    }
+}
+
 func TestConfusedMovementDeathInWallOfFire(test *testing.T) {
     for _, team := range []Team{TeamAttacker, TeamDefender} {
         name := "attacker"
