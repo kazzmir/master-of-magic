@@ -6458,9 +6458,12 @@ func (model *CombatModel) doAiCast(spellSystem SpellSystem, army *Army) bool {
 
                 // try to cast this spell
                 model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
+                    mana := int(float64(spellCost) * army.Range.ToFloat())
                     army.ManaPool -= spellCost
-                    army.Player.UseMana(spellCost)
+                    army.Player.UseMana(mana)
                     army.Casted = true
+
+                    model.RemoteUseMana(army, spellCost, mana)
 
                     casted = true
 

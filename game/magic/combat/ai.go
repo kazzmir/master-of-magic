@@ -40,7 +40,9 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
                 casted := false
                 // try to cast this spell
                 // FIXME: what to do if the unit is confused?
+                // TODO: explain why nil is passed as the caster if the aiUnit is casting the spell
                 model.InvokeSpell(spellSystem, army, nil, spell, func(success bool){
+                    model.RemoteUnitCastSpell(aiUnit, spell)
                     casted = true
 
                     aiUnit.SpellCharges[spell] -= 1
@@ -53,6 +55,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
 
                 if casted {
                     aiUnit.MovesLeft = fraction.FromInt(0)
+                    model.RemoteUnitMovesLeft(aiUnit, aiUnit.MovesLeft)
                     aiActions.DoProjectiles()
                     return
                 }
@@ -77,6 +80,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
 
         for _, candidate := range candidates {
            if model.withinArrowRange(aiUnit, candidate) && model.canRangeAttack(aiUnit, candidate) {
+               model.RemoteRangeAttack(aiUnit, candidate)
                aiActions.RangeAttack(aiUnit, candidate)
                return
            }
@@ -85,6 +89,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
 
     for _, unit := range otherArmy.units {
         if model.withinMeleeRange(aiUnit, unit) && model.canMeleeAttack(aiUnit, unit, true) {
+            model.RemoteMeleeAttack(aiUnit, unit)
             aiActions.MeleeAttack(aiUnit, unit)
             return
         }
@@ -100,6 +105,7 @@ func doAI(model *CombatModel, spellSystem SpellSystem, aiActions AIUnitActionsIn
     if !moved {
         // didn't make a choice, just exhaust moves left
         aiUnit.MovesLeft = fraction.FromInt(0)
+        model.RemoteUnitMovesLeft(aiUnit, aiUnit.MovesLeft)
     }
 }
 
@@ -178,6 +184,7 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
                 cy := unit.Y + dy
 
                 if validSquare(cx, cy) {
+                    model.RemoteTeleport(aiUnit, cx, cy)
                     aiActions.Teleport(aiUnit, cx, cy, hasMerge)
                     return true
                 }
@@ -210,6 +217,7 @@ func doAIMovementTeleport(model *CombatModel, aiActions AIUnitActionsInterface, 
         }
 
         if found {
+            model.RemoteTeleport(aiUnit, bestX, bestY)
             aiActions.Teleport(aiUnit, bestX, bestY, hasMerge)
             return true
         }
@@ -294,6 +302,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
 
         // a path of length 2 contains the position of the aiUnit and the position of the enemy, so they are right next to each other
         if len(path) == 2 && model.canMeleeAttack(aiUnit, closestEnemy, true) {
+            model.RemoteMeleeAttack(aiUnit, closestEnemy)
             aiActions.MeleeAttack(aiUnit, closestEnemy)
             return true
         } else if len(path) > 2 && aiUnit.CanSee(closestEnemy) {
@@ -314,6 +323,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
             }
 
             if lastIndex >= 1 && lastIndex <= len(path) {
+                model.RemoteMove(aiUnit, path[1:lastIndex])
                 aiActions.MoveUnit(aiUnit, path[1:lastIndex])
                 return true
             }
@@ -327,6 +337,7 @@ func doAIMovementPathfinding(model *CombatModel, aiActions AIUnitActionsInterfac
         if gateX != -1 && gateY != -1 {
             path, ok := model.computePath(aiUnit.X, aiUnit.Y, gateX, gateY, aiUnit.CanTraverseWall(), aiUnit.IsFlying())
             if ok && len(path) > 1 && aiUnit.CanFollowPath(path, false) {
+                model.RemoteMove(aiUnit, path[1:])
                 aiActions.MoveUnit(aiUnit, path[1:])
                 return true
             }

@@ -1826,6 +1826,11 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             return
         }
 
+        // just disallow auto mode in multiplayer
+        if combat.Model.Remote != nil {
+            return
+        }
+
         if combat.ExtraControl {
             combat.Events <- &CombatDoSingleAuto{}
             return
