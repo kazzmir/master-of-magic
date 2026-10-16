@@ -1056,7 +1056,7 @@ func (combat *CombatScreen) CreatePetrifyProjectile(target *ArmyUnit, reduceResi
     images, _ := combat.ImageCache.GetImages("cmbtfx.lbx", 12)
     explodeImages := images
 
-    effect := combat.Model.CreatePetrifyProjectileEffect(reduceResistance)
+    effect := combat.Model.CreatePetrifyProjectileEffect(combat, reduceResistance)
 
     return combat.createUnitProjectile(target, explodeImages, UnitPositionMiddle, effect)
 }
@@ -1489,6 +1489,24 @@ func (combat *CombatScreen) IsSelectingSpell() bool {
     return combat.DoSelectUnit || combat.DoSelectTile
 }
 
+func (combat *CombatScreen) IsAttackerTurn() bool {
+    selected := combat.Model.SelectedUnit
+    if selected != nil {
+        return combat.Model.GetArmy(selected) == combat.Model.AttackingArmy
+    }
+
+    return false
+}
+
+func (combat *CombatScreen) IsDefenderTurn() bool {
+    selected := combat.Model.SelectedUnit
+    if selected != nil {
+        return combat.Model.GetArmy(selected) == combat.Model.DefendingArmy
+    }
+
+    return false
+}
+
 func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     var elements []*uilib.UIElement
 
@@ -1502,7 +1520,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.AttackingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true}, combat.Model.AttackingArmy.Player.GetWizard().Name)
+                var colorOptions ebiten.DrawImageOptions
+
+                if combat.IsAttackerTurn() {
+                    v := float32(1 + math.Sin(float64(ui.Counter) / 10.0) * 0.5 + 0.5)
+                    colorOptions.ColorScale.Scale(v, v, v, 1.0)
+                }
+
+                combat.Fonts.AttackingWizardFont.PrintOptions(screen, 280, 167, font.FontOptions{Justify: font.FontJustifyCenter, Scale: scale.ScaleAmount, DropShadow: true, Options: &colorOptions}, combat.Model.AttackingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(246, 179)
@@ -1529,7 +1554,14 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
             if combat.Model.DefendingArmy.Player == player && (combat.DoSelectUnit || combat.DoSelectTile) {
             } else {
-                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true}, combat.Model.DefendingArmy.Player.GetWizard().Name)
+                var colorOptions ebiten.DrawImageOptions
+
+                if combat.IsDefenderTurn() {
+                    v := float32(1 + math.Sin(float64(ui.Counter) / 10.0) * 0.5 + 0.5)
+                    colorOptions.ColorScale.Scale(v, v, v, 1.0)
+                }
+
+                combat.Fonts.DefendingWizardFont.PrintOptions(screen, 40, 167, font.FontOptions{Scale: scale.ScaleAmount, Justify: font.FontJustifyCenter, DropShadow: true, Options: &colorOptions}, combat.Model.DefendingArmy.Player.GetWizard().Name)
 
                 options.GeoM.Reset()
                 options.GeoM.Translate(float64(7), float64(179))
@@ -1645,6 +1677,10 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
     // spell
     spellPage := 0
     elements = append(elements, makeButton(1, 23, 0, 0, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
         // cannot cast if the player is selecting a unit/tile
         if combat.IsSelectingSpell() {
             return
@@ -1666,11 +1702,13 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
             spellUI := spellbook.MakeSpellBookCastUI(ui, combat.Cache, player.GetKnownSpells().CombatSpells(defendingCity), make(map[spellbook.Spell]int), minimumMana, spellbook.Spell{}, 0, false, player, &spellPage, func (spell spellbook.Spell, picked bool){
                 if picked {
                     // player mana and skill should go down accordingly
-                    combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), nil, spell, func(success bool){
+                    combat.Model.InvokeSpell(combat, army, nil, spell, func(success bool){
                         spellCost := player.ComputeEffectiveSpellCost(spell, false)
                         army.Casted = true
                         army.ManaPool -= spellCost
-                        player.UseMana(int(float64(spellCost) * army.Range.ToFloat()))
+                        mana := int(float64(spellCost) * army.Range.ToFloat())
+                        player.UseMana(mana)
+                        combat.Model.RemoteUseMana(army, spellCost, mana)
                         if success {
                             combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", player.GetWizard().Name, spell.Name))
                             combat.PlaySound(spell)
@@ -1702,23 +1740,16 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
                             doCast := func(spell spellbook.Spell){
                                 combat.Model.InvokeSpell(combat, combat.Model.GetArmyForPlayer(player), caster, spell, func(success bool){
-                                    charge, hasCharge := caster.SpellCharges[spell]
-                                    if hasCharge && charge > 0 {
-                                        caster.SpellCharges[spell] -= 1
-                                    } else {
-                                        // units pay the full cost of a spell with no modifiers
-                                        caster.CastingSkill -= float32(spell.Cost(false))
-                                    }
-                                    caster.Casted = true
+                                    combat.Model.RemoteUnitCastSpell(caster, spell)
+
                                     if success {
                                         combat.Model.AddLogEvent(fmt.Sprintf("%v casts %v", caster.Unit.GetName(), spell.Name))
                                         combat.PlaySound(spell)
+                                    } else {
+                                        combat.Model.RemoteSpellFailed(spell)
                                     }
-                                    caster.MovesLeft = fraction.FromInt(0)
-                                    select {
-                                        case combat.Events <- &CombatEventNextUnit{}:
-                                        default:
-                                    }
+
+                                    combat.Model.doUnitCast(caster, spell)
                                 })
                             }
 
@@ -1771,6 +1802,11 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // wait
     elements = append(elements, makeButton(2, 24, 1, 0, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
+        combat.Model.RemoteNextUnit(combat.Model.SelectedUnit)
         combat.Model.NextUnit()
     }))
 
@@ -1786,6 +1822,15 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // auto
     elements = append(elements, makeButton2(4, 26, 1, 1, func(){
+        if !combat.Model.InControl(player) {
+            return
+        }
+
+        // just disallow auto mode in multiplayer
+        if combat.Model.Remote != nil {
+            return
+        }
+
         if combat.ExtraControl {
             combat.Events <- &CombatDoSingleAuto{}
             return
@@ -1820,7 +1865,17 @@ func (combat *CombatScreen) MakeUI(player ArmyPlayer) *uilib.UI {
 
     // done
     elements = append(elements, makeButton(3, 28, 1, 2, func(){
-        combat.Model.DoneTurn()
+        if !combat.Model.InControl(player) {
+            return
+        }
+
+        selectedUnit := combat.Model.SelectedUnit
+
+        if selectedUnit != nil {
+            // FIXME: this call should be in the model, its ugly to reference the selected unit here
+            combat.Model.RemoteDoneTurn(selectedUnit)
+            combat.Model.DoneTurn()
+        }
     }))
 
     ui.SetElementsFromArray(elements)
@@ -1937,11 +1992,20 @@ func distanceAboveRange(x1 float64, y1 float64, x2 float64, y2 float64, r float6
 }
 
 func (combat *CombatScreen) doProjectiles(yield coroutine.YieldFunc) {
-    for combat.Model.UpdateProjectiles(combat.Counter) {
+    for combat.Model.UpdateProjectiles(combat.Counter, combat, combat) {
         combat.Counter += 1
         combat.ProcessInput()
         combat.UpdateDamageIndicators()
         combat.UpdateAnimations()
+
+        if combat.Model.Remote != nil {
+            select {
+                case event := <-combat.Model.Remote.Events:
+                    combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+                default:
+            }
+        }
+
         if yield() != nil {
             return
         }
@@ -2328,7 +2392,7 @@ func (combat *CombatScreen) doCastEnchantment(yield coroutine.YieldFunc, caster 
 func (combat *CombatScreen) ShowSummon(yield coroutine.YieldFunc, unit *ArmyUnit) {
     for unit.Height < 0 {
         // so that the summoning circle displays
-        combat.Model.UpdateProjectiles(combat.Counter)
+        combat.Model.UpdateProjectiles(combat.Counter, combat, combat)
         combat.Counter += 1
 
         if combat.Counter % 3 == 0 {
@@ -2727,6 +2791,7 @@ func (combat *CombatScreen) doMeleeWall(yield coroutine.YieldFunc, attacker *Arm
 }
 
 func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUnit, defender *ArmyUnit){
+    // this is what causes the attack animation to play
     attacker.Attacking = true
     defender.Defending = true
     defer func(){
@@ -2745,6 +2810,41 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
     combat.Model.AddLogEvent(fmt.Sprintf("%v attacks %v", attacker.Unit.GetName(), defender.Unit.GetName()))
 
+    if combat.Model.Remote != nil && combat.Model.IsRemoteUnit(attacker) {
+        done := false
+        for !done {
+            combat.Counter += 1
+            combat.UpdateAnimations()
+            combat.UpdateDamageIndicators()
+            combat.ProcessInput()
+            combat.ProcessEvents(yield) // ignore return
+            if yield() != nil {
+                break
+            }
+
+            select {
+                case event := <-combat.Model.Remote.Events:
+                    // FIXME: this is redundant with the event switch in model.UpdateProjectiles()
+                    switch event.GetType() {
+                        case RemoteDamageIndicatorType:
+                            event := event.(*RemoteDamageIndicatorEvent)
+                            unit := combat.Model.GetUnitById(event.Id)
+                            if unit != nil {
+                                combat.AddDamageIndicator(unit, event.Damage)
+                            }
+                        case RemoteFinishMeleeAttackType:
+                            done = true
+                        default:
+                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+
+                    }
+                default:
+            }
+        }
+
+        return
+    }
+
     for i := range 60 {
         combat.Counter += 1
         combat.UpdateAnimations()
@@ -2758,12 +2858,17 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
 
             combat.AddDamageIndicator(defender, attackerDamage)
             combat.AddDamageIndicator(attacker, defenderDamage)
+
+            combat.Model.RemoteDamageIndicator(defender, attackerDamage)
+            combat.Model.RemoteDamageIndicator(attacker, defenderDamage)
         }
 
         if yield() != nil {
-            return
+            break
         }
     }
+
+    combat.Model.RemoteFinishMeleeAttack()
 }
 
 func (combat *CombatScreen) AddDamageIndicator(unit *ArmyUnit, damage int) {
@@ -2973,21 +3078,65 @@ func (combat *CombatScreen) UpdateMagicVortexes(yield coroutine.YieldFunc, actio
     selectedUnit := combat.Model.SelectedUnit
     combat.Model.SelectedUnit = nil
     defer func(){
+        // FIXME: the selected unit could have been killed here while moving the vortex
+        // check if it is still alive before restoring it?
         combat.Model.SelectedUnit = selectedUnit
     }()
 
     for _, vortex := range combat.Model.MagicVortexes {
         if !vortex.Moved {
-            combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
 
-            army := combat.Model.GetArmyForTeam(vortex.Team)
+            if combat.Model.IsLocalTeam(vortex.Team) {
+                combat.Model.MoveMagicVortex(vortex, actions, combat, false, 0, 0)
 
-            // FIXME: consider letting AI direct the magic vortex towards an enemy
-            // only prompt for manual movement if this army is human-controlled; AI
-            // (including watch mode, where the player's army is AI) moves randomly.
-            if !army.IsAI() {
-                x, y := combat.GetMagicVortexMoveTile(yield, vortex)
-                combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
+                army := combat.Model.GetArmyForTeam(vortex.Team)
+
+                // FIXME: consider letting AI direct the magic vortex towards an enemy
+                // only prompt for manual movement if this army is human-controlled; AI
+                // (including watch mode, where the player's army is AI) moves randomly.
+                if !army.IsAI() {
+                    x, y := combat.GetMagicVortexMoveTile(yield, vortex)
+                    combat.Model.MoveMagicVortex(vortex, actions, combat, true, x, y)
+                }
+
+                combat.Model.RemoteMagicVortexFinished(vortex)
+            } else {
+
+                // expect remote events until magic vortex finished arrives
+                finished := false
+                for !finished {
+                    combat.Counter += 1
+                    combat.ProcessInput()
+                    combat.UpdateDamageIndicators()
+                    combat.UpdateAnimations()
+
+                    if combat.Model.Remote != nil {
+                        select {
+                            case event := <-combat.Model.Remote.Events:
+                                switch event.GetType() {
+                                    case RemoteMagicVortexMoveType:
+                                        event := event.(*RemoteMagicVortexMoveEvent)
+                                        if event.VortexId == vortex.Id {
+                                            actions.MoveMagicVortex(vortex, event.Path)
+                                        }
+                                    case RemoteMagicVortexFinishedType:
+                                        event := event.(*RemoteMagicVortexFinishedEvent)
+                                        if event.VortexId == vortex.Id {
+                                            finished = true
+                                        }
+                                    // check for magic vortex finished event
+                                    default:
+                                        combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+                                }
+
+                            default:
+                        }
+                    }
+
+                    if yield() != nil {
+                        return
+                    }
+                }
             }
 
             vortex.Moved = true
@@ -3023,7 +3172,7 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     updates := combat.ProcessEvents(yield)
 
-    if len(combat.Model.Projectiles) > 0 {
+    if len(combat.Model.Projectiles) > 0 || combat.Model.RemoteProjectiles > 0 {
         combat.doProjectiles(yield)
     }
 

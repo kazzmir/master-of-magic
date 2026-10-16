@@ -13,6 +13,62 @@ import (
 
 type TestSpellSystem struct {
     createFireballProjectile func(target *ArmyUnit, cost int) *Projectile
+    createIceBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createStarFiresProjectile func(target *ArmyUnit) *Projectile
+    createPsionicBlastProjectile func(target *ArmyUnit, cost int) *Projectile
+    createDoomBoltProjectile func(target *ArmyUnit) *Projectile
+    createFireBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createLightningBoltProjectile func(target *ArmyUnit, cost int) *Projectile
+    createWarpLightningProjectile func(target *ArmyUnit) *Projectile
+    createLifeDrainProjectile func(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile
+    createDispelEvilProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createHealingProjectile func(target *ArmyUnit) *Projectile
+    createCracksCallProjectile func(target *ArmyUnit) *Projectile
+    createWebProjectile func(target *ArmyUnit) *Projectile
+    createBanishProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createDispelMagicProjectile func(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile
+    createDisintegrateProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createWarpWoodProjectile func(target *ArmyUnit) *Projectile
+    createWordOfDeathProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createCreatureBindingProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createMindStormProjectile func(target *ArmyUnit) *Projectile
+    createBlessProjectile func(target *ArmyUnit) *Projectile
+    createWeaknessProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createBlackSleepProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createVertigoProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createShatterProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createWarpCreatureProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createConfusionProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createPossessionProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createPetrifyProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createHeroismProjectile func(target *ArmyUnit) *Projectile
+    createHolyArmorProjectile func(target *ArmyUnit) *Projectile
+    createHolyWeaponProjectile func(target *ArmyUnit) *Projectile
+    createInvulnerabilityProjectile func(target *ArmyUnit) *Projectile
+    createLionHeartProjectile func(target *ArmyUnit) *Projectile
+    createRighteousnessProjectile func(target *ArmyUnit) *Projectile
+    createTrueSightProjectile func(target *ArmyUnit) *Projectile
+    createElementalArmorProjectile func(target *ArmyUnit) *Projectile
+    createGiantStrengthProjectile func(target *ArmyUnit) *Projectile
+    createIronSkinProjectile func(target *ArmyUnit) *Projectile
+    createRegenerationProjectile func(target *ArmyUnit) *Projectile
+    createResistElementsProjectile func(target *ArmyUnit) *Projectile
+    createStoneSkinProjectile func(target *ArmyUnit) *Projectile
+    createFlightProjectile func(target *ArmyUnit) *Projectile
+    createGuardianWindProjectile func(target *ArmyUnit) *Projectile
+    createHasteProjectile func(target *ArmyUnit) *Projectile
+    createInvisibilityProjectile func(target *ArmyUnit) *Projectile
+    createMagicImmunityProjectile func(target *ArmyUnit) *Projectile
+    createResistMagicProjectile func(target *ArmyUnit) *Projectile
+    createSpellLockProjectile func(target *ArmyUnit) *Projectile
+    createEldritchWeaponProjectile func(target *ArmyUnit) *Projectile
+    createFlameBladeProjectile func(target *ArmyUnit) *Projectile
+    createImmolationProjectile func(target *ArmyUnit) *Projectile
+    createBerserkProjectile func(target *ArmyUnit) *Projectile
+    createCloakOfFearProjectile func(target *ArmyUnit) *Projectile
+    createWraithFormProjectile func(target *ArmyUnit) *Projectile
+    createDeathSpellProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
+    createHolyWordProjectile func(target *ArmyUnit, reduceResistance int) *Projectile
 }
 
 func (system *TestSpellSystem) PlaySound(spell spellbook.Spell) {
@@ -27,60 +83,111 @@ func (system *TestSpellSystem) CreateFireballProjectile(target *ArmyUnit, cost i
 }
 
 func (system *TestSpellSystem) CreateIceBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createIceBoltProjectile != nil {
+        return system.createIceBoltProjectile(target, cost)
+    }
+
     return nil
 }
 func (system *TestSpellSystem) CreateStarFiresProjectile(target *ArmyUnit) *Projectile {
+    if system.createStarFiresProjectile != nil {
+        return system.createStarFiresProjectile(target)
+    }
+
     return nil
 }
 func (system *TestSpellSystem) CreatePsionicBlastProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createPsionicBlastProjectile != nil {
+        return system.createPsionicBlastProjectile(target, cost)
+    }
     return nil
 }
+
 func (system *TestSpellSystem) CreateDoomBoltProjectile(target *ArmyUnit) *Projectile {
+    if system.createDoomBoltProjectile != nil {
+        return system.createDoomBoltProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateFireBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createFireBoltProjectile != nil {
+        return system.createFireBoltProjectile(target, cost)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateLightningBoltProjectile(target *ArmyUnit, cost int) *Projectile {
+    if system.createLightningBoltProjectile != nil {
+        return system.createLightningBoltProjectile(target, cost)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWarpLightningProjectile(target *ArmyUnit) *Projectile {
+    if system.createWarpLightningProjectile != nil {
+        return system.createWarpLightningProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateFlameStrikeProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateLifeDrainProjectile(target *ArmyUnit, reduceResistance int, player ArmyPlayer, unitCaster *ArmyUnit) *Projectile {
+    if system.createLifeDrainProjectile != nil {
+        return system.createLifeDrainProjectile(target, reduceResistance, player, unitCaster)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDispelEvilProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createDispelEvilProjectile != nil {
+        return system.createDispelEvilProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateHealingProjectile(target *ArmyUnit) *Projectile {
+    if system.createHealingProjectile != nil {
+        return system.createHealingProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateHolyWordProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createHolyWordProjectile != nil {
+        return system.createHolyWordProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateRecallHeroProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateCracksCallProjectile(target *ArmyUnit) *Projectile {
+    if system.createCracksCallProjectile != nil {
+        return system.createCracksCallProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWebProjectile(target *ArmyUnit) *Projectile {
+    if system.createWebProjectile != nil {
+        return system.createWebProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateBanishProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createBanishProjectile != nil {
+        return system.createBanishProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDispelMagicProjectile(target *ArmyUnit, caster ArmyPlayer, dispelStrength int) *Projectile {
+    if system.createDispelMagicProjectile != nil {
+        return system.createDispelMagicProjectile(target, caster, dispelStrength)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWordOfRecallProjectile(target *ArmyUnit) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateDisintegrateProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createDisintegrateProjectile != nil {
+        return system.createDisintegrateProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDisruptProjectile(x int, y int) *Projectile {
@@ -90,56 +197,98 @@ func (system *TestSpellSystem) CreateMagicVortex(team Team, x int, y int) *Magic
     return nil
 }
 func (system *TestSpellSystem) CreateWarpWoodProjectile(target *ArmyUnit) *Projectile {
+    if system.createWarpWoodProjectile != nil {
+        return system.createWarpWoodProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateDeathSpellProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createDeathSpellProjectile != nil {
+        return system.createDeathSpellProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWordOfDeathProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createWordOfDeathProjectile != nil {
+        return system.createWordOfDeathProjectile(target, reduceResistance)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateSummoningCircle(x int, y int) *Projectile {
     return nil
 }
 func (system *TestSpellSystem) CreateMindStormProjectile(target *ArmyUnit) *Projectile {
+    if system.createMindStormProjectile != nil {
+        return system.createMindStormProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateBlessProjectile(target *ArmyUnit) *Projectile {
+    if system.createBlessProjectile != nil {
+        return system.createBlessProjectile(target)
+    }
     return nil
 }
 func (system *TestSpellSystem) CreateWeaknessProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createWeaknessProjectile != nil {
+        return system.createWeaknessProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateBlackSleepProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createBlackSleepProjectile != nil {
+        return system.createBlackSleepProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateVertigoProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createVertigoProjectile != nil {
+        return system.createVertigoProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateShatterProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createShatterProjectile != nil {
+        return system.createShatterProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateWarpCreatureProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createWarpCreatureProjectile != nil {
+        return system.createWarpCreatureProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateConfusionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createConfusionProjectile != nil {
+        return system.createConfusionProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreatePossessionProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createPossessionProjectile != nil {
+        return system.createPossessionProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createCreatureBindingProjectile != nil {
+        return system.createCreatureBindingProjectile(target, reduceResistance)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
+    if system.createPetrifyProjectile != nil {
+        return system.createPetrifyProjectile(target, reduceResistance)
+    }
     return nil
 }
 
@@ -148,106 +297,184 @@ func (system *TestSpellSystem) CreateChaosChannelsProjectile(target *ArmyUnit) *
 }
 
 func (system *TestSpellSystem) CreateHeroismProjectile(target *ArmyUnit) *Projectile {
+    if system.createHeroismProjectile != nil {
+        return system.createHeroismProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateHolyArmorProjectile(target *ArmyUnit) *Projectile {
+    if system.createHolyArmorProjectile != nil {
+        return system.createHolyArmorProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateHolyWeaponProjectile(target *ArmyUnit) *Projectile {
+    if system.createHolyWeaponProjectile != nil {
+        return system.createHolyWeaponProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateInvulnerabilityProjectile(target *ArmyUnit) *Projectile {
+    if system.createInvulnerabilityProjectile != nil {
+        return system.createInvulnerabilityProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateLionHeartProjectile(target *ArmyUnit) *Projectile {
+    if system.createLionHeartProjectile != nil {
+        return system.createLionHeartProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateRighteousnessProjectile(target *ArmyUnit) *Projectile {
+    if system.createRighteousnessProjectile != nil {
+        return system.createRighteousnessProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateTrueSightProjectile(target *ArmyUnit) *Projectile {
+    if system.createTrueSightProjectile != nil {
+        return system.createTrueSightProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateElementalArmorProjectile(target *ArmyUnit) *Projectile {
+    if system.createElementalArmorProjectile != nil {
+        return system.createElementalArmorProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateGiantStrengthProjectile(target *ArmyUnit) *Projectile {
+    if system.createGiantStrengthProjectile != nil {
+        return system.createGiantStrengthProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateIronSkinProjectile(target *ArmyUnit) *Projectile {
+    if system.createIronSkinProjectile != nil {
+        return system.createIronSkinProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateStoneSkinProjectile(target *ArmyUnit) *Projectile {
+    if system.createStoneSkinProjectile != nil {
+        return system.createStoneSkinProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateRegenerationProjectile(target *ArmyUnit) *Projectile {
+    if system.createRegenerationProjectile != nil {
+        return system.createRegenerationProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateResistElementsProjectile(target *ArmyUnit) *Projectile {
+    if system.createResistElementsProjectile != nil {
+        return system.createResistElementsProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateFlightProjectile(target *ArmyUnit) *Projectile {
+    if system.createFlightProjectile != nil {
+        return system.createFlightProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateGuardianWindProjectile(target *ArmyUnit) *Projectile {
+    if system.createGuardianWindProjectile != nil {
+        return system.createGuardianWindProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateHasteProjectile(target *ArmyUnit) *Projectile {
+    if system.createHasteProjectile != nil {
+        return system.createHasteProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateInvisibilityProjectile(target *ArmyUnit) *Projectile {
+    if system.createInvisibilityProjectile != nil {
+        return system.createInvisibilityProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateMagicImmunityProjectile(target *ArmyUnit) *Projectile {
+    if system.createMagicImmunityProjectile != nil {
+        return system.createMagicImmunityProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateResistMagicProjectile(target *ArmyUnit) *Projectile {
+    if system.createResistMagicProjectile != nil {
+        return system.createResistMagicProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateSpellLockProjectile(target *ArmyUnit) *Projectile {
+    if system.createSpellLockProjectile != nil {
+        return system.createSpellLockProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateEldritchWeaponProjectile(target *ArmyUnit) *Projectile {
+    if system.createEldritchWeaponProjectile != nil {
+        return system.createEldritchWeaponProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateFlameBladeProjectile(target *ArmyUnit) *Projectile {
+    if system.createFlameBladeProjectile != nil {
+        return system.createFlameBladeProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateImmolationProjectile(target *ArmyUnit) *Projectile {
+    if system.createImmolationProjectile != nil {
+        return system.createImmolationProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateBerserkProjectile(target *ArmyUnit) *Projectile {
+    if system.createBerserkProjectile != nil {
+        return system.createBerserkProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateCloakOfFearProjectile(target *ArmyUnit) *Projectile {
+    if system.createCloakOfFearProjectile != nil {
+        return system.createCloakOfFearProjectile(target)
+    }
     return nil
 }
 
 func (system *TestSpellSystem) CreateWraithFormProjectile(target *ArmyUnit) *Projectile {
+    if system.createWraithFormProjectile != nil {
+        return system.createWraithFormProjectile(target)
+    }
     return nil
 }
 
@@ -303,7 +530,7 @@ func TestFireballSpell(test *testing.T){
                 test.Errorf("Expected the defender to be targeted")
             }
 
-            return nil
+            return &Projectile{}
         },
     }
 

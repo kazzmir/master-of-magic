@@ -74,7 +74,7 @@ func RunCombat1(allSpells spellbook.Spells) {
         defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.BeastmenPriest, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
     }
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
 
     start := time.Now()
     state := combat.Run(model)
@@ -126,7 +126,7 @@ func RunCombat2(allSpells spellbook.Spells) {
         log.Printf("Defender: %v %v", unit.Unit.GetRace(), unit.Unit.GetName())
     }
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
 
     start := time.Now()
     state := combat.Run(model)
@@ -158,7 +158,7 @@ func RunCombat3(allSpells spellbook.Spells) {
 
     defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.OrcSpearmen, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
 
     start := time.Now()
     state := combat.Run(model)
@@ -194,7 +194,7 @@ func runBattle(allSpells spellbook.Spells, attacker units.Unit, defender units.U
         defendingArmy.AddUnit(units.MakeOverworldUnitFromUnit(defender, 1, 1, data.PlaneArcanus, defendingPlayer.Wizard.Banner, defendingPlayer.MakeExperienceInfo(), defendingPlayer.MakeUnitEnchantmentProvider()))
     }
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
 
     return combat.Run(model)
 }

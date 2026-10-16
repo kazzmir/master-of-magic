@@ -1,0 +1,745 @@
+package combat
+
+import (
+    "log"
+    "time"
+    "net"
+    "io"
+    "errors"
+    "bytes"
+    "context"
+    "encoding/binary"
+    "encoding/json/v2"
+
+    "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/lib/fraction"
+)
+
+const (
+    RemoteTeleportType = "teleport"
+    RemoteMoveType     = "move"
+    RemoteRangeAttackType = "range_attack"
+    RemoteProjectileFinishedType = "projectile_finished"
+    RemoteDamageType = "damage"
+    RemoteDamageIndicatorType = "damage_indicator"
+    RemoteMeleeAttackType = "melee_attack"
+    RemoteDoneTurnType = "done_turn"
+    RemoteFinishMeleeAttackType = "melee_finished"
+    RemoteHealType = "heal"
+    RemoteKillUnitType = "kill_unit"
+    RemoteRemoveUnitType = "remove_unit"
+    RemoteUnitTargetSpellType = "unit_target_spell"
+    RemoteUnitCastSpellType = "unit_cast_spell"
+    RemoteSpellFailedType = "spell_failed"
+    RemoteArmyType = "army"
+    RemoteCurseUnitType = "curse_unit"
+    RemoteRemoveUnitEnchantmentType = "remove_unit_enchantment"
+    RemoteRemoveUnitCurseType = "remove_unit_curse"
+    RemoteSwitchTeamsType = "switch_teams"
+    RemoteSetRangedAttacksType = "set_ranged_attacks"
+    RemoteEnchantmentUnitType = "enchantment_unit"
+    RemoteCreateWallType = "wall"
+    RemoteTileTargetSpellType = "tile_target_spell"
+    RemoteDestroyWallType = "destroy_wall"
+    RemoteSummonUnitType = "summon_unit"
+    RemoteSummoningCircleType = "summoning_circle"
+    RemoteGlobalSpellType = "global_spell"
+    RemoteRemoveArmyEnchantmentType = "remove_army_enchantment"
+    RemoteAddArmyEnchantmentType = "add_army_enchantment"
+    RemoteCounterMagicType = "counter_magic"
+    RemoteRaiseDeadUnitType = "raise_dead_unit"
+    RemoteCreateLightningBoltType = "create_lightning_bolt"
+    RemoteAnimateDeadUnitType = "animate_dead_unit"
+    RemoteManaPoolType = "mana_pool"
+    RemoteRangeAttackWallType = "range_attack_wall"
+    RemoteMeleeAttackWallType = "melee_attack_wall"
+    RemoteUnitCastSkillType = "unit_cast_skill"
+    RemoteUnitMovesLeftType = "unit_moves_left"
+    RemoteUseManaType = "use_mana"
+    RemoteNextUnitType = "next_unit"
+    RemoteCreateMagicVortexType = "create_magic_vortex"
+    RemoteMagicVortexMoveType = "magic_vortex_move"
+    RemoteMagicVortexFinishedType = "magic_vortex_finished"
+    RemoteConfusionActionType = "confusion_action"
+)
+
+type RemoteWallKind int
+const (
+    RemoteWallFire RemoteWallKind = iota
+    RemoteWallDarkness
+)
+
+type Remote struct {
+    // true if the remote side is the server side that will handle combat logic (random numbers)
+    IsServer bool
+    // true if remote side is attacker. false if defender
+    Attacker bool
+    Peer     net.Conn
+
+    Events chan RemoteEvent
+}
+
+func MakeRemote(isServer bool, isAttacker bool, peer net.Conn) *Remote {
+    return &Remote{
+        IsServer: isServer,
+        Attacker: isAttacker,
+        Peer:     peer,
+        Events:   make(chan RemoteEvent, 100),
+    }
+}
+
+type RemoteEvent interface {
+    GetType() string
+}
+
+var ErrorEmptyType = errors.New("event type is empty")
+
+// event should be some event type from below
+func (remote *Remote) SendEvent(event RemoteEvent) error {
+    if event.GetType() == "" {
+        log.Printf("Error: event type is empty")
+        return ErrorEmptyType
+    }
+
+    var out bytes.Buffer
+    err := json.MarshalWrite(&out, event)
+    if err != nil {
+        return err
+    }
+
+    // write 4-byte uint32 of json data
+    size := uint32(out.Len())
+    err = binary.Write(remote.Peer, binary.BigEndian, size)
+    if err != nil {
+        return err
+    }
+
+    // write json data
+    _, err = remote.Peer.Write(out.Bytes())
+
+    log.Printf("Sent json data: %s", out.String())
+    return err
+}
+
+type RateLimiter struct {
+    WindowSize time.Duration
+    MaxEvents int
+    count int
+    windowStart time.Time
+}
+
+func (limiter *RateLimiter) AddAndLimit(quit context.Context) {
+    limiter.count += 1
+    if time.Now().Sub(limiter.windowStart) > limiter.WindowSize {
+        limiter.windowStart = time.Now()
+        limiter.count = 1
+    }
+
+    if limiter.count > limiter.MaxEvents {
+        select {
+            case <-quit.Done():
+            // sleep for the duration of the window
+            case <-time.After(limiter.WindowSize - time.Now().Sub(limiter.windowStart)):
+        }
+    }
+}
+
+// caller should run this in a goroutine
+func (remote *Remote) RunReceiveLoop(quit context.Context) {
+
+    defer remote.Peer.SetReadDeadline(time.Time{}) // clear read deadline on exit
+
+    limiter := RateLimiter{
+        WindowSize: 1 * time.Second,
+        MaxEvents: 300,
+    }
+
+    for quit.Err() == nil {
+        done := make(chan struct{})
+        go func() {
+            select {
+                case <-quit.Done():
+                    // force read to error
+                    remote.Peer.SetReadDeadline(time.Now())
+                case <-done:
+            }
+        }()
+
+        event, err := remote.ReceiveEvent()
+        close(done)
+
+        if quit.Err() != nil {
+            return
+        }
+
+        if err != nil {
+            log.Printf("Error receiving event: %v", err)
+            return
+        }
+
+        if event == nil {
+            log.Printf("Received nil event")
+            return
+        }
+
+        remote.Events <- event
+
+        limiter.AddAndLimit(quit)
+    }
+}
+
+func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
+    // read 4-byte uint32
+
+    var size uint32
+    err := binary.Read(remote.Peer, binary.BigEndian, &size)
+    if err != nil {
+        return nil, err
+    }
+
+    // read json data
+    data := make([]byte, size)
+    _, err = io.ReadFull(remote.Peer, data)
+    if err != nil {
+        return nil, err
+    }
+
+    log.Printf("Received json data: %s", string(data))
+
+    // unmarshal into a map to get the type
+    var m map[string]any
+    err = json.Unmarshal(data, &m)
+    if err != nil {
+        return nil, err
+    }
+
+    // check type
+    eventType, ok := m["type"].(string)
+    if !ok {
+        log.Printf("Error: event type is not a string")
+        return nil, err
+    }
+
+    switch eventType {
+        case RemoteTeleportType: return convert[*RemoteTeleportEvent](data)
+        case RemoteRangeAttackType: return convert[*RemoteRangeAttackEvent](data)
+        case RemoteMoveType: return convert[*RemoteMoveEvent](data)
+        case RemoteProjectileFinishedType: return convert[*RemoteProjectileFinishedEvent](data)
+        case RemoteDamageType: return convert[*RemoteDamageEvent](data)
+        case RemoteDamageIndicatorType: return convert[*RemoteDamageIndicatorEvent](data)
+        case RemoteMeleeAttackType: return convert[*RemoteMeleeAttackEvent](data)
+        case RemoteDoneTurnType: return convert[*RemoteDoneTurnEvent](data)
+        case RemoteFinishMeleeAttackType: return convert[*RemoteFinishMeleeAttackEvent](data)
+        case RemoteHealType: return convert[*RemoteHealEvent](data)
+        case RemoteKillUnitType: return convert[*RemoteKillUnitEvent](data)
+        case RemoteRemoveUnitType: return convert[*RemoteRemoveUnitEvent](data)
+        case RemoteUnitTargetSpellType: return convert[*RemoteUnitTargetSpellEvent](data)
+        case RemoteUnitCastSpellType: return convert[*RemoteUnitCastSpellEvent](data)
+        case RemoteSpellFailedType: return convert[*RemoteSpellFailedEvent](data)
+        case RemoteArmyType: return convert[*RemoteArmyEvent](data)
+        case RemoteCurseUnitType: return convert[*RemoteCurseUnitEvent](data)
+        case RemoteEnchantmentUnitType: return convert[*RemoteEnchantmentUnitEvent](data)
+        case RemoteRemoveUnitEnchantmentType: return convert[*RemoteRemoveUnitEnchantmentEvent](data)
+        case RemoteRemoveUnitCurseType: return convert[*RemoteRemoveUnitCurseEvent](data)
+        case RemoteSwitchTeamsType: return convert[*RemoteSwitchTeamsEvent](data)
+        case RemoteSetRangedAttacksType: return convert[*RemoteSetRangedAttacksEvent](data)
+        case RemoteCreateWallType: return convert[*RemoteCreateWallEvent](data)
+        case RemoteTileTargetSpellType: return convert[*RemoteTileTargetSpellEvent](data)
+        case RemoteDestroyWallType: return convert[*RemoteDestroyWallEvent](data)
+        case RemoteSummonUnitType: return convert[*RemoteSummonUnitEvent](data)
+        case RemoteSummoningCircleType: return convert[*RemoteSummoningCircleEvent](data)
+        case RemoteGlobalSpellType: return convert[*RemoteGlobalSpellEvent](data)
+        case RemoteRemoveArmyEnchantmentType: return convert[*RemoteRemoveArmyEnchantmentEvent](data)
+        case RemoteAddArmyEnchantmentType: return convert[*RemoteAddArmyEnchantmentEvent](data)
+        case RemoteCounterMagicType: return convert[*RemoteCounterMagicEvent](data)
+        case RemoteRaiseDeadUnitType: return convert[*RemoteRaiseDeadUnitEvent](data)
+        case RemoteCreateLightningBoltType: return convert[*RemoteCreateLightningBoltEvent](data)
+        case RemoteAnimateDeadUnitType: return convert[*RemoteAnimateDeadUnitEvent](data)
+        case RemoteManaPoolType: return convert[*RemoteManaPoolEvent](data)
+        case RemoteRangeAttackWallType: return convert[*RemoteRangeAttackWallEvent](data)
+        case RemoteMeleeAttackWallType: return convert[*RemoteMeleeAttackWallEvent](data)
+        case RemoteUnitCastSkillType: return convert[*RemoteUnitCastSkillEvent](data)
+        case RemoteUnitMovesLeftType: return convert[*RemoteUnitMovesLeftEvent](data)
+        case RemoteUseManaType: return convert[*RemoteUseManaEvent](data)
+        case RemoteNextUnitType: return convert[*RemoteNextUnitEvent](data)
+        case RemoteCreateMagicVortexType: return convert[*RemoteCreateMagicVortexEvent](data)
+        case RemoteMagicVortexMoveType: return convert[*RemoteMagicVortexMoveEvent](data)
+        case RemoteMagicVortexFinishedType: return convert[*RemoteMagicVortexFinishedEvent](data)
+        case RemoteConfusionActionType: return convert[*RemoteConfusionActionEvent](data)
+        default:
+            log.Printf("Error: unknown event type: %s", eventType)
+            return nil, err
+    }
+}
+
+func convert[T RemoteEvent](data []byte) (RemoteEvent, error) {
+    var event T
+    err := json.Unmarshal(data, &event)
+    if err != nil {
+        return nil, err
+    }
+    return event, nil
+}
+
+// sent when a unit teleports to a location
+type RemoteTeleportEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    X int    `json:"x"`
+    Y int    `json:"y"`
+}
+
+func (remote *RemoteTeleportEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteProjectileFinishedEvent struct {
+    Type string `json:"type"`
+}
+
+func (remote *RemoteProjectileFinishedEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRangeAttackEvent struct {
+    AttackerId uint64 `json:"attacker_id"`
+    DefenderId uint64 `json:"defender_id"`
+    Type string `json:"type"`
+}
+
+func (remote *RemoteRangeAttackEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMoveEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Path pathfinding.Path `json:"path"`
+}
+
+func (remote *RemoteMoveEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDamageEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    DamageKind DamageType `json:"damage_kind"`
+    Damage int `json:"damage"`
+}
+
+func (remote *RemoteDamageEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDamageIndicatorEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Damage int `json:"damage"`
+}
+
+func (remote *RemoteDamageIndicatorEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMeleeAttackEvent struct {
+    Type string `json:"type"`
+    AttackerId uint64 `json:"attacker_id"`
+    DefenderId uint64 `json:"defender_id"`
+}
+
+func (remote *RemoteMeleeAttackEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDoneTurnEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteDoneTurnEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteFinishMeleeAttackEvent struct {
+    Type string `json:"type"`
+}
+
+func (remote *RemoteFinishMeleeAttackEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteHealEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Heal int `json:"heal"`
+}
+
+func (remote *RemoteHealEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteKillUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteKillUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteRemoveUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitTargetSpellEvent struct {
+    TargetId uint64 `json:"target_id"`
+    Type string `json:"type"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
+    CasterId uint64 `json:"caster_id"`
+    ArmyId uint64 `json:"army_id"`
+}
+
+func (remote *RemoteUnitTargetSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitCastSpellEvent struct {
+    Id uint64 `json:"id"`
+    Type string `json:"type"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
+}
+
+func (remote *RemoteUnitCastSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSpellFailedEvent struct {
+    Type string `json:"type"`
+    Spell string `json:"spell"`
+    OverrideCost int `json:"override_cost"`
+}
+
+func (remote *RemoteSpellFailedEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteArmyEvent struct {
+    Type string `json:"type"`
+    Team Team `json:"team"`
+    Units []RemoteUnit `json:"units"`
+}
+
+func (remote *RemoteArmyEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnit struct {
+    UnitId units.UnitId `json:"unit_id"`
+}
+
+type RemoteCurseUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Curse data.UnitEnchantment `json:"curse"`
+}
+
+func (remote *RemoteCurseUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitEnchantmentEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Enchantment data.UnitEnchantment `json:"enchantment"`
+}
+
+func (remote *RemoteRemoveUnitEnchantmentEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveUnitCurseEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Curse data.UnitEnchantment `json:"curse"`
+}
+
+func (remote *RemoteRemoveUnitCurseEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSwitchTeamsEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteSwitchTeamsEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSetRangedAttacksEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Attacks int `json:"attacks"`
+}
+
+func (remote *RemoteSetRangedAttacksEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteEnchantmentUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Enchantment data.UnitEnchantment `json:"enchantment"`
+}
+
+func (remote *RemoteEnchantmentUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCreateWallEvent struct {
+    Type string `json:"type"`
+    Kind RemoteWallKind `json:"kind"`
+}
+
+func (remote *RemoteCreateWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteTileTargetSpellEvent struct {
+    Type string `json:"type"`
+    X int `json:"x"`
+    Y int `json:"y"`
+    Spell string `json:"spell"`
+}
+
+func (remote *RemoteTileTargetSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteDestroyWallEvent struct {
+    Type string `json:"type"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteDestroyWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSummonUnitEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+    Unit units.UnitId `json:"unit"`
+}
+
+func (remote *RemoteSummonUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteSummoningCircleEvent struct {
+    Type string `json:"type"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteSummoningCircleEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteGlobalSpellEvent struct {
+    Type string `json:"type"`
+    Army uint64 `json:"army"`
+    Magic data.MagicType `json:"magic"`
+    Name string `json:"name"`
+}
+
+func (remote *RemoteGlobalSpellEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRemoveArmyEnchantmentEvent struct {
+    Type string `json:"type"`
+    Enchantment data.CombatEnchantment `json:"enchantment"`
+    ArmyId uint64 `json:"army_id"`
+}
+
+func (remote *RemoteRemoveArmyEnchantmentEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteAddArmyEnchantmentEvent struct {
+    Type string `json:"type"`
+    Enchantment data.CombatEnchantment `json:"enchantment"`
+    ArmyId uint64 `json:"army_id"`
+}
+
+func (remote *RemoteAddArmyEnchantmentEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCounterMagicEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    Value int `json:"value"`
+}
+
+func (remote *RemoteCounterMagicEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRaiseDeadUnitEvent struct {
+    Type string `json:"type"`
+    UnitId uint64 `json:"id"`
+    ArmyId uint64 `json:"army"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteRaiseDeadUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCreateLightningBoltEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteCreateLightningBoltEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteAnimateDeadUnitEvent struct{
+    Type string `json:"type"`
+    UnitId uint64 `json:"unit_id"`
+    ArmyId uint64 `json:"army_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteAnimateDeadUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteManaPoolEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    Amount int `json:"amount"`
+}
+
+func (remote *RemoteManaPoolEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteRangeAttackWallEvent struct {
+    Type string `json:"type"`
+    AttackerId uint64 `json:"attacker_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteRangeAttackWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMeleeAttackWallEvent struct {
+    Type string `json:"type"`
+    AttackerId uint64 `json:"attacker_id"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteMeleeAttackWallEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitCastSkillEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Delta int `json:"delta"`
+}
+
+func (remote *RemoteUnitCastSkillEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUnitMovesLeftEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Moves fraction.Fraction `json:"moves"`
+}
+
+func (remote *RemoteUnitMovesLeftEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteUseManaEvent struct {
+    Type string `json:"type"`
+    ArmyId uint64 `json:"army_id"`
+    Skill int `json:"skill"`
+    Mana int `json:"mana"`
+}
+
+func (remote *RemoteUseManaEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteNextUnitEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteNextUnitEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteCreateMagicVortexEvent struct {
+    Type string `json:"type"`
+    Team Team `json:"team"`
+    X int `json:"x"`
+    Y int `json:"y"`
+}
+
+func (remote *RemoteCreateMagicVortexEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMagicVortexMoveEvent struct {
+    Type string `json:"type"`
+    VortexId uint64 `json:"vortex_id"`
+    Path pathfinding.Path `json:"path"`
+}
+
+func (remote *RemoteMagicVortexMoveEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteMagicVortexFinishedEvent struct {
+    Type string `json:"type"`
+    VortexId uint64 `json:"vortex_id"`
+}
+
+func (remote *RemoteMagicVortexFinishedEvent) GetType() string {
+    return remote.Type
+}
+
+type RemoteConfusionActionEvent struct {
+    Type string `json:"type"`
+    Id uint64 `json:"id"`
+    Action ConfusionAction `json:"action"`
+}
+
+func (remote *RemoteConfusionActionEvent) GetType() string {
+    return remote.Type
+}
