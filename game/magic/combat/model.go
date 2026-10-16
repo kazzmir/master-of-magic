@@ -6635,11 +6635,6 @@ func (model *CombatModel) HandleConfusedUnit(actions CombatActionsInterface) {
 
         moved := false
         for _, index := range rand.Perm(len(points)) {
-            // the unit might have died due to walking over fire
-            if confusedUnit.GetHealth() == 0 {
-                return
-            }
-
             point := points[index]
             if model.TileIsEmpty(point.X, point.Y) && model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
                 path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
@@ -6647,6 +6642,11 @@ func (model *CombatModel) HandleConfusedUnit(actions CombatActionsInterface) {
 
                 model.RemoteMove(confusedUnit, path)
                 actions.MoveUnit(confusedUnit, path)
+
+                // the unit might have died due to walking over fire
+                if confusedUnit.GetHealth() == 0 {
+                    return
+                }
 
                 moved = true
                 break
