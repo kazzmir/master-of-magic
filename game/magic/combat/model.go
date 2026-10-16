@@ -6614,49 +6614,6 @@ type CombatActionsInterface interface {
 }
 
 func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsInterface, actionSelect bool, actionTileX int, actionTileY int) {
-    if model.SelectedUnit != nil && model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
-        confusedUnit := model.SelectedUnit
-
-        // keep moving randomly until the unit is out of moves
-        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
-            var points []image.Point
-            for x := -1; x <= 1; x++ {
-                for y := -1; y <= 1; y++ {
-                    if x == 0 && y == 0 {
-                        continue
-                    }
-
-                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
-                }
-            }
-
-            moved := false
-            for _, index := range rand.Perm(len(points)) {
-                point := points[index]
-                if model.TileIsEmpty(point.X, point.Y) && model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
-                    path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
-                    path = path[1:]
-
-                    model.RemoteMove(confusedUnit, path)
-                    actions.MoveUnit(confusedUnit, path)
-
-                    moved = true
-                    break
-                }
-            }
-
-            // unable to move, just quit the loop
-            if !moved {
-                break
-            }
-        }
-
-        model.RemoteDoneTurn(model.SelectedUnit)
-        model.DoneTurn()
-
-        return
-    }
-
     // not sure exactly where this should be
     if model.Remote != nil {
         select {
@@ -6717,6 +6674,53 @@ func (model *CombatModel) Update(spellSystem SpellSystem, actions CombatActionsI
                 }
             default:
         }
+    }
+
+    if model.SelectedUnit != nil && model.SelectedUnit.ConfusionAction == ConfusionActionMoveRandomly {
+        if model.IsRemoteUnit(model.SelectedUnit) {
+            return
+        }
+
+        confusedUnit := model.SelectedUnit
+
+        // keep moving randomly until the unit is out of moves
+        for confusedUnit.MovesLeft.GreaterThan(fraction.Zero()) {
+            var points []image.Point
+            for x := -1; x <= 1; x++ {
+                for y := -1; y <= 1; y++ {
+                    if x == 0 && y == 0 {
+                        continue
+                    }
+
+                    points = append(points, image.Pt(confusedUnit.X + x, confusedUnit.Y + y))
+                }
+            }
+
+            moved := false
+            for _, index := range rand.Perm(len(points)) {
+                point := points[index]
+                if model.TileIsEmpty(point.X, point.Y) && model.CanMoveTo(confusedUnit, point.X, point.Y, false) {
+                    path, _ := model.FindPath(confusedUnit, point.X, point.Y, false)
+                    path = path[1:]
+
+                    model.RemoteMove(confusedUnit, path)
+                    actions.MoveUnit(confusedUnit, path)
+
+                    moved = true
+                    break
+                }
+            }
+
+            // unable to move, just quit the loop
+            if !moved {
+                break
+            }
+        }
+
+        model.RemoteDoneTurn(model.SelectedUnit)
+        model.DoneTurn()
+
+        return
     }
 
     if model.SelectedUnit != nil && (model.IsAIControlled(model.SelectedUnit) || actions.SingleAuto()) {
