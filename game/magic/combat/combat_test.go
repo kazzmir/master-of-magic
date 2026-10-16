@@ -2300,6 +2300,119 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
     })
 }
 
+// Exercise actual wall-crossing damage, retrying zero-damage fire rolls so
+// the regression does not depend on the confused unit surviving its first roll.
+type confusedFireMovementActions struct {
+    *ProxyActions
+    test *testing.T
+    moves int
+}
+
+func (actions *confusedFireMovementActions) MoveUnit(unit *ArmyUnit, path pathfinding.Path) {
+    actions.test.Helper()
+    actions.moves += 1
+    if unit.GetHealth() <= 0 {
+        actions.test.Error("Confused movement tried to move the unit again after it died")
+        // Bound the buggy loop so the remaining turn-state assertions can run.
+        unit.MovesLeft = fraction.Zero()
+        return
+    }
+    if len(path) != 1 {
+        actions.test.Fatalf("Expected one adjacent step, got %v", path)
+    }
+    model := actions.Model
+    target := path[0]
+    if model.InsideWallOfFire(unit.X, unit.Y) || !model.InsideWallOfFire(target.X, target.Y) {
+        actions.test.Fatal("Movement did not cross into Wall of Fire")
+    }
+    startX, startY, movesLeft := unit.X, unit.Y, unit.MovesLeft
+    for range 100 {
+        if model.MoveUnit(unit, target.X, target.Y) {
+            return
+        }
+        // With one HP and zero defense, surviving means the fire rolled zero
+        // damage. Restore the attempted step and retry the actual crossing.
+        model.setTileUnit(unit.X, unit.Y, nil)
+        unit.X, unit.Y, unit.MovesLeft = startX, startY, movesLeft
+        model.setTileUnit(startX, startY, unit)
+    }
+    actions.test.Fatal("Wall of Fire rolled zero damage on 100 consecutive crossings")
+}
+
+func TestConfusedMovementDeathInWallOfFire(test *testing.T) {
+    for _, team := range []Team{TeamAttacker, TeamDefender} {
+        name := "attacker"
+        if team == TeamDefender {
+            name = "defender"
+        }
+        for _, movement := range []int{1, 4} {
+            movementName := "last_movement_point"
+            if movement == 4 {
+                movementName = "movement_remaining"
+            }
+            test.Run(name+"/"+movementName, func(test *testing.T) {
+                makeArmy := func() *Army {
+                    army := &Army{Player: makeTestCombatPlayer(true)}
+                    template := units.LizardSpearmen
+                    template.Count = 1
+                    template.HitPoints = 1
+                    template.Defense = 0
+                    for range 2 {
+                        army.AddUnit(units.MakeOverworldUnitFromUnit(template, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+                    }
+                    return army
+                }
+                model := MakeCombatModel(spellbook.Spells{}, makeArmy(), makeArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), nil)
+                army := model.GetArmyForTeam(team)
+                confused, next := army.units[0], army.units[1]
+                model.setTileUnit(confused.X, confused.Y, nil)
+                confused.X, confused.Y = 10, 10
+                model.setTileUnit(confused.X, confused.Y, confused)
+                confused.Curses = append(confused.Curses, data.UnitCurseConfusion)
+                confused.ConfusionAction = ConfusionActionMoveRandomly
+                confused.MovesLeft = fraction.FromInt(movement)
+                // Every possible random step crosses fire, regardless of direction.
+                for dx := -1; dx <= 1; dx++ {
+                    for dy := -1; dy <= 1; dy++ {
+                        if dx != 0 || dy != 0 {
+                            model.GetTile(confused.X + dx, confused.Y + dy).InsideFire = true
+                        }
+                    }
+                }
+                model.Turn = team
+                model.SelectedUnit = confused
+                initialTurn := model.CurrentTurn
+                nextLastTurn, nextMoves := next.LastTurn, next.MovesLeft
+                actions := &confusedFireMovementActions{
+                    ProxyActions: &ProxyActions{Model: model},
+                    test: test,
+                }
+
+                model.Update(&ProxySpellSystem{Model: model}, actions, false, 0, 0)
+
+                if confused.GetHealth() != 0 || model.GetUnitById(confused.Id) != nil || army.GetKilledUnitById(confused.Id) != confused {
+                    test.Error("Confused unit was not killed and moved into the killed-unit list")
+                }
+                if model.GetUnit(10, 10) != nil {
+                    test.Error("Dead confused unit still occupies its tile")
+                }
+                if actions.moves != 1 {
+                    test.Errorf("Movement actions = %d, want exactly one before death", actions.moves)
+                }
+                if model.SelectedUnit != next {
+                    test.Error("Death skipped the next unit instead of leaving it selected")
+                }
+                if next.LastTurn != nextLastTurn || !next.MovesLeft.Equals(nextMoves) {
+                    test.Error("Confused unit's death consumed the next unit's turn or movement")
+                }
+                if model.CurrentTurn != initialTurn || model.Turn != team {
+                    test.Error("Confused unit's death incorrectly advanced the army/round")
+                }
+            })
+        }
+    }
+}
+
 func TestRemoteTurnEnchantments(test *testing.T) {
     scenarios := []struct {
         name string
