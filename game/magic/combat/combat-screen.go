@@ -3014,8 +3014,6 @@ func (actions AIUnitActions) DoProjectiles() {
 
 type CombatActions struct {
     *AIUnitActions
-    combat *CombatScreen
-    yield coroutine.YieldFunc
     extraControl bool
     singleAuto bool
 }
@@ -3269,8 +3267,6 @@ func (combat *CombatScreen) Update(yield coroutine.YieldFunc) CombatState {
 
     combatActions := &CombatActions{
         AIUnitActions: &actions,
-        yield: yield,
-        combat: combat,
         extraControl: combat.ExtraControl,
         singleAuto: updates.SingleAuto,
     }
