@@ -2712,6 +2712,18 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
             combat.MouseTileX = int(math.Round(tileX))
             combat.MouseTileY = int(math.Round(tileY))
 
+            // moving through a wall of fire might create an expectation from the remote player
+            if combat.Model.Remote != nil {
+                for !combat.Model.IsSynchronized() {
+                    select {
+                        case <-combat.Quit.Done():
+                            return
+                        case event := <-combat.Model.Remote.Events:
+                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
+                    }
+                }
+            }
+
             mover.MoveX += math.Cos(angle) * speed
             mover.MoveY += math.Sin(angle) * speed
 

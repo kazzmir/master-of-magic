@@ -17,8 +17,10 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
 )
 
+type RemoteType string
+
 const (
-    RemoteTeleportType = "teleport"
+    RemoteTeleportType RemoteType = "teleport"
     RemoteMoveType     = "move"
     RemoteRangeAttackType = "range_attack"
     RemoteProjectileFinishedType = "projectile_finished"
@@ -63,6 +65,8 @@ const (
     RemoteMagicVortexMoveType = "magic_vortex_move"
     RemoteMagicVortexFinishedType = "magic_vortex_finished"
     RemoteConfusionActionType = "confusion_action"
+    RemoteWallOfFireDamageDoneType = "wall_of_fire_damage_done"
+    RemoteSyncType = "sync"
 )
 
 type RemoteWallKind int
@@ -91,7 +95,7 @@ func MakeRemote(isServer bool, isAttacker bool, peer net.Conn) *Remote {
 }
 
 type RemoteEvent interface {
-    GetType() string
+    GetType() RemoteType
 }
 
 var ErrorEmptyType = errors.New("event type is empty")
@@ -216,11 +220,13 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
     }
 
     // check type
-    eventType, ok := m["type"].(string)
+    eventType_, ok := m["type"].(string)
     if !ok {
         log.Printf("Error: event type is not a string")
         return nil, err
     }
+
+    eventType := RemoteType(eventType_)
 
     switch eventType {
         case RemoteTeleportType: return convert[*RemoteTeleportEvent](data)
@@ -268,6 +274,8 @@ func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
         case RemoteMagicVortexMoveType: return convert[*RemoteMagicVortexMoveEvent](data)
         case RemoteMagicVortexFinishedType: return convert[*RemoteMagicVortexFinishedEvent](data)
         case RemoteConfusionActionType: return convert[*RemoteConfusionActionEvent](data)
+        case RemoteWallOfFireDamageDoneType: return convert[*RemoteWallOfFireDamageDoneEvent](data)
+        case RemoteSyncType: return convert[*RemoteSyncEvent](data)
         default:
             log.Printf("Error: unknown event type: %s", eventType)
             return nil, err
@@ -286,160 +294,160 @@ func convert[T RemoteEvent](data []byte) (RemoteEvent, error) {
 // sent when a unit teleports to a location
 type RemoteTeleportEvent struct {
     Id uint64 `json:"id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     X int    `json:"x"`
     Y int    `json:"y"`
 }
 
-func (remote *RemoteTeleportEvent) GetType() string {
+func (remote *RemoteTeleportEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteProjectileFinishedEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
 }
 
-func (remote *RemoteProjectileFinishedEvent) GetType() string {
+func (remote *RemoteProjectileFinishedEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRangeAttackEvent struct {
     AttackerId uint64 `json:"attacker_id"`
     DefenderId uint64 `json:"defender_id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
 }
 
-func (remote *RemoteRangeAttackEvent) GetType() string {
+func (remote *RemoteRangeAttackEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteMoveEvent struct {
     Id uint64 `json:"id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Path pathfinding.Path `json:"path"`
 }
 
-func (remote *RemoteMoveEvent) GetType() string {
+func (remote *RemoteMoveEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteDamageEvent struct {
     Id uint64 `json:"id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     DamageKind DamageType `json:"damage_kind"`
     Damage int `json:"damage"`
 }
 
-func (remote *RemoteDamageEvent) GetType() string {
+func (remote *RemoteDamageEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteDamageIndicatorEvent struct {
     Id uint64 `json:"id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Damage int `json:"damage"`
 }
 
-func (remote *RemoteDamageIndicatorEvent) GetType() string {
+func (remote *RemoteDamageIndicatorEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteMeleeAttackEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     AttackerId uint64 `json:"attacker_id"`
     DefenderId uint64 `json:"defender_id"`
 }
 
-func (remote *RemoteMeleeAttackEvent) GetType() string {
+func (remote *RemoteMeleeAttackEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteDoneTurnEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteDoneTurnEvent) GetType() string {
+func (remote *RemoteDoneTurnEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteFinishMeleeAttackEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
 }
 
-func (remote *RemoteFinishMeleeAttackEvent) GetType() string {
+func (remote *RemoteFinishMeleeAttackEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteHealEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Heal int `json:"heal"`
 }
 
-func (remote *RemoteHealEvent) GetType() string {
+func (remote *RemoteHealEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteKillUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteKillUnitEvent) GetType() string {
+func (remote *RemoteKillUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRemoveUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteRemoveUnitEvent) GetType() string {
+func (remote *RemoteRemoveUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteUnitTargetSpellEvent struct {
     TargetId uint64 `json:"target_id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Spell string `json:"spell"`
     OverrideCost int `json:"override_cost"`
     CasterId uint64 `json:"caster_id"`
     ArmyId uint64 `json:"army_id"`
 }
 
-func (remote *RemoteUnitTargetSpellEvent) GetType() string {
+func (remote *RemoteUnitTargetSpellEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteUnitCastSpellEvent struct {
     Id uint64 `json:"id"`
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Spell string `json:"spell"`
     OverrideCost int `json:"override_cost"`
 }
 
-func (remote *RemoteUnitCastSpellEvent) GetType() string {
+func (remote *RemoteUnitCastSpellEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteSpellFailedEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Spell string `json:"spell"`
     OverrideCost int `json:"override_cost"`
 }
 
-func (remote *RemoteSpellFailedEvent) GetType() string {
+func (remote *RemoteSpellFailedEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteArmyEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Team Team `json:"team"`
     Units []RemoteUnit `json:"units"`
 }
 
-func (remote *RemoteArmyEvent) GetType() string {
+func (remote *RemoteArmyEvent) GetType() RemoteType {
     return remote.Type
 }
 
@@ -448,298 +456,315 @@ type RemoteUnit struct {
 }
 
 type RemoteCurseUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Curse data.UnitEnchantment `json:"curse"`
 }
 
-func (remote *RemoteCurseUnitEvent) GetType() string {
+func (remote *RemoteCurseUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRemoveUnitEnchantmentEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Enchantment data.UnitEnchantment `json:"enchantment"`
 }
 
-func (remote *RemoteRemoveUnitEnchantmentEvent) GetType() string {
+func (remote *RemoteRemoveUnitEnchantmentEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRemoveUnitCurseEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Curse data.UnitEnchantment `json:"curse"`
 }
 
-func (remote *RemoteRemoveUnitCurseEvent) GetType() string {
+func (remote *RemoteRemoveUnitCurseEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteSwitchTeamsEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteSwitchTeamsEvent) GetType() string {
+func (remote *RemoteSwitchTeamsEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteSetRangedAttacksEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Attacks int `json:"attacks"`
 }
 
-func (remote *RemoteSetRangedAttacksEvent) GetType() string {
+func (remote *RemoteSetRangedAttacksEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteEnchantmentUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Enchantment data.UnitEnchantment `json:"enchantment"`
 }
 
-func (remote *RemoteEnchantmentUnitEvent) GetType() string {
+func (remote *RemoteEnchantmentUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteCreateWallEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Kind RemoteWallKind `json:"kind"`
 }
 
-func (remote *RemoteCreateWallEvent) GetType() string {
+func (remote *RemoteCreateWallEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteTileTargetSpellEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     X int `json:"x"`
     Y int `json:"y"`
     Spell string `json:"spell"`
 }
 
-func (remote *RemoteTileTargetSpellEvent) GetType() string {
+func (remote *RemoteTileTargetSpellEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteDestroyWallEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteDestroyWallEvent) GetType() string {
+func (remote *RemoteDestroyWallEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteSummonUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     ArmyId uint64 `json:"army_id"`
     X int `json:"x"`
     Y int `json:"y"`
     Unit units.UnitId `json:"unit"`
 }
 
-func (remote *RemoteSummonUnitEvent) GetType() string {
+func (remote *RemoteSummonUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteSummoningCircleEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteSummoningCircleEvent) GetType() string {
+func (remote *RemoteSummoningCircleEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteGlobalSpellEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Army uint64 `json:"army"`
     Magic data.MagicType `json:"magic"`
     Name string `json:"name"`
 }
 
-func (remote *RemoteGlobalSpellEvent) GetType() string {
+func (remote *RemoteGlobalSpellEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRemoveArmyEnchantmentEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Enchantment data.CombatEnchantment `json:"enchantment"`
     ArmyId uint64 `json:"army_id"`
 }
 
-func (remote *RemoteRemoveArmyEnchantmentEvent) GetType() string {
+func (remote *RemoteRemoveArmyEnchantmentEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteAddArmyEnchantmentEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Enchantment data.CombatEnchantment `json:"enchantment"`
     ArmyId uint64 `json:"army_id"`
 }
 
-func (remote *RemoteAddArmyEnchantmentEvent) GetType() string {
+func (remote *RemoteAddArmyEnchantmentEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteCounterMagicEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     ArmyId uint64 `json:"army_id"`
     Value int `json:"value"`
 }
 
-func (remote *RemoteCounterMagicEvent) GetType() string {
+func (remote *RemoteCounterMagicEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRaiseDeadUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     UnitId uint64 `json:"id"`
     ArmyId uint64 `json:"army"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteRaiseDeadUnitEvent) GetType() string {
+func (remote *RemoteRaiseDeadUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteCreateLightningBoltEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteCreateLightningBoltEvent) GetType() string {
+func (remote *RemoteCreateLightningBoltEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteAnimateDeadUnitEvent struct{
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     UnitId uint64 `json:"unit_id"`
     ArmyId uint64 `json:"army_id"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteAnimateDeadUnitEvent) GetType() string {
+func (remote *RemoteAnimateDeadUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteManaPoolEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     ArmyId uint64 `json:"army_id"`
     Amount int `json:"amount"`
 }
 
-func (remote *RemoteManaPoolEvent) GetType() string {
+func (remote *RemoteManaPoolEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteRangeAttackWallEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     AttackerId uint64 `json:"attacker_id"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteRangeAttackWallEvent) GetType() string {
+func (remote *RemoteRangeAttackWallEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteMeleeAttackWallEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     AttackerId uint64 `json:"attacker_id"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteMeleeAttackWallEvent) GetType() string {
+func (remote *RemoteMeleeAttackWallEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteUnitCastSkillEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Delta int `json:"delta"`
 }
 
-func (remote *RemoteUnitCastSkillEvent) GetType() string {
+func (remote *RemoteUnitCastSkillEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteUnitMovesLeftEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Moves fraction.Fraction `json:"moves"`
 }
 
-func (remote *RemoteUnitMovesLeftEvent) GetType() string {
+func (remote *RemoteUnitMovesLeftEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteUseManaEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     ArmyId uint64 `json:"army_id"`
     Skill int `json:"skill"`
     Mana int `json:"mana"`
 }
 
-func (remote *RemoteUseManaEvent) GetType() string {
+func (remote *RemoteUseManaEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteNextUnitEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
 }
 
-func (remote *RemoteNextUnitEvent) GetType() string {
+func (remote *RemoteNextUnitEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteCreateMagicVortexEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Team Team `json:"team"`
     X int `json:"x"`
     Y int `json:"y"`
 }
 
-func (remote *RemoteCreateMagicVortexEvent) GetType() string {
+func (remote *RemoteCreateMagicVortexEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteMagicVortexMoveEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     VortexId uint64 `json:"vortex_id"`
     Path pathfinding.Path `json:"path"`
 }
 
-func (remote *RemoteMagicVortexMoveEvent) GetType() string {
+func (remote *RemoteMagicVortexMoveEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteMagicVortexFinishedEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     VortexId uint64 `json:"vortex_id"`
 }
 
-func (remote *RemoteMagicVortexFinishedEvent) GetType() string {
+func (remote *RemoteMagicVortexFinishedEvent) GetType() RemoteType {
     return remote.Type
 }
 
 type RemoteConfusionActionEvent struct {
-    Type string `json:"type"`
+    Type RemoteType `json:"type"`
     Id uint64 `json:"id"`
     Action ConfusionAction `json:"action"`
 }
 
-func (remote *RemoteConfusionActionEvent) GetType() string {
+func (remote *RemoteConfusionActionEvent) GetType() RemoteType {
+    return remote.Type
+}
+
+type RemoteWallOfFireDamageDoneEvent struct {
+    Type RemoteType `json:"type"`
+    Id uint64 `json:"id"`
+}
+
+func (remote *RemoteWallOfFireDamageDoneEvent) GetType() RemoteType {
+    return remote.Type
+}
+
+type RemoteSyncEvent struct {
+    Type RemoteType `json:"type"`
+}
+
+func (remote *RemoteSyncEvent) GetType() RemoteType {
     return remote.Type
 }

@@ -9,6 +9,7 @@ import (
     "testing"
     "math"
     "slices"
+    "image"
 
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
@@ -2339,6 +2340,149 @@ func (actions *confusedFireMovementActions) MoveUnit(unit *ArmyUnit, path pathfi
     actions.test.Fatal("Wall of Fire rolled zero damage on 100 consecutive crossings")
 }
 
+func TestRemoteWallOfFireDeath(test *testing.T) {
+    for _, movingTeam := range []Team{TeamAttacker, TeamDefender} {
+        name := "attacker"
+        if movingTeam == TeamDefender {
+            name = "defender"
+        }
+        test.Run(name, func(test *testing.T) {
+            peer1, peer2 := net.Pipe()
+            defer peer1.Close()
+            defer peer2.Close()
+            peer1.SetWriteDeadline(time.Now().Add(5 * time.Second))
+            peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
+            // The mover's owner is the non-authoritative peer. IsServer()
+            // returns the inverse of Remote.IsServer.
+            attackerRemote := MakeRemote(movingTeam == TeamAttacker, false, peer1)
+            defenderRemote := MakeRemote(movingTeam == TeamDefender, true, peer2)
+            makeModel := func(remote *Remote) *CombatModel {
+                makeArmy := func() *Army {
+                    army := &Army{Player: makeTestCombatPlayer(true)}
+                    template := units.LizardSpearmen
+                    template.Count = 1
+                    template.HitPoints = 1
+                    template.Defense = 0
+                    army.AddUnit(units.MakeOverworldUnitFromUnit(template, 0, 0, data.PlaneArcanus, data.BannerRed, &units.NoExperienceInfo{}, &units.NoEnchantments{}))
+                    return army
+                }
+                return MakeCombatModel(spellbook.Spells{}, makeArmy(), makeArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+            }
+            attackerModel, defenderModel := makeModel(attackerRemote), makeModel(defenderRemote)
+            owner, server := attackerModel, defenderModel
+            if movingTeam == TeamDefender {
+                owner, server = defenderModel, attackerModel
+            }
+            if owner.IsServer() || !server.IsServer() {
+                test.Fatal("Incorrect damage-authority setup")
+            }
+            id := owner.GetArmyForTeam(movingTeam).units[0].Id
+            path := pathfinding.Path{image.Pt(11, 10), image.Pt(12, 10), image.Pt(13, 10)}
+            for _, model := range []*CombatModel{owner, server} {
+                model.SelectedUnit = nil // Isolate movement/damage from turn advancement.
+                for _, point := range path {
+                    model.GetTile(point.X, point.Y).InsideFire = true
+                }
+            }
+
+            quit, cancel := context.WithCancel(context.Background())
+            var receiveWait sync.WaitGroup
+            for _, remote := range []*Remote{attackerRemote, defenderRemote} {
+                receiveWait.Go(func() { remote.RunReceiveLoop(quit) })
+            }
+            defer func() {
+                cancel()
+                receiveWait.Wait()
+            }()
+            receive := func(remote *Remote) RemoteEvent {
+                test.Helper()
+                select {
+                    case event := <-remote.Events:
+                        return event
+                    case <-time.After(5 * time.Second):
+                        test.Fatal("Timed out waiting for movement/fire events")
+                        return nil
+                }
+            }
+
+            // Fire can roll zero damage. Retry those crossings from the same
+            // initial state, without assuming the random roll must be lethal.
+            for attempt := 0; attempt < 100; attempt++ {
+                for _, model := range []*CombatModel{owner, server} {
+                    unit := model.GetUnitById(id)
+                    model.setTileUnit(unit.X, unit.Y, nil)
+                    unit.X, unit.Y = 10, 10
+                    unit.MovesLeft = fraction.FromInt(10)
+                    model.setTileUnit(unit.X, unit.Y, unit)
+                }
+                ownerUnit := owner.GetUnitById(id)
+                serverUnit := server.GetUnitById(id)
+                if err := owner.RemoteMove(ownerUnit, path); err != nil {
+                    test.Fatal(err)
+                }
+                // Simulate normal network delay: local movement finishes before
+                // the server replays the command and returns the fire result.
+
+                event, ok := receive(server.Remote).(*RemoteMoveEvent)
+                if !ok || event.Id != id {
+                    test.Fatal("Expected the mover's remote movement command")
+                }
+
+                var waiter sync.WaitGroup
+
+                waiter.Go(func() {
+                    (&ProxyActions{Model: owner}).MoveUnit(ownerUnit, path)
+                })
+
+                waiter.Go(func() {
+                    (&ProxyActions{Model: server}).MoveUnit(serverUnit, event.Path)
+                })
+
+                waiter.Wait()
+
+                // A stream marker ensures all damage/kill messages have been
+                // applied before comparing models, including zero-damage rolls.
+                if err := server.Remote.SendEvent(&RemoteGlobalSpellEvent{Type: RemoteGlobalSpellType, Name: "fire-test-marker"}); err != nil {
+                    test.Fatal(err)
+                }
+                for {
+                    event := receive(owner.Remote)
+                    if marker, ok := event.(*RemoteGlobalSpellEvent); ok && marker.Name == "fire-test-marker" {
+                        break
+                    }
+                    owner.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+                }
+                if serverUnit.GetHealth() > 0 {
+                    if ownerUnit.GetHealth() != serverUnit.GetHealth() {
+                        test.Fatal("Fire damage diverged between models")
+                    }
+                    continue
+                }
+
+                if ownerUnit.GetHealth() != 0 || owner.GetUnitById(id) != nil || server.GetUnitById(id) != nil {
+                    test.Fatal("Lethal fire damage did not remove the mover from both active armies")
+                }
+                if owner.GetArmyForTeam(movingTeam).GetKilledUnitById(id) != ownerUnit || server.GetArmyForTeam(movingTeam).GetKilledUnitById(id) != serverUnit {
+                    test.Fatal("Dead mover missing from a peer's killed-unit list")
+                }
+                // Synchronization happens after movement finishes, so the
+                // non-server owner may advance one extra position on the path.
+                movementPositions := append(pathfinding.Path{image.Pt(10, 10)}, path...)
+                ownerPosition := slices.Index(movementPositions, image.Pt(ownerUnit.X, ownerUnit.Y))
+                serverPosition := slices.Index(movementPositions, image.Pt(serverUnit.X, serverUnit.Y))
+                if serverPosition < 0 || ownerPosition < serverPosition || ownerPosition > serverPosition+1 {
+                    test.Errorf("Owner moved beyond the allowed extra step: corpse at (%d,%d), server stopped at (%d,%d)", ownerUnit.X, ownerUnit.Y, serverUnit.X, serverUnit.Y)
+                }
+                if ownerUnit.X == path[len(path)-1].X && ownerUnit.Y == path[len(path)-1].Y {
+                    test.Error("Owner completed the path despite dying at the first fire crossing")
+                }
+                return
+            }
+            test.Fatal("Wall of Fire rolled zero damage on 100 consecutive crossings")
+        })
+    }
+}
+
 func TestAIUnitDeathDoesNotFinishNextUnitsTurn(test *testing.T) {
     for _, team := range []Team{TeamAttacker, TeamDefender} {
         name := "attacker"
@@ -2554,12 +2698,12 @@ func TestRemoteTurnEnchantments(test *testing.T) {
 
                     // A marker on the same stream bounds the events for each round.
                     // Process model mutations on the test goroutine, not the receive loop.
-                    flush := func(from, to *CombatModel) map[string]int {
+                    flush := func(from, to *CombatModel) map[RemoteType]int {
                         test.Helper()
                         if err := from.Remote.SendEvent(&RemoteGlobalSpellEvent{Type: RemoteGlobalSpellType, Name: "turn-test-marker"}); err != nil {
                             test.Fatal(err)
                         }
-                        counts := make(map[string]int)
+                        counts := make(map[RemoteType]int)
                         timeout := time.NewTimer(5 * time.Second)
                         defer timeout.Stop()
                         for {
@@ -2622,7 +2766,7 @@ func TestRemoteTurnEnchantments(test *testing.T) {
                         }
                         source.NextTurn()
                         counts := flush(source, receiver)
-                        expected := make(map[string]int)
+                        expected := make(map[RemoteType]int)
                         switch scenario.enchantment {
                             case data.CombatEnchantmentWrack:
                                 expected[RemoteDamageType] = activeBefore
@@ -2766,7 +2910,7 @@ func TestRemoteRaiseDead(test *testing.T) {
             }()
 
             receiverSpells := &ProxySpellSystem{Model: receiver}
-            receiveThrough := func(wanted string) {
+            receiveThrough := func(wanted RemoteType) {
                 test.Helper()
                 timeout := time.NewTimer(5 * time.Second)
                 defer timeout.Stop()

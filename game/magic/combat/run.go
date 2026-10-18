@@ -6,6 +6,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/log"
+    "github.com/kazzmir/master-of-magic/lib/optional"
 )
 
 type ProxySpellSystem struct {
@@ -525,6 +526,20 @@ func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
     // log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
     for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
         targetX, targetY := path[0].X, path[0].Y
+
+        if actions.Model.Remote != nil {
+            for !actions.Model.IsSynchronized() {
+                select {
+                    /*
+                    case <-actions.Quit.Done():
+                        return
+                        */
+                    case event := <-actions.Model.Remote.Events:
+                        actions.Model.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+                }
+            }
+        }
+
         died := actions.Model.MoveUnit(mover, targetX, targetY)
         if died {
             return

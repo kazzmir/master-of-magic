@@ -4,6 +4,7 @@ import (
     "image"
     "fmt"
     "slices"
+    "context"
     "math"
     "math/rand/v2"
     "time"
@@ -2396,6 +2397,10 @@ type CombatModel struct {
     // a count of the number of projectiles waiting to be resolved
     RemoteProjectiles int
 
+    // can be negative, meaning waiting for a sync to occur, or can be positive which means a sync already has been sent
+    // and the local client is waiting to hit the sync point
+    Synchronization int
+
     LastUnitId uint64
     LastMagicVortexId uint64
 
@@ -3907,13 +3912,9 @@ func (model *CombatModel) ApplyMeleeDamage(attacker *ArmyUnit, defender *ArmyUni
 }
 
 func (model *CombatModel) ApplyWallOfFireDamage(defender *ArmyUnit) int {
-    if model.IsServer() {
-        hurt := model.ApplyImmolationDamage(defender, 5)
-        model.Observer.WallOfFire(defender, 5)
-        return hurt
-    } else {
-        return 0
-    }
+    hurt := model.ApplyImmolationDamage(defender, 5)
+    model.Observer.WallOfFire(defender, 5)
+    return hurt
 }
 
 func (model *CombatModel) canRangeAttack(attacker *ArmyUnit, defender *ArmyUnit) bool {
@@ -6838,6 +6839,9 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             if unit != nil {
                 unit.Heal(event.Heal)
             }
+        case RemoteSyncType:
+            model.Synchronization -= 1
+
         case RemoteKillUnitType:
             event := event.(*RemoteKillUnitEvent)
             unit := model.GetUnitById(event.Id)
@@ -7651,6 +7655,25 @@ func (model *CombatModel) RemoteConfusionAction(unit *ArmyUnit, action Confusion
             Type: RemoteConfusionActionType,
             Id: unit.Id,
             Action: action,
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
+
+}
+
+func (model *CombatModel) RemoteWallOfFireDamageDone(unit *ArmyUnit) error {
+    if model.Remote != nil {
+        event := RemoteWallOfFireDamageDoneEvent{
+            Type: RemoteWallOfFireDamageDoneType,
+            Id: unit.Id,
         }
 
         err := model.Remote.SendEvent(&event)
@@ -8578,6 +8601,11 @@ func (model *CombatModel) ApplyMagicVortexDamage(vortex *MagicVortex, damageIndi
 
 // returns true if the unit dies while moving (through a wall of fire)
 func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bool {
+    // already dead
+    if mover.GetHealth() <= 0 {
+        return true
+    }
+
     if !model.IsInsideMap(targetX, targetY) {
         return false
     }
@@ -8592,12 +8620,23 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
 
     // unit moves from outside the wall of fire to inside
     if !mover.IsFlying() && model.InsideWallOfFire(targetX, targetY) && !model.InsideWallOfFire(mover.X, mover.Y) {
-        model.ApplyWallOfFireDamage(mover)
 
-        if mover.GetHealth() <= 0 {
-            // this feels dangerous to do here but it seems to work
-            model.KillUnit(mover)
-            return true
+        // it could be that the server applies wall of fire damage and maybe kills the unit
+        // while the client waits for confirmation from the server
+        // in general there can be sync points between the server and client
+
+        if model.IsServer() {
+            model.ApplyWallOfFireDamage(mover)
+
+            defer model.RemoteSync()
+
+            if mover.GetHealth() <= 0 {
+                // this feels dangerous to do here but it seems to work
+                model.KillUnit(mover)
+                return true
+            }
+        } else {
+            model.NeedSynchronization()
         }
     }
 
@@ -8606,6 +8645,51 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     // new tile the unit landed on is now occupied
     model.setTileUnit(mover.X, mover.Y, mover)
     return false
+}
+
+func (model *CombatModel) WaitForSynchronization(quit context.Context, yield func() error) error {
+    for !model.IsSynchronized() {
+        select {
+            case <-quit.Done():
+                return quit.Err()
+            case event := <-model.Remote.Events:
+                model.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+            default:
+                err := yield()
+                if err != nil {
+                    return err
+                }
+        }
+    }
+
+    return nil
+}
+
+func (model *CombatModel) IsSynchronized() bool {
+    return model.Synchronization == 0
+}
+
+func (model *CombatModel) NeedSynchronization() {
+    model.Synchronization += 1
+}
+
+// send a synchronization event to the remote side
+func (model *CombatModel) RemoteSync() error {
+    if model.Remote != nil {
+        event := RemoteSyncEvent{
+            Type: RemoteSyncType,
+            // todo: maybe include sequence number
+        }
+
+        err := model.Remote.SendEvent(&event)
+        if err != nil {
+            log.Error("Failed to send remote curse event: %v", err)
+        }
+
+        return err
+    }
+
+    return nil
 }
 
 func (model *CombatModel) createRemoteProjectileEffect(effect func(*ArmyUnit)) func(*ArmyUnit) {
