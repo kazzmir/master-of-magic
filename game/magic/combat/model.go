@@ -6847,6 +6847,9 @@ func (model *CombatModel) HandleRemoteEvent(spellSystem optional.Optional[SpellS
             unit := model.GetUnitById(event.Id)
             if unit != nil {
                 model.doKillUnit(unit)
+                if unit == model.SelectedUnit {
+                    model.DoneTurn()
+                }
             }
         case RemoteUnitCastSpellType:
             event := event.(*RemoteUnitCastSpellEvent)

@@ -3161,3 +3161,162 @@ func TestCounterMagic(test *testing.T) {
             }
     }
 }
+
+// Mirror CombatScreen.doMelee's local resolution / remote event replay without
+// requiring animations, audio, or a window.
+type remoteMeleeTestActions struct {
+	*ProxyActions
+	test *testing.T
+}
+
+func (actions *remoteMeleeTestActions) MeleeAttack(attacker, defender *ArmyUnit) {
+	actions.test.Helper()
+	model := actions.Model
+	if !model.IsRemoteUnit(attacker) {
+		model.meleeAttack(attacker, defender)
+		if err := model.RemoteFinishMeleeAttack(); err != nil {
+			actions.test.Fatal(err)
+		}
+		return
+	}
+
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+	for {
+		select {
+		case event := <-model.Remote.Events:
+			if event.GetType() == RemoteFinishMeleeAttackType {
+				return
+			}
+			model.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+		case <-timeout.C:
+			actions.test.Fatal("Timed out waiting for remote melee to finish")
+		}
+	}
+}
+
+func TestRemoteDefenderMeleeMutualDeathSelectsNextUnit(test *testing.T) {
+	serverPeer, clientPeer := net.Pipe()
+	defer serverPeer.Close()
+	defer clientPeer.Close()
+	serverPeer.SetWriteDeadline(time.Now().Add(5 * time.Second))
+	clientPeer.SetWriteDeadline(time.Now().Add(5 * time.Second))
+
+	// Remote flags describe the opposite peer: the server owns the attacker,
+	// and the client owns the defender.
+	serverRemote := MakeRemote(false, false, serverPeer)
+	clientRemote := MakeRemote(true, true, clientPeer)
+	makeModel := func(remote *Remote) *CombatModel {
+		makeArmy := func(banner data.BannerType) *Army {
+			army := &Army{Player: makeTestCombatPlayer(true)}
+			template := units.LizardSpearmen
+			template.Count = 1
+			template.HitPoints = 1
+			template.Defense = 1
+			template.MeleeAttackPower = 100
+			template.MovementSpeed = 2
+			for range 2 {
+				// Guaranteed hits make simultaneous lethal melee deterministic.
+				army.AddUnit(&OverrideToHitMelee{units.MakeOverworldUnitFromUnit(template, 0, 0, data.PlaneArcanus, banner, &units.NoExperienceInfo{}, &units.NoEnchantments{})})
+			}
+			return army
+		}
+		model := MakeCombatModel(spellbook.Spells{}, makeArmy(data.BannerRed), makeArmy(data.BannerBlue), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remote)
+		for _, army := range []*Army{model.DefendingArmy, model.AttackingArmy} {
+			for _, unit := range army.units {
+				model.setTileUnit(unit.X, unit.Y, nil)
+			}
+		}
+		for i, unit := range model.DefendingArmy.units {
+			unit.X, unit.Y = 10-2*i, 10
+			unit.MovesLeft = fraction.FromInt(2)
+			unit.LastTurn = model.CurrentTurn - 1
+			model.setTileUnit(unit.X, unit.Y, unit)
+		}
+		for i, unit := range model.AttackingArmy.units {
+			unit.X, unit.Y = 11+2*i, 10
+			unit.LastTurn = model.CurrentTurn - 1
+			model.setTileUnit(unit.X, unit.Y, unit)
+		}
+		model.Turn = TeamDefender
+		model.SelectedUnit = model.DefendingArmy.units[0]
+		return model
+	}
+	server, client := makeModel(serverRemote), makeModel(clientRemote)
+	if !server.IsServer() || client.IsServer() {
+		test.Fatal("Expected attacker server and defender client")
+	}
+
+	clientMover := client.DefendingArmy.units[0]
+	clientTarget := client.AttackingArmy.units[0]
+	serverMover := server.DefendingArmy.units[0]
+	serverTarget := server.AttackingArmy.units[0]
+	clientNext := client.DefendingArmy.units[1]
+	serverNext := server.DefendingArmy.units[1]
+	initialTurn := client.CurrentTurn
+	if !client.canMeleeAttack(clientMover, clientTarget, true) || clientMover.GetMovementSpeed().LessThan(fraction.FromInt(2)) {
+		test.Fatal("Expected defender to be able to melee twice in one turn")
+	}
+
+	quit, cancel := context.WithCancel(context.Background())
+	var receivers sync.WaitGroup
+	for _, remote := range []*Remote{serverRemote, clientRemote} {
+		receivers.Go(func() { remote.RunReceiveLoop(quit) })
+	}
+	defer func() {
+		cancel()
+		receivers.Wait()
+	}()
+
+	// Initiate the attack through the same selection/update path as a click.
+	client.Update(&ProxySpellSystem{Model: client}, &remoteMeleeTestActions{ProxyActions: &ProxyActions{Model: client}, test: test}, true, clientTarget.X, clientTarget.Y)
+
+	// A marker bounds replay of every command, damage, death and turn event.
+	if err := clientRemote.SendEvent(&RemoteGlobalSpellEvent{Type: RemoteGlobalSpellType, Name: "mutual-melee-marker"}); err != nil {
+		test.Fatal(err)
+	}
+	// The first queued event is the melee command. Its action consumes the
+	// ordered result stream through melee_finished before Update returns.
+	server.Update(&ProxySpellSystem{Model: server}, &remoteMeleeTestActions{ProxyActions: &ProxyActions{Model: server}, test: test}, false, 0, 0)
+	timeout := time.NewTimer(5 * time.Second)
+	defer timeout.Stop()
+	for {
+		select {
+		case event := <-serverRemote.Events:
+			if marker, ok := event.(*RemoteGlobalSpellEvent); ok && marker.Name == "mutual-melee-marker" {
+				goto assertions
+			}
+			server.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+		case <-timeout.C:
+			test.Fatal("Timed out replaying defender's melee on the server")
+		}
+	}
+
+assertions:
+	for _, peer := range []struct {
+		name                string
+		model               *CombatModel
+		mover, target, next *ArmyUnit
+	}{
+		{"client", client, clientMover, clientTarget, clientNext},
+		{"server", server, serverMover, serverTarget, serverNext},
+	} {
+		for _, dead := range []*ArmyUnit{peer.mover, peer.target} {
+			if dead.GetHealth() != 0 || peer.model.GetUnitById(dead.Id) != nil || peer.model.GetArmyForTeam(dead.Team).GetKilledUnitById(dead.Id) != dead {
+				test.Errorf("%s: expected melee participant %d to be dead and removed", peer.name, dead.Id)
+			}
+		}
+		if len(peer.model.DefendingArmy.units) != 1 || len(peer.model.AttackingArmy.units) != 1 {
+			test.Errorf("%s: expected one surviving unit in each army", peer.name)
+		}
+		if peer.model.SelectedUnit != peer.next {
+			test.Errorf("%s: expected defender %d selected instead of the dead melee unit (still selected: %v)", peer.name, peer.next.Id, peer.model.SelectedUnit == peer.mover)
+		}
+		if peer.model.Turn != TeamDefender || peer.model.CurrentTurn != initialTurn {
+			test.Errorf("%s: mutual death advanced the team or round", peer.name)
+		}
+		if peer.next.LastTurn >= initialTurn || !peer.next.MovesLeft.Equals(fraction.FromInt(2)) {
+			test.Errorf("%s: mutual death consumed the next defender's turn or movement", peer.name)
+		}
+	}
+}

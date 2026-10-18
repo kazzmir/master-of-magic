@@ -317,7 +317,7 @@ func MakeScenario4(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
 }
 
 func MakeScenario5(isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
-    return makeGenericScenario(isServer, remote, units.BeastmenPriest, 3, units.Colossus, 3)
+    return makeGenericScenario(isServer, remote, units.Cockatrices, 3, units.GreatDrake, 3)
 }
 
 func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.CombatModel, *combat.CombatScreen, error) {
