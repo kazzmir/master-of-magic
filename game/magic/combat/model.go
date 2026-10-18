@@ -8647,13 +8647,13 @@ func (model *CombatModel) MoveUnit(mover *ArmyUnit, targetX int, targetY int) bo
     return false
 }
 
-func (model *CombatModel) WaitForSynchronization(quit context.Context, yield func() error) error {
+func (model *CombatModel) WaitForSynchronization(quit context.Context, yield func() error, spellSystem optional.Optional[SpellSystem], damage optional.Optional[AddDamageIndicators]) error {
     for !model.IsSynchronized() {
         select {
             case <-quit.Done():
                 return quit.Err()
             case event := <-model.Remote.Events:
-                model.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
+                model.HandleRemoteEvent(spellSystem, damage, event)
             default:
                 err := yield()
                 if err != nil {

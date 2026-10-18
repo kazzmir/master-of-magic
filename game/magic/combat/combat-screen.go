@@ -2700,8 +2700,7 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
         // speed := float64(combat.Counter - combat.SelectedUnit.MovementTick) / 4
         speed := float64(0.04)
 
-        reached := false
-        for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+        localYield := func() error {
             combat.UpdateAnimations()
             combat.UpdateDamageIndicators()
             combat.ProcessInput()
@@ -2712,15 +2711,19 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
             combat.MouseTileX = int(math.Round(tileX))
             combat.MouseTileY = int(math.Round(tileY))
 
+            return yield()
+        }
+
+        reached := false
+        for !reached && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
+            if localYield() != nil {
+                return
+            }
+
             // moving through a wall of fire might create an expectation from the remote player
             if combat.Model.Remote != nil {
-                for !combat.Model.IsSynchronized() {
-                    select {
-                        case <-combat.Quit.Done():
-                            return
-                        case event := <-combat.Model.Remote.Events:
-                            combat.Model.HandleRemoteEvent(optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat), event)
-                    }
+                if combat.Model.WaitForSynchronization(combat.Quit, localYield, optional.Of[SpellSystem](combat), optional.Of[AddDamageIndicators](combat)) != nil {
+                    return
                 }
             }
 
@@ -2744,10 +2747,6 @@ func (combat *CombatScreen) doMoveUnit(yield coroutine.YieldFunc, mover *ArmyUni
 
                 path = path[1:]
                 reached = true
-            }
-
-            if yield() != nil {
-                return
             }
         }
     }

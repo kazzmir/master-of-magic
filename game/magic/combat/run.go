@@ -1,6 +1,8 @@
 package combat
 
 import (
+    "context"
+
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
@@ -528,16 +530,7 @@ func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
         targetX, targetY := path[0].X, path[0].Y
 
         if actions.Model.Remote != nil {
-            for !actions.Model.IsSynchronized() {
-                select {
-                    /*
-                    case <-actions.Quit.Done():
-                        return
-                        */
-                    case event := <-actions.Model.Remote.Events:
-                        actions.Model.HandleRemoteEvent(optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators](), event)
-                }
-            }
+            actions.Model.WaitForSynchronization(context.Background(), func() error { return nil }, optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators]())
         }
 
         died := actions.Model.MoveUnit(mover, targetX, targetY)
