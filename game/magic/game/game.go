@@ -4995,7 +4995,7 @@ func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player
 
     events := make(chan combat.CombatEvent, 1000)
 
-    combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events)
+    combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events, nil)
 
     if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
         combatModel.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)

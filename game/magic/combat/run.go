@@ -1,11 +1,14 @@
 package combat
 
 import (
+    "context"
+
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/unitview"
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/log"
+    "github.com/kazzmir/master-of-magic/lib/optional"
 )
 
 type ProxySpellSystem struct {
@@ -274,7 +277,7 @@ func (system *ProxySpellSystem) CreateCreatureBindingProjectile(target *ArmyUnit
 func (system *ProxySpellSystem) CreatePetrifyProjectile(target *ArmyUnit, reduceResistance int) *Projectile {
     return &Projectile{
         Target: target,
-        Effect: system.Model.CreatePetrifyProjectileEffect(reduceResistance),
+        Effect: system.Model.CreatePetrifyProjectileEffect(&FakeDamageIndicators{}, reduceResistance),
     }
 }
 
@@ -525,6 +528,11 @@ func (actions *ProxyActions) MoveUnit(mover *ArmyUnit, path pathfinding.Path) {
     // log.Printf("Move %v along path: %+v", mover.Unit.GetName(), path)
     for len(path) > 0 && mover.MovesLeft.GreaterThan(fraction.FromInt(0)) {
         targetX, targetY := path[0].X, path[0].Y
+
+        if actions.Model.Remote != nil {
+            actions.Model.WaitForSynchronization(context.Background(), func() error { return nil }, optional.Empty[SpellSystem](), optional.Empty[AddDamageIndicators]())
+        }
+
         died := actions.Model.MoveUnit(mover, targetX, targetY)
         if died {
             return

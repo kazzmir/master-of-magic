@@ -421,7 +421,7 @@ func makeScenario1(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), nil)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
     // lame but we have to do this after the model has been created
@@ -459,7 +459,7 @@ func makeScenario2(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createSettlerArmy(attackingPlayer, 3)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -513,7 +513,7 @@ func makeScenario3(cache *lbx.LbxCache) *combat.CombatScreen {
 
     attackingArmy.AddUnit(units.MakeOverworldUnitFromUnit(units.LizardSwordsmen, 1, 1, data.PlaneArcanus, attackingPlayer.Wizard.Banner, attackingPlayer.MakeExperienceInfo(), attackingPlayer.MakeUnitEnchantmentProvider()))
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, model)
 }
 
@@ -572,7 +572,7 @@ func makeScenario4(cache *lbx.LbxCache) *combat.CombatScreen {
     // city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, model)
 }
 
@@ -615,7 +615,7 @@ func makeScenario5(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneNatureNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneNatureNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneNatureNode}, model)
 }
 
@@ -657,7 +657,7 @@ func makeScenario6(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, model)
 }
 
@@ -694,7 +694,7 @@ func makeScenario7(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeWater, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -771,7 +771,7 @@ func makeScenario8(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, data.ChaosMagic, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{Encounter: combat.ZoneChaosNode}, model)
 }
 
@@ -817,7 +817,7 @@ func makeScenario9(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -853,7 +853,7 @@ func makeScenario10(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -911,7 +911,7 @@ func makeScenario11(cache *lbx.LbxCache) *combat.CombatScreen {
     city.AddEnchantment(data.CityEnchantmentFlyingFortress, defendingPlayer.GetBanner())
     // city.AddEnchantment(data.CityEnchantmentWallOfDarkness, defendingPlayer.Wizard.Banner)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](defendingPlayer), combat.CombatLandscapeGrass, data.PlaneMyrror, combat.ZoneType{City: city}, model)
 }
 
@@ -963,7 +963,7 @@ func makeScenario12(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -1003,7 +1003,7 @@ func makeScenario13(cache *lbx.LbxCache) *combat.CombatScreen {
     city := citylib.MakeCity("xyz", 10, 10, attackingPlayer.Wizard.Race, nil, nil, nil, attackingPlayer)
     city.Buildings.Insert(buildinglib.BuildingFortress)
 
-    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(spellbook.Spells{}, defendingArmy, attackingArmy, combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeMountain, data.PlaneArcanus, combat.ZoneType{}, model)
 }
 
@@ -1045,7 +1045,7 @@ func makeScenario14(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy := createGreatDrakeArmy(&attackingPlayer)
     attackingArmy := createLizardmenArmy(attackingPlayer, 3)
 
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 10), nil)
     return combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](defendingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: city}, model)
 }
 
@@ -1114,7 +1114,7 @@ func makeScenario15(cache *lbx.LbxCache) *combat.CombatScreen {
     // attackingArmy.Units[0].AddCurse(data.UnitCurseConfusion)
 
     // return combat.MakeCombatScreen(cache, &defendingArmy, attackingArmy, attackingPlayer, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, 10, 25)
-    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10))
+    model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), nil)
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
     // combatScreen.Model.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
