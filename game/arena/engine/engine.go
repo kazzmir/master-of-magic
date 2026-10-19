@@ -1940,6 +1940,24 @@ func sum[T any](items []T, f func(T) int) int {
     return total
 }
 
+// cloneArmyUnit buys an independent, fresh recruit with the source's upgrades.
+func cloneArmyUnit(playerObj *player.Player, source units.StackUnit) units.StackUnit {
+    if source == nil || !slices.Contains(playerObj.Units, source) {
+        return nil
+    }
+    cost := getCloneCost(source)
+    if cost > playerObj.Money {
+        return nil
+    }
+    clone := playerObj.AddUnit(source.GetRawUnit())
+    clone.SetWeaponBonus(source.GetWeaponBonus())
+    for _, enchantment := range source.GetEnchantments() {
+        clone.AddEnchantment(enchantment)
+    }
+    playerObj.Money -= cost
+    return clone
+}
+
 func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
 
     unitContainer := ui.Column(0, 1)
@@ -2079,6 +2097,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                             unitSpecifics.ReplaceChild(meleeBox, newMeleeBox)
                             playerObj.Money -= upgradeCost
                             uiEvents.AddUpdate(&UIUpdateMoney{})
+                            uiEvents.AddUpdate(&UIUpdateUnit{Unit: unit})
                         }),
                     ))
                 }
@@ -2182,6 +2201,36 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(healButton)
         unitSpecifics.AddChild(removeButton)
 
+        var cloneButton *widget.Button
+        updateClone := func() {
+            cost := getCloneCost(unit)
+            cloneButton.SetText(fmt.Sprintf("Clone for %d", cost))
+            cloneButton.GetWidget().Disabled = cost > playerObj.Money
+        }
+        cloneButton = widget.NewButton(
+            widget.ButtonOpts.TextPosition(widget.TextPositionStart, widget.TextPositionCenter),
+            widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 12, Right: 12}),
+            widget.ButtonOpts.Image(standardButtonImage()),
+            widget.ButtonOpts.TextAndImage(fmt.Sprintf("Clone for %d", getCloneCost(unit)), face, moneyImage, &widget.ButtonTextColor{
+                Idle: color.White,
+                Hover: color.White,
+                Pressed: color.NRGBA{R: 255, G: 220, B: 140, A: 255},
+                Disabled: color.Gray{Y: 128},
+            }),
+            widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+                clone := cloneArmyUnit(playerObj, unit)
+                if clone == nil {
+                    return
+                }
+                playSound.Play()
+                updateClone()
+                uiEvents.AddUpdate(&UIAddUnit{Unit: clone})
+                uiEvents.AddUpdate(&UIUpdateMoney{})
+            }),
+        )
+        updateClone()
+        unitSpecifics.AddChild(cloneButton)
+
         enchantments := widget.NewList(
             widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
                 Idle: ui.SolidImage(64, 64, 64),
@@ -2222,10 +2271,12 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 }
 
                 updateSellCost()
+                updateClone()
             }
         }
 
         removeId := AddEvent(uiEvents, newEvent)
+        cloneMoneyID := AddEvent(uiEvents, func(update *UIUpdateMoney) { updateClone() })
 
         enchantmentsBoxes := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -2245,6 +2296,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         buyEnchantments, cleanup := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache, playSound)
         removeUnit = func() {
             uiEvents.Remove(removeId)
+            uiEvents.Remove(cloneMoneyID)
             cleanup()
         }
 

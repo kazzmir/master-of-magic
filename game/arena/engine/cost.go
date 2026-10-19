@@ -855,6 +855,27 @@ func getVeryRareSpells(books int) int {
 }
 
 // upgrade from bonus to the next one, e.g. none -> magic, magic -> mythril, mythril -> adamantium
+// getCloneCost is the full purchase price, without experience or healing costs.
+// Weapon prices are cumulative: reaching mythril also requires buying magic.
+func getCloneCost(unit units.StackUnit) uint64 {
+    raw := unit.GetRawUnit()
+    cost := getUnitCost(&raw)
+    for _, enchantment := range unit.GetEnchantments() {
+        cost += uint64(getEnchantmentCost(enchantment))
+    }
+    switch unit.GetWeaponBonus() {
+        case data.WeaponAdamantium:
+            cost += getWeaponUpgradeCost(data.WeaponMythril)
+            fallthrough
+        case data.WeaponMythril:
+            cost += getWeaponUpgradeCost(data.WeaponMagic)
+            fallthrough
+        case data.WeaponMagic:
+            cost += getWeaponUpgradeCost(data.WeaponNone)
+    }
+    return cost
+}
+
 func getWeaponUpgradeCost(bonus data.WeaponBonus) uint64 {
     switch bonus {
         case data.WeaponNone: return 100
