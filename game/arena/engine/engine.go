@@ -2644,20 +2644,8 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         widget.ContainerOpts.BackgroundImage(ui.SolidImage(24, 28, 35)),
     )
 
-    enterBattleButton := widget.NewButton(
-        widget.ButtonOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                Position: widget.RowLayoutPositionCenter,
-            }),
-        ),
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 4, Bottom: 4, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Enter Battle", &face2, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-        widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+    var battleFace text.Face = &text.GoTextFace{Source: font, Size: 24}
+    enterBattleButton := ui.BattleButton(&battleFace, func() {
             if len(engine.Player.Units) == 0 {
                 return
             }
@@ -2666,8 +2654,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
                 case engine.Events <- &EventEnterBattle{}:
                 default:
             }
-        }),
-    )
+    })
 
     imageCache := util.MakeImageCache(engine.Cache)
 
