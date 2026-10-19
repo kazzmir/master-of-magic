@@ -4,9 +4,28 @@ import (
 	"image"
 	"testing"
 
+	"github.com/ebitenui/ebitenui/event"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 )
+
+func TestAffordableCheckboxDefaultsChecked(t *testing.T) {
+	var changes []bool
+	checkbox := Checkbox("Affordable units", nil, true, func(checked bool) {
+		changes = append(changes, checked)
+	})
+	event.ExecuteDeferred()
+	if checkbox.State() != widget.WidgetChecked || len(changes) != 0 {
+		t.Fatal("checkbox should start checked without triggering a change")
+	}
+	checkbox.Click()
+	event.ExecuteDeferred()
+	checkbox.Click()
+	event.ExecuteDeferred()
+	if len(changes) != 2 || changes[0] || !changes[1] {
+		t.Fatalf("expected uncheck then check, got %v", changes)
+	}
+}
 
 func TestColumnFillsWidth(t *testing.T) {
 	column := Column()

@@ -1665,54 +1665,19 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         setupFilteredList()
     })
 
-    allButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("All Units", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-    )
-
-    affordableButton := widget.NewButton(
-        widget.ButtonOpts.TextPadding(&widget.Insets{Top: 2, Bottom: 2, Left: 5, Right: 5}),
-        widget.ButtonOpts.Image(standardButtonImage()),
-        widget.ButtonOpts.Text("Affordable Units", face, &widget.ButtonTextColor{
-            Idle: color.White,
-            Hover: color.White,
-            Pressed: color.NRGBA{R: 255, G: 255, B: 0, A: 255},
-        }),
-    )
-
-    buttons := ui.HBox()
-    buttons.AddChild(allButton, affordableButton)
-
     listContainer := ui.Column(1)
+    listContainer.AddChild(filteredUnitList.GetWidget())
 
-    first := true
-
-    widget.NewRadioGroup(
-        widget.RadioGroupOpts.Elements(allButton, affordableButton),
-        widget.RadioGroupOpts.InitialElement(allButton),
-        widget.RadioGroupOpts.ChangedHandler(func(args *widget.RadioGroupChangedEventArgs) {
-            // the handler is called when the radio group is created, so don't play sound the first time
-            if !first {
-                playSound.Play()
-            }
-            first = false
-            listContainer.RemoveChildren()
-            if args.Active == allButton {
-                listContainer.AddChild(unitList.GetWidget())
-            } else {
-                listContainer.AddChild(filteredUnitList.GetWidget())
-            }
-        }),
-    )
-
-    container2.AddChild(buttons)
-
-    listContainer.AddChild(unitList.GetWidget())
+    affordableOnly := ui.Checkbox("Affordable units", face, true, func(checked bool) {
+        playSound.Play()
+        listContainer.RemoveChildren()
+        if checked {
+            listContainer.AddChild(filteredUnitList.GetWidget())
+        } else {
+            listContainer.AddChild(unitList.GetWidget())
+        }
+    })
+    container2.AddChild(affordableOnly)
 
     container2.AddChild(listContainer)
 

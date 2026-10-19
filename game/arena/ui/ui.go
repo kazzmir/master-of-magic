@@ -5,7 +5,9 @@ import (
     "math"
 
     // "github.com/ebitenui/ebitenui"
+    "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/text/v2"
+    "github.com/hajimehoshi/ebiten/v2/vector"
     "github.com/ebitenui/ebitenui/widget"
     ui_image "github.com/ebitenui/ebitenui/image"
 )
@@ -74,6 +76,45 @@ func CenteredText(textStr string, face *text.Face, textColor color.Color) *widge
 
 func BorderedImage(borderColor color.RGBA, borderSize int) *ui_image.NineSlice {
     return ui_image.NewBorderedNineSliceColor(color.RGBA{}, borderColor, borderSize)
+}
+
+// Checkbox is a labeled, keyboard-accessible checkbox using the arena palette.
+func Checkbox(label string, face *text.Face, checked bool, changed func(bool)) *widget.Checkbox {
+    makeImage := func(selected, hover bool) *ui_image.NineSlice {
+        img := ebiten.NewImage(22, 22)
+        img.Fill(color.NRGBA{R: 32, G: 40, B: 48, A: 255})
+        border := color.NRGBA{R: 125, G: 153, B: 145, A: 255}
+        if hover {
+            border = color.NRGBA{R: 160, G: 220, B: 185, A: 255}
+        }
+        vector.StrokeRect(img, 1, 1, 20, 20, 2, border, false)
+        if selected {
+            tick := color.NRGBA{R: 145, G: 225, B: 165, A: 255}
+            vector.StrokeLine(img, 5, 11, 9, 16, 3, tick, true)
+            vector.StrokeLine(img, 9, 16, 17, 6, 3, tick, true)
+        }
+        return ui_image.NewFixedNineSlice(img)
+    }
+    state := widget.WidgetUnchecked
+    if checked {
+        state = widget.WidgetChecked
+    }
+    return widget.NewCheckbox(
+        widget.CheckboxOpts.Image(&widget.CheckboxImage{
+            Unchecked: makeImage(false, false),
+            UncheckedHovered: makeImage(false, true),
+            Checked: makeImage(true, false),
+            CheckedHovered: makeImage(true, true),
+        }),
+        widget.CheckboxOpts.Text(label, face, &widget.LabelColor{Idle: color.White, Disabled: color.Gray{Y: 128}}),
+        widget.CheckboxOpts.Spacing(10),
+        widget.CheckboxOpts.InitialState(state),
+        widget.CheckboxOpts.StateChangedHandler(func(args *widget.CheckboxChangedEventArgs) {
+            if changed != nil {
+                changed(args.State == widget.WidgetChecked)
+            }
+        }),
+    )
 }
 
 // NavigationButtonImage gives each section its own palette, with a brighter
