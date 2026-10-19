@@ -2496,7 +2496,11 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 }
 
 func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
-    container := ui.HBox()
+    container := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(5),
+        widget.GridLayoutOpts.Weights([]float64{0, 0, 0, 0, 1}, []float64{1}),
+        widget.GridLayoutOpts.Spacing(8, 0),
+    )))
 
     name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
     container.AddChild(name)
@@ -2513,7 +2517,7 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
         money.Label = fmt.Sprintf("Gold: %d", playerObj.Money)
     })
 
-    books := ui.HBox()
+    books := ui.NewIconStrip()
     container.AddChild(books)
 
     lifeBook, _ := imageCache.GetImageTransform("newgame.lbx", 24, 0, "enlarge", enlargeTransform(2))
@@ -2523,7 +2527,7 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
     chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
 
     setupBooks := func() {
-        books.RemoveChildren()
+        var images []*ebiten.Image
 
         for _, book := range playerObj.GetWizard().Books {
             count := book.Count
@@ -2537,16 +2541,10 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
             }
 
             for range count {
-                books.AddChild(widget.NewGraphic(
-                    widget.GraphicOpts.Image(bookImage),
-                    widget.GraphicOpts.WidgetOpts(
-                        widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                            Position: widget.RowLayoutPositionCenter,
-                        }),
-                    ),
-                ))
+                images = append(images, bookImage)
             }
         }
+        books.SetImages(images)
     }
 
     setupBooks()

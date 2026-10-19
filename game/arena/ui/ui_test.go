@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"math"
 	"testing"
 
 	"github.com/ebitenui/ebitenui/event"
@@ -24,6 +25,69 @@ func TestAffordableCheckboxDefaultsChecked(t *testing.T) {
 	event.ExecuteDeferred()
 	if len(changes) != 2 || changes[0] || !changes[1] {
 		t.Fatalf("expected uncheck then check, got %v", changes)
+	}
+}
+
+func TestIconStripFitsAvailableSpace(t *testing.T) {
+	for _, test := range []struct {
+		name                                                  string
+		totalWidth, minWidth, maxHeight, count, width, height int
+		scale, gap                                            float64
+	}{
+		{"natural size", 100, 20, 40, 5, 200, 64, 1, 4},
+		{"close gaps", 100, 20, 40, 5, 108, 64, 1, 2},
+		{"overlap before shrinking", 100, 20, 40, 5, 80, 64, 1, -5},
+		{"half visible", 100, 20, 40, 5, 60, 64, 1, -10},
+		{"shrink after overlap limit", 100, 20, 40, 5, 30, 64, .5, -5},
+		{"mixed widths", 140, 20, 40, 3, 120, 64, 1, -10},
+		{"single book", 20, 20, 40, 1, 10, 64, .5, 0},
+		{"fit height", 100, 20, 40, 5, 200, 20, .5, 4},
+		{"no width", 100, 20, 40, 5, 0, 64, 0, 0},
+		{"no books", 0, 0, 0, 0, 200, 64, 0, 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			scale, gap := fitIconStrip(test.totalWidth, test.minWidth, test.maxHeight, test.count, test.width, test.height)
+			if math.Abs(scale-test.scale) > 1e-9 || math.Abs(gap-test.gap) > 1e-9 {
+				t.Fatalf("got scale %v gap %v, want %v and %v", scale, gap, test.scale, test.gap)
+			}
+			if gap < -float64(test.minWidth)*scale/2-1e-9 {
+				t.Fatal("more than half a book is hidden")
+			}
+		})
+	}
+}
+
+func TestHeaderBooksResizeWithoutOverflow(t *testing.T) {
+	header := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(2),
+		widget.GridLayoutOpts.Weights([]float64{0, 1}, []float64{1}),
+		widget.GridLayoutOpts.Spacing(8, 0),
+	)))
+	label := widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(300, 20)))
+	books := NewIconStrip()
+	header.AddChild(label, books)
+	icon := ebiten.NewImage(20, 40)
+	for _, count := range []int{0, 5, 55} {
+		images := make([]*ebiten.Image, count)
+		for i := range images {
+			images[i] = icon
+		}
+		books.SetImages(images)
+		for _, width := range []int{1200, 500, 320, 308} {
+			header.SetLocation(image.Rect(0, 0, width, 64))
+			header.RequestRelayout()
+			header.Render(ebiten.NewImage(width, 64))
+			rect := books.GetWidget().Rect
+			total, height, n, minWidth := books.imageSize()
+			scale, gap := fitIconStrip(total, minWidth, height, n, rect.Dx(), rect.Dy())
+			used := float64(total)*scale + float64(max(0, n-1))*gap
+			if rect.Min.X < 308 || rect.Max.X > width || used > float64(rect.Dx())+1e-9 {
+				t.Fatalf("%d books at width %d overflow: bounds %v, used %v", count, width, rect, used)
+			}
+		}
+	}
+	if icon.Bounds().Size() != image.Pt(20, 40) {
+		t.Fatal("source book image was modified")
 	}
 }
 
