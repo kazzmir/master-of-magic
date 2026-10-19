@@ -740,6 +740,7 @@ type UnitIconList struct {
 
     SortNameDirection SortDirection
     SortCostDirection SortDirection
+    sortByCost bool
 }
 
 func standardButtonImage() *widget.ButtonImage {
@@ -954,6 +955,7 @@ func (iconList *UnitIconList) Clear() {
 }
 
 func (iconList *UnitIconList) SortByName() {
+    iconList.sortByCost = false
     var sortFunc func(a, b *units.Unit) int
 
     switch iconList.SortNameDirection {
@@ -976,6 +978,7 @@ func (iconList *UnitIconList) SortByName() {
 }
 
 func (iconList *UnitIconList) SortByCost() {
+    iconList.sortByCost = true
     var sortFunc func(a, b *units.Unit) int
 
     switch iconList.SortCostDirection {
@@ -1603,6 +1606,18 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
     return shop
 }
 
+type unitShopFilters struct {
+    Affordable bool
+    Ranged bool
+    Flying bool
+}
+
+func (filters unitShopFilters) matches(unit *units.Unit, gold uint64) bool {
+    return (!filters.Affordable || getUnitCost(unit) <= gold) &&
+        (!filters.Ranged || unit.GetRangedAttackPower() > 0) &&
+        (!filters.Flying || unit.Flying)
+}
+
 func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
     armyShop := ui.Column(0, 0, 1)
 
@@ -1639,47 +1654,45 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
         }
     }
 
-    unitList := MakeUnitIconList("All Units", imageCache, face, buyUnit, playSound)
-
-    for _, unit := range getValidChoices(100000) {
-        unitList.AddUnit(unit)
-    }
-
-    unitList.SortByName()
-
-    filteredUnitList := MakeUnitIconList("Affordable Units", imageCache, face, buyUnit, playSound)
-
+    filters := unitShopFilters{Affordable: true}
+    unitList := MakeUnitIconList("Units", imageCache, face, buyUnit, playSound)
+    choices := getValidChoices(^uint64(0))
     setupFilteredList := func() {
-        filteredUnitList.Clear()
-        filteredUnitList.Reset()
-        for _, unit := range getValidChoices(playerObj.Money) {
-            filteredUnitList.AddUnit(unit)
+        unitList.Clear()
+        unitList.Reset()
+        for _, unit := range choices {
+            if filters.matches(unit, playerObj.Money) {
+                unitList.AddUnit(unit)
+            }
         }
-
-        filteredUnitList.SortByName()
+        if unitList.sortByCost {
+            unitList.SortByCost()
+        } else {
+            unitList.SortByName()
+        }
     }
-
     setupFilteredList()
 
     AddEvent(uiEvents, func (update *UIUpdateMoney) {
         setupFilteredList()
     })
 
-    listContainer := ui.Column(1)
-    listContainer.AddChild(filteredUnitList.GetWidget())
-
-    affordableOnly := ui.Checkbox("Affordable units", face, true, func(checked bool) {
-        playSound.Play()
-        listContainer.RemoveChildren()
-        if checked {
-            listContainer.AddChild(filteredUnitList.GetWidget())
-        } else {
-            listContainer.AddChild(unitList.GetWidget())
-        }
-    })
-    container2.AddChild(affordableOnly)
-
-    container2.AddChild(listContainer)
+    filterControls := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
+        widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+        widget.RowLayoutOpts.Spacing(20),
+    )))
+    addFilter := func(label string, value *bool) {
+        filterControls.AddChild(ui.Checkbox(label, face, *value, func(checked bool) {
+            *value = checked
+            playSound.Play()
+            setupFilteredList()
+        }))
+    }
+    addFilter("Affordable units", &filters.Affordable)
+    addFilter("Ranged attacks", &filters.Ranged)
+    addFilter("Flying", &filters.Flying)
+    container2.AddChild(filterControls)
+    container2.AddChild(unitList.GetWidget())
 
     return armyShop
 }
