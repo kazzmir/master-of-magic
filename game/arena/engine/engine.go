@@ -2497,22 +2497,27 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
 func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEventUpdate, imageCache *util.ImageCache) *widget.Container {
     container := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
-        widget.GridLayoutOpts.Columns(5),
-        widget.GridLayoutOpts.Weights([]float64{0, 0, 0, 0, 1}, []float64{1}),
-        widget.GridLayoutOpts.Spacing(8, 0),
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Weights([]float64{1}, []float64{0, 1}),
+        widget.GridLayoutOpts.Spacing(0, 6),
     )))
+    stats := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
+        widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+        widget.RowLayoutOpts.Spacing(16),
+    )))
+    container.AddChild(stats)
 
     name := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Name: %v", playerObj.Wizard.Name), face, color.White))
-    container.AddChild(name)
+    stats.AddChild(name)
 
     level := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Level: %d", playerObj.Level), face, color.White))
-    container.AddChild(level)
+    stats.AddChild(level)
 
     mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.OriginalMana), face, color.White))
-    container.AddChild(mana)
+    stats.AddChild(mana)
 
     money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Gold: %d", playerObj.Money), face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
-    container.AddChild(money)
+    stats.AddChild(money)
     AddEvent(events, func(update *UIUpdateMoney) {
         money.Label = fmt.Sprintf("Gold: %d", playerObj.Money)
     })
