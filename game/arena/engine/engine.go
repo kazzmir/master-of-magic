@@ -525,7 +525,6 @@ func (engine *Engine) Update() error {
                             engine.GameMode = GameModeUI
                             engine.Difficulty = use.Level
                             engine.Player = player.MakePlayer(data.BannerGreen)
-                            // test3(engine.Player)
 
                             if engine.Difficulty == DifficultyEasy {
                                 engine.Player.Money = 500
@@ -2707,38 +2706,68 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     return ui, uiEvents, nil
 }
 
-func test1(playerObj *player.Player) {
-    playerObj.AddUnit(units.LizardSwordsmen)
-}
+const TestScenarioCount = 5
 
-func test2(playerObj *player.Player) {
-    v := playerObj.AddUnit(units.LizardSwordsmen)
-    v.AddExperience(100)
-}
-
-func test3(playerObj *player.Player) {
-    v := playerObj.AddUnit(units.LizardSwordsmen)
-    v.AdjustHealth(-10)
-    playerObj.Money = 300000
-    playerObj.Level = 8
-}
-
-func test4(playerObj *player.Player) {
-    for range 5 {
-        playerObj.AddUnit(units.LizardSwordsmen)
+// makeTestPlayer produces deterministic preparation fixtures without requiring
+// game assets. Larger presets also exercise scrolling and long upgrade lists.
+func makeTestPlayer(scenario int) (*player.Player, Difficulty, error) {
+    if scenario < 1 || scenario > TestScenarioCount {
+        return nil, DifficultyEasy, fmt.Errorf("test scenario must be between 1 and %d", TestScenarioCount)
     }
-    for range 5 {
-        playerObj.AddUnit(units.Warlocks)
+    presets := []struct {
+        count int
+        gold uint64
+        level, mana, books int
+        difficulty Difficulty
+    }{
+        {2, 500, 1, 20, 1, DifficultyEasy},
+        {5, 2500, 3, 50, 2, DifficultyNormal},
+        {10, 10000, 6, 100, 3, DifficultyHard},
+        {18, 50000, 10, 200, 4, DifficultyImpossible},
+        {30, 200000, 15, 400, 5, DifficultyImpossible},
     }
-    playerObj.Money = 3000
+    preset := presets[scenario-1]
+    playerObj := player.MakePlayer(data.BannerGreen)
+    playerObj.Wizard.Name = fmt.Sprintf("Test army %d", scenario)
+    playerObj.Money = preset.gold
+    playerObj.Level = preset.level
+    playerObj.Mana = preset.mana
+    playerObj.OriginalMana = preset.mana
+    for _, magic := range []data.MagicType{data.LifeMagic, data.NatureMagic, data.SorceryMagic, data.ChaosMagic, data.DeathMagic}[:min(scenario+1, 5)] {
+        playerObj.Wizard.Books = append(playerObj.Wizard.Books, data.WizardBook{Magic: magic, Count: preset.books})
+    }
+    roster := []units.Unit{
+        units.LizardSwordsmen, units.HighMenBowmen, units.HighMenPriest,
+        units.HighElfSwordsmen, units.Warlocks, units.Hammerhands,
+        units.HighElfMagician, units.GreatDrake, units.SkyDrake,
+    }
+    enchantments := []data.UnitEnchantment{
+        data.UnitEnchantmentBless, data.UnitEnchantmentGiantStrength,
+        data.UnitEnchantmentHolyArmor, data.UnitEnchantmentStoneSkin,
+        data.UnitEnchantmentHaste, data.UnitEnchantmentFlameBlade,
+    }
+    for i := range preset.count {
+        unit := playerObj.AddUnit(roster[i % min(len(roster), scenario*2)])
+        unit.AddExperience((scenario-1)*40 + i*5)
+        for j := range scenario {
+            unit.AddEnchantment(enchantments[(i+j) % len(enchantments)])
+        }
+        if unit.GetRace() != data.RaceFantastic {
+            bonuses := []data.WeaponBonus{data.WeaponNone, data.WeaponMagic, data.WeaponMythril, data.WeaponAdamantium}
+            unit.SetWeaponBonus(bonuses[min(scenario-1, len(bonuses)-1)])
+        }
+        if i % 3 == 0 {
+            unit.AdjustHealth(-max(1, unit.GetMaxHealth()/3))
+        }
+    }
+    return playerObj, preset.difficulty, nil
 }
 
 func MakeEngine(cache *lbx.LbxCache) *Engine {
-    playerObj := player.MakePlayer(data.BannerGreen)
+    return makeEngine(cache, player.MakePlayer(data.BannerGreen), DifficultyEasy, GameModeNewGameUI)
+}
 
-    // test1(playerObj)
-    // test3(playerObj)
-    // test4(playerObj)
+func makeEngine(cache *lbx.LbxCache, playerObj *player.Player, difficulty Difficulty, mode GameMode) *Engine {
 
     music := musiclib.MakeMusic(cache)
 
@@ -2749,7 +2778,8 @@ func MakeEngine(cache *lbx.LbxCache) *Engine {
     }
 
     engine := Engine{
-        GameMode: GameModeNewGameUI,
+        GameMode: mode,
+        Difficulty: difficulty,
         Player: playerObj,
         Cache: cache,
         Events: make(chan EngineEvents, 10),
@@ -2784,18 +2814,58 @@ func showCost() {
 
 // Run starts the desktop arena.
 func Run() {
+    RunWithTestScenario(0)
+}
+
+// RunWithTestScenario skips the difficulty picker for presets 1-5; zero keeps
+// normal startup. Mobile callers continue to use MakeEngine without a preset.
+func RunWithTestScenario(scenario int) {
     log.SetFlags(log.Lshortfile | log.Ldate | log.Lmicroseconds)
+
+    playerObj := player.MakePlayer(data.BannerGreen)
+    difficulty, mode := DifficultyEasy, GameModeNewGameUI
+    if scenario != 0 {
+        var err error
+        playerObj, difficulty, err = makeTestPlayer(scenario)
+        if err != nil {
+            log.Printf("Error: %v", err)
+            return
+        }
+        mode = GameModeUI
+        log.Printf("Test scenario %d: %d units, %d gold, %v difficulty", scenario, len(playerObj.Units), playerObj.Money, difficulty)
+    }
 
     showCost()
 
     cache := lbx.AutoCache()
+    if scenario != 0 {
+        allSpells, err := spellbook.ReadSpellsFromCache(cache)
+        if err != nil {
+            log.Printf("Error loading test spells: %v", err)
+            return
+        }
+        // A deterministic selection of affordable combat spells for each realm.
+        for _, book := range playerObj.Wizard.Books {
+            learned := 0
+            for _, spell := range allSpells.GetSpellsByMagic(book.Magic).Spells {
+                if !spell.Eligibility.CanCastInCombat(false) || playerObj.ComputeEffectiveSpellCost(spell, false) > playerObj.OriginalMana {
+                    continue
+                }
+                playerObj.KnownSpells.AddSpell(spell)
+                learned++
+                if learned >= scenario*2 {
+                    break
+                }
+            }
+        }
+    }
 
     audio.Initialize()
     mouse.Initialize()
 
     ebiten.SetWindowSize(1200, 1050)
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
-    engine := MakeEngine(cache)
+    engine := makeEngine(cache, playerObj, difficulty, mode)
 
     err := ebiten.RunGame(engine)
     if err != nil {
