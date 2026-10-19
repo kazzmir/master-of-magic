@@ -109,6 +109,57 @@ func TestArmyAndUpgradePanelsFillHeight(t *testing.T) {
 	}
 }
 
+func TestMagicSpellGridFillsRemainingSpace(t *testing.T) {
+	shop := Column(0, 0, 0, 1)
+	graphic := func(width, height int) *widget.Graphic {
+		return widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(width, height)))
+	}
+	realm := Column(0, 1)
+	row := ScrollRow(1)
+	spells := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(3),
+		widget.GridLayoutOpts.Weights([]float64{1, 1, 1}, nil),
+		widget.GridLayoutOpts.Spacing(12, 12),
+		widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(8)),
+	)))
+	cards := make([]*widget.Graphic, 6)
+	for i := range cards {
+		cards[i] = graphic(100, 180)
+		spells.AddChild(cards[i])
+	}
+	viewport := widget.NewScrollContainer(
+		widget.ScrollContainerOpts.Content(spells),
+		widget.ScrollContainerOpts.StretchContentWidth(),
+		widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+			Idle: SolidImage(32, 32, 32), Mask: SolidImage(255, 255, 255),
+		}),
+	)
+	scrollbar := graphic(10, 10)
+	row.AddChild(viewport, scrollbar)
+	realm.AddChild(graphic(100, 20), row)
+	shop.AddChild(graphic(100, 20), graphic(100, 140), graphic(100, 40), realm)
+
+	for _, size := range []image.Point{{1200, 600}, {1600, 1000}, {1000, 500}} {
+		shop.SetLocation(image.Rectangle{Max: size})
+		shop.Render(ebiten.NewImage(size.X, size.Y))
+		if bottom := viewport.GetWidget().Rect.Max.Y; bottom != size.Y-12 {
+			t.Fatalf("size %v: viewport bottom = %d, want %d", size, bottom, size.Y-12)
+		}
+		if scrollbar.GetWidget().Rect.Max.Y != viewport.GetWidget().Rect.Max.Y {
+			t.Fatal("scrollbar does not fill viewport height")
+		}
+		for i := 0; i < 3; i++ {
+			top, lower := cards[i].GetWidget().Rect, cards[i+3].GetWidget().Rect
+			if top.Min.X != lower.Min.X || top.Dx() != lower.Dx() || lower.Min.Y != top.Max.Y+12 {
+				t.Fatalf("size %v: inconsistent spell column %d", size, i)
+			}
+		}
+		if cards[2].GetWidget().Rect.Max.X != viewport.GetWidget().Rect.Max.X-8 {
+			t.Fatalf("size %v: spell columns do not fill viewport width", size)
+		}
+	}
+}
+
 func TestScrollRowCapsContentHeight(t *testing.T) {
 	row := ScrollRow()
 	content := widget.NewGraphic(

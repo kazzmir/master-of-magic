@@ -1176,10 +1176,15 @@ func combineHorizontalElementsCentered(elements... widget.PreferredSizeLocateabl
 }
 
 func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.LbxCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
-    shop := ui.VBox()
+    shop := ui.Column(0, 0, 0, 1)
     shop.AddChild(widget.NewText(widget.TextOpts.Text("Magic Shop", face, color.White)))
 
-    books := ui.HBox()
+    books := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(5),
+        widget.GridLayoutOpts.Weights([]float64{1, 1, 1, 1, 1}, nil),
+        widget.GridLayoutOpts.Spacing(16, 8),
+        widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(8)),
+    )))
     shop.AddChild(books)
 
     lifeBook, _ := imageCache.GetImageTransform("newgame.lbx", 24, 0, "enlarge", enlargeTransform(2))
@@ -1234,6 +1239,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             gold, _ := imageCache.GetImageTransform("backgrnd.lbx", 42, 0, "enlarge", enlargeTransform(2))
             costUI := combineHorizontalElements(makeIcon(gold), widget.NewText(widget.TextOpts.Text(fmt.Sprintf("%d", cost), face, color.White), widget.TextOpts.WidgetOpts(centered)))
 
+            costUI.GetWidget().LayoutData = widget.RowLayoutData{Position: widget.RowLayoutPositionCenter}
             buy.AddChild(costUI)
 
             buyButton := widget.NewButton(
@@ -1291,11 +1297,15 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
         )
     }
 
-    manaBox := ui.HBox()
+    manaBox := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
+        widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+        widget.RowLayoutOpts.Spacing(12),
+        widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(8)),
+    )))
 
     setupMana := func() {
         manaBox.RemoveChildren()
-        manaBox.AddChild(widget.NewText(widget.TextOpts.Text("Mana", face, color.White)))
+        manaBox.AddChild(widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.OriginalMana), face, color.White)))
         manaBox.AddChild(makeManaBuyButton(1), makeManaBuyButton(5))
     }
 
@@ -1340,19 +1350,23 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             widget.TabBookTabOpts.Label(magic.String()),
             widget.TabBookTabOpts.Image(getMagicIcon(magic)),
             widget.TabBookTabOpts.ContainerOpts(
-            widget.ContainerOpts.Layout(widget.NewRowLayout(
-                widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            ))),
+                widget.ContainerOpts.Layout(widget.NewGridLayout(
+                    widget.GridLayoutOpts.Columns(1),
+                    widget.GridLayoutOpts.Weights([]float64{1}, []float64{0, 1}),
+                    widget.GridLayoutOpts.Spacing(0, 12),
+                )),
+            ),
         )
 
         tab.AddChild(ui.CenteredText(fmt.Sprintf("%v Spells", magic), face, color.White))
         tabs = append(tabs, tab)
 
-        containerSize := 300
-
         spellList := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewGridLayout(
-                widget.GridLayoutOpts.Columns(2),
+                widget.GridLayoutOpts.Columns(3),
+                widget.GridLayoutOpts.Weights([]float64{1, 1, 1}, nil),
+                widget.GridLayoutOpts.Spacing(12, 12),
+                widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(8)),
             )),
         )
 
@@ -1525,12 +1539,8 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
         }
 
         scroller := widget.NewScrollContainer(
-            widget.ScrollContainerOpts.WidgetOpts(
-                widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                    MaxHeight: containerSize,
-                }),
-            ),
             widget.ScrollContainerOpts.Content(spellList),
+            widget.ScrollContainerOpts.StretchContentWidth(),
             widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
                 Idle: ui.SolidImage(32, 32, 32),
                 Mask: ui.SolidImage(32, 32, 32),
@@ -1548,7 +1558,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
                 return 20
             }),
             widget.SliderOpts.WidgetOpts(
-                widget.WidgetOpts.MinSize(10, containerSize),
+                widget.WidgetOpts.MinSize(10, 0),
             ),
             widget.SliderOpts.Images(
                 &widget.SliderTrackImage{
@@ -1568,7 +1578,7 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             slider.Current -= int(math.Round(eventArgs.Y * 8))
         })
 
-        both := ui.HBox()
+        both := ui.ScrollRow(1)
         both.AddChild(scroller)
         both.AddChild(slider)
         tab.AddChild(both)
@@ -1583,7 +1593,8 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
             Pressed: color.White,
         }),
         widget.TabBookOpts.TabButtonSpacing(8),
-        // widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(2)),
+        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 8, Bottom: 8, Left: 16, Right: 16}),
+        widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(8)),
         widget.TabBookOpts.Tabs(tabs...),
     )
 
@@ -2653,7 +2664,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     header.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache), enterBattleButton)
     rootContainer.AddChild(header)
 
-    makeTab := func(label string, content *widget.Container, fillHeight bool) *widget.TabBookTab {
+    makeTab := func(label string, content *widget.Container) *widget.TabBookTab {
         tab := widget.NewTabBookTab(
             widget.TabBookTabOpts.Label(label),
             widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -2661,34 +2672,13 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
                 widget.GridLayoutOpts.DefaultStretch(true, true),
             ))),
         )
-        if fillHeight {
-            // Army and recruitment own their scrolling viewports and need the
-            // actual tab height, not an outer scroller's preferred height.
-            tab.AddChild(content)
-            return tab
-        }
-        // Keep preparation controls reachable on smaller windows.
-        scroll := widget.NewScrollContainer(
-            widget.ScrollContainerOpts.Content(content),
-            widget.ScrollContainerOpts.StretchContentWidth(),
-            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
-                Idle: ui.SolidImage(30, 35, 43), Mask: ui.SolidImage(255, 255, 255),
-            }),
-        )
-        scroll.GetWidget().ScrolledEvent.AddHandler(func(args any) {
-            event := args.(*widget.WidgetScrolledEventArgs)
-            _, height := content.PreferredSize()
-            overflow := height - scroll.GetWidget().Rect.Dy()
-            if overflow > 0 {
-                scroll.ScrollTop = math.Max(0, math.Min(1, scroll.ScrollTop-event.Y*40/float64(overflow)))
-            }
-        })
-        tab.AddChild(scroll)
+        // Each shop manages its own scrolling and needs the actual tab height.
+        tab.AddChild(content)
         return tab
     }
-    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound), true)
-    recruitTab := makeTab("Recruit units", makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound), true)
-    magicTab := makeTab("Magic", makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound), false)
+    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound))
+    recruitTab := makeTab("Recruit units", makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound))
+    magicTab := makeTab("Magic", makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
     rootContainer.AddChild(widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(standardButtonImage()),
         widget.TabBookOpts.TabButtonText(&face2, &widget.ButtonTextColor{Idle: color.White, Pressed: color.NRGBA{R: 255, G: 220, B: 140, A: 255}}),
