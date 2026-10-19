@@ -82,12 +82,14 @@ func BorderedImage(borderColor color.RGBA, borderSize int) *ui_image.NineSlice {
 // resizing source images or allocating new GPU images when the window changes.
 type IconStrip struct {
     *widget.Widget
+    // MaxOverlap is the maximum covered fraction of an icon's width.
+    MaxOverlap float64
     images []*ebiten.Image
     dirty bool
 }
 
 func NewIconStrip() *IconStrip {
-    return &IconStrip{Widget: widget.NewWidget()}
+    return &IconStrip{Widget: widget.NewWidget(), MaxOverlap: 0.5}
 }
 
 func (strip *IconStrip) GetWidget() *widget.Widget { return strip.Widget }
@@ -125,14 +127,13 @@ func (strip *IconStrip) Update(update *widget.UpdateObject) {
     }
 }
 
-func fitIconStrip(totalWidth, minWidth, maxHeight, count, width, height int) (scale, gap float64) {
+func fitIconStrip(totalWidth, minWidth, maxHeight, count, width, height int, overlap float64) (scale, gap float64) {
     if totalWidth <= 0 || minWidth <= 0 || maxHeight <= 0 || width <= 0 || height <= 0 || count <= 0 {
         return 0, 0
     }
-    // A negative gap overlaps books. Bound it by half the narrowest book's
-    // width so at least half of every image remains visible, even with mixed
-    // image sizes. Only shrink once that maximum overlap is insufficient.
-    maxOverlap := float64(minWidth)/2
+    // Bound negative gaps by the narrowest image's allowed overlap. Only
+    // shrink once that maximum overlap is insufficient to fit the strip.
+    maxOverlap := float64(minWidth)*math.Max(0, math.Min(1, overlap))
     packedWidth := float64(totalWidth) - float64(count-1)*maxOverlap
     scale = math.Min(1, math.Min(float64(height)/float64(maxHeight), float64(width)/packedWidth))
     if count > 1 {
@@ -148,7 +149,7 @@ func (strip *IconStrip) Render(screen *ebiten.Image) {
     strip.Widget.Render(screen)
     width, height, count, minWidth := strip.imageSize()
     rect := strip.Widget.Rect
-    scale, gap := fitIconStrip(width, minWidth, height, count, rect.Dx(), rect.Dy())
+    scale, gap := fitIconStrip(width, minWidth, height, count, rect.Dx(), rect.Dy(), strip.MaxOverlap)
     if scale == 0 {
         return
     }

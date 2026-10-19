@@ -1607,7 +1607,7 @@ func (filters unitShopFilters) matches(unit *units.Unit, gold uint64) bool {
 }
 
 func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
-    armyShop := ui.Column(0, 0, 1)
+    armyShop := ui.Column(0, 0, 0, 1)
 
     armyShop.AddChild(widget.NewText(
         widget.TextOpts.Text("Recruit your army", face, color.White),
@@ -1616,6 +1616,28 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
             Stretch: true,
         })),
     ))
+
+    armyIcons := ui.NewIconStrip()
+    armyIcons.MaxOverlap = 0.25
+    armyPreview := ui.Column()
+    armyPreview.AddChild(widget.NewText(widget.TextOpts.Text("Army", face, color.White)), armyIcons)
+    armyShop.AddChild(armyPreview)
+
+    setupArmyIcons := func() {
+        var images []*ebiten.Image
+        for _, unit := range playerObj.Units {
+            icon, err := imageCache.GetImageTransform(unit.GetLbxFile(), unit.GetLbxIndex(), 0, "enlarge", enlargeTransform(2))
+            if err != nil {
+                log.Printf("Error loading army preview icon: %v", err)
+                continue
+            }
+            images = append(images, icon)
+        }
+        armyIcons.SetImages(images)
+    }
+    setupArmyIcons()
+    AddEvent(uiEvents, func(update *UIAddUnit) { setupArmyIcons() })
+    AddEvent(uiEvents, func(update *UIRemoveUnit) { setupArmyIcons() })
 
     money := widget.NewText(
         // widget.TextOpts.Text(fmt.Sprintf("Money: %d", playerObj.Money), face, color.White),

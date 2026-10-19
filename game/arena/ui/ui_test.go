@@ -46,7 +46,7 @@ func TestIconStripFitsAvailableSpace(t *testing.T) {
 		{"no books", 0, 0, 0, 0, 200, 64, 0, 0},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			scale, gap := fitIconStrip(test.totalWidth, test.minWidth, test.maxHeight, test.count, test.width, test.height)
+			scale, gap := fitIconStrip(test.totalWidth, test.minWidth, test.maxHeight, test.count, test.width, test.height, .5)
 			if math.Abs(scale-test.scale) > 1e-9 || math.Abs(gap-test.gap) > 1e-9 {
 				t.Fatalf("got scale %v gap %v, want %v and %v", scale, gap, test.scale, test.gap)
 			}
@@ -54,6 +54,25 @@ func TestIconStripFitsAvailableSpace(t *testing.T) {
 				t.Fatal("more than half a book is hidden")
 			}
 		})
+	}
+}
+
+func TestArmyPreviewOverlapLimit(t *testing.T) {
+	// Five 20px icons occupy 80px when each overlaps the next by 25%.
+	for _, width := range []int{200, 100, 90, 80, 60, 20, 1} {
+		scale, gap := fitIconStrip(100, 20, 40, 5, width, 40, .25)
+		if gap < -20*scale*.25-1e-9 {
+			t.Fatalf("width %d: icons overlap by more than 25%%", width)
+		}
+		if used := 100*scale + 4*gap; used > float64(width)+1e-9 {
+			t.Fatalf("width %d: icons overflow with used width %v", width, used)
+		}
+		if width >= 80 && scale != 1 {
+			t.Fatalf("width %d: icons shrank before overlap limit", width)
+		}
+		if width < 80 && scale >= 1 {
+			t.Fatalf("width %d: icons must shrink after overlap limit", width)
+		}
 	}
 }
 
@@ -79,7 +98,7 @@ func TestHeaderBooksResizeWithoutOverflow(t *testing.T) {
 			header.Render(ebiten.NewImage(width, 64))
 			rect := books.GetWidget().Rect
 			total, height, n, minWidth := books.imageSize()
-			scale, gap := fitIconStrip(total, minWidth, height, n, rect.Dx(), rect.Dy())
+			scale, gap := fitIconStrip(total, minWidth, height, n, rect.Dx(), rect.Dy(), books.MaxOverlap)
 			used := float64(total)*scale + float64(max(0, n-1))*gap
 			if rect.Min.X < 308 || rect.Max.X > width || used > float64(rect.Dx())+1e-9 {
 				t.Fatalf("%d books at width %d overflow: bounds %v, used %v", count, width, rect, used)
