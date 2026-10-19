@@ -105,6 +105,32 @@ func TestTabBook_GetTabButton(t *testing.T) {
 	is.True(tb.GetTabButton(tab3) == nil)
 }
 
+func TestTabBook_PerTabButtonImageSurvivesValidation(t *testing.T) {
+	customImage := &ButtonImage{Idle: newNineSliceEmpty(t), Pressed: newNineSliceEmpty(t)}
+	custom := NewTabBookTab(TabBookTabOpts.Label("Custom"), TabBookTabOpts.ButtonImage(customImage))
+	fallback := NewTabBookTab(TabBookTabOpts.Label("Default"))
+	book := NewTabBook(
+		TabBookOpts.Tabs(custom, fallback),
+		TabBookOpts.TabButtonImage(&ButtonImage{Idle: newNineSliceEmpty(t), Pressed: newNineSliceEmpty(t)}),
+		TabBookOpts.TabButtonText(loadFont(t), &ButtonTextColor{Idle: color.White}),
+	)
+	// Buttons are not available before validation. Configuring the tab itself
+	// must be safe and must carry over whenever validation recreates buttons.
+	if book.GetTabButton(custom) != nil {
+		t.Fatal("expected buttons to be created only during validation")
+	}
+	for range 2 {
+		book.Validate()
+		button := book.GetTabButton(custom)
+		if button == nil || button.definedParams.Image != customImage {
+			t.Fatal("custom tab image was not applied during button creation")
+		}
+		if book.GetTabButton(fallback).definedParams.Image == customImage {
+			t.Fatal("custom image leaked into another tab")
+		}
+	}
+}
+
 func newTabBook(t *testing.T, opts ...TabBookOpt) *TabBook {
 	t.Helper()
 

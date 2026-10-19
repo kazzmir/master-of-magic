@@ -6,9 +6,10 @@ import (
 
 type TabBookTab struct {
 	Container
-	Disabled bool
-	label    string
-	image   *GraphicImage
+	Disabled    bool
+	label       string
+	image       *GraphicImage
+	buttonImage *ButtonImage
 }
 
 type TabBookTabSelectedEventArgs struct {
@@ -44,15 +45,21 @@ func (o *TabBookTabOptions) Image(img *GraphicImage) TabBookTabOpt {
 	}
 }
 
+// ButtonImage overrides the parent tab book's button images for this tab.
+func (o *TabBookTabOptions) ButtonImage(img *ButtonImage) TabBookTabOpt {
+	return func(t *TabBookTab) {
+		t.buttonImage = img
+	}
+}
+
 func (o *TabBookTabOptions) Label(label string) TabBookTabOpt {
 	return func(t *TabBookTab) {
 		t.label = label
 	}
 }
 
-func NewTabBookTab(opts... TabBookTabOpt) *TabBookTab {
-	c := &TabBookTab{
-	}
+func NewTabBookTab(opts ...TabBookTabOpt) *TabBookTab {
+	c := &TabBookTab{}
 	c.init = &MultiOnce{}
 	c.init.Append(c.createWidget)
 

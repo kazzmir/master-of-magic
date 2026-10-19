@@ -2664,9 +2664,25 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     header.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache), enterBattleButton)
     rootContainer.AddChild(header)
 
-    makeTab := func(label string, content *widget.Container) *widget.TabBookTab {
+    tabIcon := func(file string, index int) *widget.GraphicImage {
+        icon, err := imageCache.GetImage(file, index, 0)
+        if err != nil {
+            log.Printf("Error loading navigation icon: %v", err)
+            return nil
+        }
+        icon = resizeImage(icon, 28.0/float64(max(icon.Bounds().Dx(), icon.Bounds().Dy())))
+        // Use identical icon bounds so every navigation button has the same
+        // height, regardless of the source sprite's aspect ratio.
+        canvas := ebiten.NewImage(28, 28)
+        var options ebiten.DrawImageOptions
+        options.GeoM.Translate(float64(28-icon.Bounds().Dx())/2, float64(28-icon.Bounds().Dy())/2)
+        canvas.DrawImage(icon, &options)
+        return &widget.GraphicImage{Idle: canvas, Disabled: canvas}
+    }
+    makeTab := func(label string, icon *widget.GraphicImage, content *widget.Container) *widget.TabBookTab {
         tab := widget.NewTabBookTab(
             widget.TabBookTabOpts.Label(label),
+            widget.TabBookTabOpts.Image(icon),
             widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
                 widget.GridLayoutOpts.Columns(1),
                 widget.GridLayoutOpts.DefaultStretch(true, true),
@@ -2676,10 +2692,20 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         tab.AddChild(content)
         return tab
     }
-    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound))
-    recruitTab := makeTab("Recruit units", makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound))
-    magicTab := makeTab("Magic", makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
-    rootContainer.AddChild(widget.NewTabBook(
+    armyTab := makeTab("Army & upgrades", tabIcon("unitview.lbx", 13), makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound))
+    recruitTab := makeTab("Recruit units", tabIcon(units.HighMenSwordsmen.LbxFile, units.HighMenSwordsmen.Index), makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound))
+    magicTab := makeTab("Magic", tabIcon("newgame.lbx", 27), makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
+    for _, section := range []struct {
+        tab *widget.TabBookTab
+        base, accent color.NRGBA
+    }{
+        {armyTab, color.NRGBA{R: 34, G: 53, B: 78, A: 255}, color.NRGBA{R: 112, G: 177, B: 235, A: 255}},
+        {recruitTab, color.NRGBA{R: 32, G: 64, B: 50, A: 255}, color.NRGBA{R: 115, G: 203, B: 148, A: 255}},
+        {magicTab, color.NRGBA{R: 58, G: 39, B: 78, A: 255}, color.NRGBA{R: 190, G: 143, B: 233, A: 255}},
+    } {
+        widget.TabBookTabOpts.ButtonImage(ui.NavigationButtonImage(section.base, section.accent))(section.tab)
+    }
+    navigation := widget.NewTabBook(
         widget.TabBookOpts.TabButtonImage(standardButtonImage()),
         widget.TabBookOpts.TabButtonText(&face2, &widget.ButtonTextColor{Idle: color.White, Pressed: color.NRGBA{R: 255, G: 220, B: 140, A: 255}}),
         widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 8, Bottom: 8, Left: 18, Right: 18}),
@@ -2687,7 +2713,8 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(8)),
         widget.TabBookOpts.Tabs(armyTab, recruitTab, magicTab),
         widget.TabBookOpts.InitialTab(recruitTab),
-    ))
+    )
+    rootContainer.AddChild(navigation)
 
     ui := &ebitenui.UI{
         Container: rootContainer,

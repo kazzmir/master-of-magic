@@ -76,6 +76,24 @@ func BorderedImage(borderColor color.RGBA, borderSize int) *ui_image.NineSlice {
     return ui_image.NewBorderedNineSliceColor(color.RGBA{}, borderColor, borderSize)
 }
 
+// NavigationButtonImage gives each section its own palette, with a brighter
+// fill and border for the selected tab (the button's pressed state).
+func NavigationButtonImage(base, accent color.NRGBA) *widget.ButtonImage {
+    blend := func(a, b color.NRGBA, amount int) color.NRGBA {
+        channel := func(x, y uint8) uint8 {
+            return uint8((int(x)*(100-amount) + int(y)*amount)/100)
+        }
+        return color.NRGBA{R: channel(a.R, b.R), G: channel(a.G, b.G), B: channel(a.B, b.B), A: 255}
+    }
+    return &widget.ButtonImage{
+        Idle: ui_image.NewBorderedNineSliceColor(base, blend(base, accent, 45), 2),
+        Hover: ui_image.NewBorderedNineSliceColor(blend(base, accent, 20), accent, 2),
+        Pressed: ui_image.NewBorderedNineSliceColor(blend(base, accent, 40), accent, 2),
+        PressedHover: ui_image.NewBorderedNineSliceColor(blend(base, accent, 50), accent, 2),
+        Disabled: SolidImage(38, 40, 46),
+    }
+}
+
 // BattleButton is the primary preparation action. Cache the glow frames rather
 // than creating GPU images during updates. A gentle, two-second pulse provides
 // a hint without flashing or changing the button's size.

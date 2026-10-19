@@ -371,8 +371,12 @@ func (t *TabBook) initTabBook() {
 
 		t.tabs[i].GetWidget().parent = t.GetWidget()
 		t.tabs[i].Validate()
+		buttonImage := t.computedParams.TabButton.Image
+		if t.tabs[i].buttonImage != nil {
+			buttonImage = t.tabs[i].buttonImage
+		}
 		btnOpts := []ButtonOpt{
-			ButtonOpts.Image(t.computedParams.TabButton.Image),
+			ButtonOpts.Image(buttonImage),
 		}
 		if t.tabs[i].image != nil {
 			btnOpts = append(btnOpts, ButtonOpts.TextAndImage(t.tabs[i].label, t.computedParams.TabButton.TextFace, t.tabs[i].image, t.computedParams.TabButton.TextColor))
