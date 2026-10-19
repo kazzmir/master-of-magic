@@ -1783,14 +1783,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
         )),
     )
 
-    containerSize := 250
-
     scroller := widget.NewScrollContainer(
-        widget.ScrollContainerOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.GridLayoutData{
-                MaxHeight: containerSize,
-            }),
-        ),
         widget.ScrollContainerOpts.Content(enchantmentList),
         widget.ScrollContainerOpts.StretchContentWidth(),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
@@ -1810,7 +1803,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
             return 20
         }),
         widget.SliderOpts.WidgetOpts(
-            widget.WidgetOpts.MinSize(10, containerSize),
+            widget.WidgetOpts.MinSize(10, 0),
         ),
         widget.SliderOpts.Images(
             &widget.SliderTrackImage{
@@ -1941,7 +1934,7 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
         }
     })
 
-    container := ui.ScrollRow()
+    container := ui.ScrollRow(1)
     container.AddChild(scroller)
     container.AddChild(slider)
 
@@ -1961,7 +1954,7 @@ func sum[T any](items []T, f func(T) int) int {
 
 func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
 
-    unitContainer := ui.Column()
+    unitContainer := ui.Column(0, 1)
     showEmptySelection := func() {
         unitContainer.AddChild(ui.CenteredText("Select a unit to heal or upgrade", face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
     }
@@ -2214,14 +2207,6 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 },
                 HandleImage: ui.MakeButtonImage(ui.SolidImage(192, 192, 192)),
             }),
-            widget.ListOpts.ContainerOpts(
-                widget.ContainerOpts.WidgetOpts(
-                    widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                        MaxHeight: 230,
-                    }),
-                ),
-            ),
-
             widget.ListOpts.HideHorizontalSlider(),
             widget.ListOpts.EntryFontFace(face),
             widget.ListOpts.EntryColor(&widget.ListEntryColor{
@@ -2257,12 +2242,12 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         enchantmentsBoxes := widget.NewContainer(
             widget.ContainerOpts.Layout(widget.NewGridLayout(
                 widget.GridLayoutOpts.Columns(2),
-                widget.GridLayoutOpts.Weights([]float64{1, 2}, nil),
+                widget.GridLayoutOpts.Weights([]float64{1, 2}, []float64{1}),
                 widget.GridLayoutOpts.Spacing(12, 8),
             )),
         )
 
-        showEnchantments := ui.VBox()
+        showEnchantments := ui.Column(0, 1)
 
         showEnchantments.AddChild(widget.NewText(widget.TextOpts.Text("Enchantments", face, color.RGBA{R: 255, G: 255, B: 0, A: 255})))
         showEnchantments.AddChild(enchantments)
@@ -2275,7 +2260,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
             cleanup()
         }
 
-        available := ui.Column()
+        available := ui.Column(0, 1)
         available.AddChild(ui.CenteredText("Available upgrades", face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
         available.AddChild(buyEnchantments)
         enchantmentsBoxes.AddChild(available)
@@ -2394,11 +2379,6 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     }
 
     scroller := widget.NewScrollContainer(
-        widget.ScrollContainerOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.GridLayoutData{
-                MaxHeight: 400,
-            }),
-        ),
         widget.ScrollContainerOpts.Content(unitList),
         widget.ScrollContainerOpts.StretchContentWidth(),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
@@ -2449,7 +2429,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     armyInfo := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(1),
-            widget.GridLayoutOpts.Weights([]float64{1}, nil),
+            widget.GridLayoutOpts.Weights([]float64{1}, []float64{0, 1}),
             widget.GridLayoutOpts.Spacing(0, 8),
             widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(6)),
         )),
@@ -2464,7 +2444,8 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         })),
     ))
 
-    scrollStuff := ui.ScrollRow()
+    slider.GetWidget().MinHeight = 0
+    scrollStuff := ui.ScrollRow(1)
     scrollStuff.AddChild(scroller)
     scrollStuff.AddChild(slider)
 
@@ -2473,7 +2454,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     unitInfoContainer := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.Weights([]float64{2, 3}, nil),
+            widget.GridLayoutOpts.Weights([]float64{2, 3}, []float64{1}),
             widget.GridLayoutOpts.Spacing(16, 8),
             widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(8)),
         )),
@@ -2682,7 +2663,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
             ))),
         )
         if fillHeight {
-            // Recruitment owns its scrolling viewport and must receive the
+            // Army and recruitment own their scrolling viewports and need the
             // actual tab height, not an outer scroller's preferred height.
             tab.AddChild(content)
             return tab
@@ -2706,7 +2687,7 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
         tab.AddChild(scroll)
         return tab
     }
-    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound), false)
+    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound), true)
     recruitTab := makeTab("Recruit units", makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound), true)
     magicTab := makeTab("Magic", makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound), false)
     rootContainer.AddChild(widget.NewTabBook(
