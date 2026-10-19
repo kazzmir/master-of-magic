@@ -744,9 +744,13 @@ type UnitIconList struct {
 }
 
 func standardButtonImage() *widget.ButtonImage {
-    body := color.NRGBA{R: 64, G: 32, B: 32, A: 255}
-    border := color.NRGBA{R: 32, G: 16, B: 16, A: 255}
-    return ui.MakeButtonImage(ui_image.NewBorderedNineSliceColor(body, border, 1))
+    border := color.NRGBA{R: 125, G: 103, B: 63, A: 255}
+    return &widget.ButtonImage{
+        Idle: ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 48, G: 54, B: 65, A: 255}, border, 1),
+        Hover: ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 68, G: 79, B: 94, A: 255}, border, 1),
+        Pressed: ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 96, G: 78, B: 42, A: 255}, border, 1),
+        Disabled: ui.SolidImage(38, 40, 46),
+    }
 }
 
 func MakeUnitIconList(description string, imageCache *util.ImageCache, face *text.Face, buyUnit func(*units.Unit), playSound *PlaySound) *UnitIconList {
@@ -760,17 +764,14 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
     iconList.unitList = widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(4),
-            widget.GridLayoutOpts.Stretch([]bool{true, true, true}, []bool{false, false, false}),
+            widget.GridLayoutOpts.Weights([]float64{1, 1, 1, 1}, nil),
+            widget.GridLayoutOpts.Spacing(8, 8),
         )),
     )
 
     scroller := widget.NewScrollContainer(
-        widget.ScrollContainerOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-                MaxHeight: 400,
-            }),
-        ),
         widget.ScrollContainerOpts.Content(iconList.unitList),
+        widget.ScrollContainerOpts.StretchContentWidth(),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
             Idle: ui.SolidImage(64, 64, 64),
             Mask: ui.SolidImage(32, 32, 32),
@@ -808,11 +809,14 @@ func MakeUnitIconList(description string, imageCache *util.ImageCache, face *tex
         slider.Current -= int(math.Round(eventArgs.Y * 8))
     })
 
-    scrollStuff := ui.HBox()
+    // Both the viewport and scrollbar fill the height supplied by the tab.
+    slider.GetWidget().MinHeight = 0
+    scrollStuff := ui.ScrollRow(1)
     scrollStuff.AddChild(scroller)
     scrollStuff.AddChild(slider)
 
-    box := ui.VBox()
+    box := ui.Column(0, 0, 1)
+    box.AddChild(ui.CenteredText(description, face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
 
     upArrow, _ := imageCache.GetImageTransform("resource.lbx", 32, 0, "enlarge", enlargeTransform(2))
     downArrow, _ := imageCache.GetImageTransform("resource.lbx", 33, 0, "enlarge", enlargeTransform(2))
@@ -1590,10 +1594,10 @@ func makeMagicShop(face *text.Face, imageCache *util.ImageCache, lbxCache *lbx.L
 }
 
 func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *player.Player, uiEvents *UIEventUpdate, playSound *PlaySound) *widget.Container {
-    armyShop := ui.VBox()
+    armyShop := ui.Column(0, 0, 1)
 
     armyShop.AddChild(widget.NewText(
-        widget.TextOpts.Text("Shop", face, color.White),
+        widget.TextOpts.Text("Recruit your army", face, color.White),
         widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionStart),
         widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{
             Stretch: true,
@@ -1611,12 +1615,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
 
     armyShop.AddChild(makeMoneyText(money, imageCache))
 
-    container2 := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-        )),
-    )
+    container2 := ui.Column(0, 1)
 
     armyShop.AddChild(container2)
 
@@ -1679,11 +1678,7 @@ func makeArmyShop(face *text.Face, imageCache *util.ImageCache, playerObj *playe
     buttons := ui.HBox()
     buttons.AddChild(allButton, affordableButton)
 
-    listContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-        )),
-    )
+    listContainer := ui.Column(1)
 
     first := true
 
@@ -1772,7 +1767,7 @@ func enlargeTransform(factor int) util.ImageTransformFunc {
     return f 
 }
 
-func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
+func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) (*widget.Container, func()) {
     // remove any enchantments the unit already has
     enchantments := slices.DeleteFunc(getValidUnitEnchantments(), unit.HasEnchantment)
 
@@ -1783,6 +1778,8 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
     enchantmentList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.Weights([]float64{1, 1}, nil),
+            widget.GridLayoutOpts.Spacing(8, 8),
         )),
     )
 
@@ -1790,11 +1787,12 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
 
     scroller := widget.NewScrollContainer(
         widget.ScrollContainerOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            widget.WidgetOpts.LayoutData(widget.GridLayoutData{
                 MaxHeight: containerSize,
             }),
         ),
         widget.ScrollContainerOpts.Content(enchantmentList),
+        widget.ScrollContainerOpts.StretchContentWidth(),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
             Idle: ui.SolidImage(32, 32, 32),
             Mask: ui.SolidImage(32, 32, 32),
@@ -1838,8 +1836,13 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
     deathBook, _ := imageCache.GetImageTransform("newgame.lbx", 33, 0, "enlarge", enlargeTransform(2))
     chaosBook, _ := imageCache.GetImageTransform("newgame.lbx", 36, 0, "enlarge", enlargeTransform(2))
 
+    var updateButtons []func()
     setupEnchantments := func() {
+        updateButtons = nil
         for _, enchantment := range enchantments {
+            if unit.HasEnchantment(enchantment) {
+                continue
+            }
             border := ui.BorderedImage(color.RGBA{R: 128, G: 128, B: 128, A: 255}, 1)
             box := ui.VBox(
                 widget.ContainerOpts.BackgroundImage(border),
@@ -1916,6 +1919,11 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
                     }
                 }),
             )
+            updateButton := func() {
+                enchantButton.GetWidget().Disabled = !canBuy || uint64(getEnchantmentCost(enchantment)) > playerObj.Money
+            }
+            updateButton()
+            updateButtons = append(updateButtons, updateButton)
             box.AddChild(enchantButton)
             remove = enchantmentList.AddChild(box)
         }
@@ -1923,16 +1931,24 @@ func makeBuyEnchantments(unit units.StackUnit, face *text.Face, playerObj *playe
 
     setupEnchantments()
 
-    AddEvent(uiEvents, func (update *UIUpdateMagicBooks) {
+    booksID := AddEvent(uiEvents, func (update *UIUpdateMagicBooks) {
         enchantmentList.RemoveChildren()
         setupEnchantments()
     })
+    moneyID := AddEvent(uiEvents, func(update *UIUpdateMoney) {
+        for _, updateButton := range updateButtons {
+            updateButton()
+        }
+    })
 
-    container := ui.HBox()
+    container := ui.ScrollRow()
     container.AddChild(scroller)
     container.AddChild(slider)
 
-    return container
+    return container, func() {
+        uiEvents.Remove(booksID)
+        uiEvents.Remove(moneyID)
+    }
 }
 
 func sum[T any](items []T, f func(T) int) int {
@@ -1945,7 +1961,11 @@ func sum[T any](items []T, f func(T) int) int {
 
 func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *player.Player, uiEvents *UIEventUpdate, imageCache *util.ImageCache, playSound *PlaySound) *widget.Container {
 
-    unitContainer := ui.HBox()
+    unitContainer := ui.Column()
+    showEmptySelection := func() {
+        unitContainer.AddChild(ui.CenteredText("Select a unit to heal or upgrade", face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
+    }
+    showEmptySelection()
 
     var updateUnitSpecifics func(unit units.StackUnit, setup func())
 
@@ -1964,6 +1984,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         removeUnit()
 
         if unit == nil {
+            showEmptySelection()
             return
         }
 
@@ -2015,11 +2036,11 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         updateSellCost := func() {
             newButton := makeRemoveButton()
-            unitContainer.ReplaceChild(removeButton, newButton)
+            unitSpecifics.ReplaceChild(removeButton, newButton)
             removeButton = newButton
         }
 
-        unitContainer.AddChild(removeButton)
+        // The sell action belongs with the selected unit's other actions.
 
         unitSpecifics.RemoveChildren()
         unitSpecifics.AddChild(currentName)
@@ -2178,6 +2199,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         unitSpecifics.AddChild(healContainer)
         unitSpecifics.AddChild(healSlider)
         unitSpecifics.AddChild(healButton)
+        unitSpecifics.AddChild(removeButton)
 
         enchantments := widget.NewList(
             widget.ListOpts.ScrollContainerImage(&widget.ScrollContainerImage{
@@ -2232,11 +2254,13 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         removeId := AddEvent(uiEvents, newEvent)
 
-        removeUnit = func() {
-            uiEvents.Remove(removeId)
-        }
-
-        enchantmentsBoxes := ui.HBox()
+        enchantmentsBoxes := widget.NewContainer(
+            widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(2),
+                widget.GridLayoutOpts.Weights([]float64{1, 2}, nil),
+                widget.GridLayoutOpts.Spacing(12, 8),
+            )),
+        )
 
         showEnchantments := ui.VBox()
 
@@ -2245,18 +2269,25 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
         enchantmentsBoxes.AddChild(showEnchantments)
 
-        buyEnchantments := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache, playSound)
+        buyEnchantments, cleanup := makeBuyEnchantments(unit, face, playerObj, uiEvents, imageCache, playSound)
+        removeUnit = func() {
+            uiEvents.Remove(removeId)
+            cleanup()
+        }
 
-        enchantmentsBoxes.AddChild(buyEnchantments)
+        available := ui.Column()
+        available.AddChild(ui.CenteredText("Available upgrades", face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
+        available.AddChild(buyEnchantments)
+        enchantmentsBoxes.AddChild(available)
 
-        unitSpecifics.AddChild(enchantmentsBoxes)
+        unitContainer.AddChild(enchantmentsBoxes)
     }
 
     unitList := widget.NewContainer(
         widget.ContainerOpts.Layout(widget.NewGridLayout(
             widget.GridLayoutOpts.Columns(2),
-            widget.GridLayoutOpts.DefaultStretch(false, false),
-            // widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{false, false}),
+            widget.GridLayoutOpts.Weights([]float64{1, 1}, nil),
+            widget.GridLayoutOpts.Spacing(8, 8),
         )),
     )
 
@@ -2276,7 +2307,7 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
                 if lastBox != nil {
                     lastBox.SetBackgroundImage(border)
                 }
-                unitBox.SetBackgroundImage(ui.SolidImage(96, 96, 32))
+                unitBox.SetBackgroundImage(ui_image.NewBorderedNineSliceColor(color.NRGBA{R: 65, G: 65, B: 48, A: 255}, color.NRGBA{R: 224, G: 195, B: 133, A: 255}, 2))
                 lastBox = unitBox
             }),
             ),
@@ -2364,11 +2395,12 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
 
     scroller := widget.NewScrollContainer(
         widget.ScrollContainerOpts.WidgetOpts(
-            widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+            widget.WidgetOpts.LayoutData(widget.GridLayoutData{
                 MaxHeight: 400,
             }),
         ),
         widget.ScrollContainerOpts.Content(unitList),
+        widget.ScrollContainerOpts.StretchContentWidth(),
         widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
             Idle: ui.SolidImage(64, 64, 64),
             Mask: ui.SolidImage(32, 32, 32),
@@ -2415,10 +2447,11 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
     })
 
     armyInfo := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(2),
-            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 2, Bottom: 2, Left: 2, Right: 2}),
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(1),
+            widget.GridLayoutOpts.Weights([]float64{1}, nil),
+            widget.GridLayoutOpts.Spacing(0, 8),
+            widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(6)),
         )),
         widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 48, G: 48, B: 48, A: 255})),
     )
@@ -2431,17 +2464,18 @@ func makeUnitInfoUI(face *text.Face, allUnits []units.StackUnit, playerObj *play
         })),
     ))
 
-    scrollStuff := ui.HBox()
+    scrollStuff := ui.ScrollRow()
     scrollStuff.AddChild(scroller)
     scrollStuff.AddChild(slider)
 
     armyInfo.AddChild(scrollStuff)
 
     unitInfoContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
-            widget.RowLayoutOpts.Spacing(4),
-            // widget.RowLayoutOpts.Padding(widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(2),
+            widget.GridLayoutOpts.Weights([]float64{2, 3}, nil),
+            widget.GridLayoutOpts.Spacing(16, 8),
+            widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(8)),
         )),
     )
 
@@ -2463,6 +2497,12 @@ func makePlayerInfoUI(face *text.Face, playerObj *player.Player, events *UIEvent
 
     mana := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Mana: %d", playerObj.OriginalMana), face, color.White))
     container.AddChild(mana)
+
+    money := widget.NewText(widget.TextOpts.Text(fmt.Sprintf("Gold: %d", playerObj.Money), face, color.NRGBA{R: 224, G: 195, B: 133, A: 255}))
+    container.AddChild(money)
+    AddEvent(events, func(update *UIUpdateMoney) {
+        money.Label = fmt.Sprintf("Gold: %d", playerObj.Money)
+    })
 
     books := ui.HBox()
     container.AddChild(books)
@@ -2595,12 +2635,13 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
     uiEvents := MakeUIEventUpdate()
 
     rootContainer := widget.NewContainer(
-        widget.ContainerOpts.Layout(widget.NewRowLayout(
-            widget.RowLayoutOpts.Direction(widget.DirectionVertical),
-            widget.RowLayoutOpts.Spacing(4),
-            widget.RowLayoutOpts.Padding(&widget.Insets{Top: 4, Bottom: 4, Left: 4, Right: 4}),
+        widget.ContainerOpts.Layout(widget.NewGridLayout(
+            widget.GridLayoutOpts.Columns(1),
+            widget.GridLayoutOpts.Weights([]float64{1}, []float64{0, 1}),
+            widget.GridLayoutOpts.Spacing(0, 12),
+            widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(12)),
         )),
-        widget.ContainerOpts.BackgroundImage(ui_image.NewNineSliceColor(color.NRGBA{R: 32, G: 32, B: 32, A: 255})),
+        widget.ContainerOpts.BackgroundImage(ui.SolidImage(24, 28, 35)),
     )
 
     enterBattleButton := widget.NewButton(
@@ -2630,14 +2671,66 @@ func (engine *Engine) MakeUI() (*ebitenui.UI, *UIEventUpdate, error) {
 
     imageCache := util.MakeImageCache(engine.Cache)
 
-    rootContainer.AddChild(enterBattleButton)
+    updateBattleButton := func() {
+        enterBattleButton.GetWidget().Disabled = len(engine.Player.Units) == 0
+    }
+    updateBattleButton()
+    AddEvent(uiEvents, func(update *UIAddUnit) { updateBattleButton() })
+    AddEvent(uiEvents, func(update *UIRemoveUnit) { updateBattleButton() })
 
-    rootContainer.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache))
+    header := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(2),
+        widget.GridLayoutOpts.Weights([]float64{1, 0}, nil),
+        widget.GridLayoutOpts.Spacing(16, 0),
+    )))
+    header.AddChild(makePlayerInfoUI(&face1, engine.Player, uiEvents, &imageCache), enterBattleButton)
+    rootContainer.AddChild(header)
 
-    unitInfoUI := makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound)
-
-    rootContainer.AddChild(unitInfoUI)
-    rootContainer.AddChild(makeShopUI(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound))
+    makeTab := func(label string, content *widget.Container, fillHeight bool) *widget.TabBookTab {
+        tab := widget.NewTabBookTab(
+            widget.TabBookTabOpts.Label(label),
+            widget.TabBookTabOpts.ContainerOpts(widget.ContainerOpts.Layout(widget.NewGridLayout(
+                widget.GridLayoutOpts.Columns(1),
+                widget.GridLayoutOpts.DefaultStretch(true, true),
+            ))),
+        )
+        if fillHeight {
+            // Recruitment owns its scrolling viewport and must receive the
+            // actual tab height, not an outer scroller's preferred height.
+            tab.AddChild(content)
+            return tab
+        }
+        // Keep preparation controls reachable on smaller windows.
+        scroll := widget.NewScrollContainer(
+            widget.ScrollContainerOpts.Content(content),
+            widget.ScrollContainerOpts.StretchContentWidth(),
+            widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+                Idle: ui.SolidImage(30, 35, 43), Mask: ui.SolidImage(255, 255, 255),
+            }),
+        )
+        scroll.GetWidget().ScrolledEvent.AddHandler(func(args any) {
+            event := args.(*widget.WidgetScrolledEventArgs)
+            _, height := content.PreferredSize()
+            overflow := height - scroll.GetWidget().Rect.Dy()
+            if overflow > 0 {
+                scroll.ScrollTop = math.Max(0, math.Min(1, scroll.ScrollTop-event.Y*40/float64(overflow)))
+            }
+        })
+        tab.AddChild(scroll)
+        return tab
+    }
+    armyTab := makeTab("Army & upgrades", makeUnitInfoUI(&face1, engine.Player.Units, engine.Player, uiEvents, &imageCache, engine.LeftClickSound), false)
+    recruitTab := makeTab("Recruit units", makeArmyShop(&face1, &imageCache, engine.Player, uiEvents, engine.LeftClickSound), true)
+    magicTab := makeTab("Magic", makeMagicShop(&face1, &imageCache, engine.Cache, engine.Player, uiEvents, engine.LeftClickSound), false)
+    rootContainer.AddChild(widget.NewTabBook(
+        widget.TabBookOpts.TabButtonImage(standardButtonImage()),
+        widget.TabBookOpts.TabButtonText(&face2, &widget.ButtonTextColor{Idle: color.White, Pressed: color.NRGBA{R: 255, G: 220, B: 140, A: 255}}),
+        widget.TabBookOpts.TabButtonTextPadding(&widget.Insets{Top: 8, Bottom: 8, Left: 18, Right: 18}),
+        widget.TabBookOpts.TabButtonSpacing(8),
+        widget.TabBookOpts.ContentPadding(widget.NewInsetsSimple(8)),
+        widget.TabBookOpts.Tabs(armyTab, recruitTab, magicTab),
+        widget.TabBookOpts.InitialTab(recruitTab),
+    ))
 
     ui := &ebitenui.UI{
         Container: rootContainer,

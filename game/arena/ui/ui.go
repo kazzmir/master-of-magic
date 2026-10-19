@@ -42,6 +42,26 @@ func VBox(opts ...widget.ContainerOpt) *widget.Container {
     return widget.NewContainer(allArgs...)
 }
 
+// Column fills the available width. Optional row weights stretch selected rows
+// into the remaining height; zero-weight rows keep their preferred height.
+func Column(rowWeights ...float64) *widget.Container {
+    return widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(1),
+        widget.GridLayoutOpts.Weights([]float64{1}, rowWeights),
+        widget.GridLayoutOpts.Spacing(0, 8),
+        widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(6)),
+    )))
+}
+
+// ScrollRow reserves a narrow scrollbar beside flexible content.
+func ScrollRow(rowWeights ...float64) *widget.Container {
+    return widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+        widget.GridLayoutOpts.Columns(2),
+        widget.GridLayoutOpts.Weights([]float64{1, 0}, rowWeights),
+        widget.GridLayoutOpts.Spacing(6, 0),
+    )))
+}
+
 func CenteredText(textStr string, face *text.Face, textColor color.Color) *widget.Text {
     return widget.NewText(
         widget.TextOpts.Text(textStr, face, textColor),
