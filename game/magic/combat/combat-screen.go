@@ -2834,6 +2834,8 @@ func (combat *CombatScreen) doMelee(yield coroutine.YieldFunc, attacker *ArmyUni
             }
 
             select {
+                case <-combat.Quit.Done():
+                    return
                 case event := <-combat.Model.Remote.Events:
                     // FIXME: this is redundant with the event switch in model.UpdateProjectiles()
                     switch event.GetType() {
