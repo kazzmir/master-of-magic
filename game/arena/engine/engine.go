@@ -312,6 +312,48 @@ func tryUpgradeUnit(unit units.StackUnit, budget uint64) uint64 {
     return upgradeCost
 }
 
+// buyAIUnit spends at most budget on one unit and its upgrades. A large
+// remaining balance is valid at high levels, not evidence of unsigned overflow.
+func buyAIUnit(enemyPlayer *player.Player, budget uint64) uint64 {
+    choices := getValidChoices(budget)
+    if len(choices) == 0 {
+        return 0
+    }
+    slices.SortFunc(choices, func(a, b *units.Unit) int {
+        return cmp.Compare(getUnitCost(b), getUnitCost(a))
+    })
+    weight := rand.N(100)
+    var start, end int
+    if weight < 70 {
+        start, end = 0, len(choices)/3
+    } else if weight < 90 {
+        start, end = len(choices)/3, 2*len(choices)/3
+    } else {
+        start, end = 2*len(choices)/3, len(choices)
+    }
+    if end <= start {
+        end = start + 1
+    }
+    choice := choices[start + rand.N(end-start)]
+    unitCost := getUnitCost(choice)
+    if unitCost == 0 || unitCost > budget {
+        return 0
+    }
+    addedUnit := enemyPlayer.AddUnit(*choice)
+    remaining := budget - unitCost
+    enchantmentCost := tryAddEnchantments(addedUnit, enemyPlayer, remaining/2)
+    if enchantmentCost > remaining {
+        panic("AI enchantments exceeded their budget")
+    }
+    remaining -= enchantmentCost
+    upgradeCost := tryUpgradeUnit(addedUnit, remaining/2)
+    if upgradeCost > remaining {
+        panic("AI weapon upgrades exceeded their budget")
+    }
+    remaining -= upgradeCost
+    return budget - remaining
+}
+
 func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     defendingArmy := combat.Army {
         Player: engine.Player,
@@ -377,66 +419,12 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     // log.Printf("Budget after spells: %v", budget)
 
     for budget > 0 {
-        choices := getValidChoices(budget)
-
-        if len(choices) == 0 {
+        spent := buyAIUnit(enemyPlayer, budget)
+        if spent == 0 {
             break
         }
-
-        slices.SortFunc(choices, func(a, b *units.Unit) int {
-            return cmp.Compare(getUnitCost(b), getUnitCost(a))
-        })
-
-        weight := rand.N(100)
-        var choice *units.Unit
-        var start, end int
-        // choose from first 1/3rd of array if weight < 70
-        if weight < 70 {
-            start = 0
-            end = len(choices) / 3
-        } else if weight < 90 {
-            // choose from 2nd 1/3rd of array
-            start = len(choices) / 3
-            end = 2 * len(choices) / 3
-        } else {
-            // choose from last 1/3rd of array
-            start = 2 * len(choices) / 3
-            end = len(choices)
-        }
-
-        if end <= start {
-            end = start + 1
-        }
-
-        sub := choices[start:end]
-
-        if len(sub) == 0 {
-            sub = choices
-        }
-
-        choice = sub[rand.N(len(sub))]
-
-        addedUnit := enemyPlayer.AddUnit(*choice)
-
-        unitCost := getUnitCost(choice)
-        budget -= unitCost
-
-        var enchantmentCost uint64
-        enchantmentCost = tryAddEnchantments(addedUnit, enemyPlayer, budget / 2)
-
-        budget -= enchantmentCost
-
-        upgradeCost := tryUpgradeUnit(addedUnit, budget / 2)
-
-        budget -= upgradeCost
-
-        engine.CurrentBattleReward += enchantmentCost
-        engine.CurrentBattleReward += unitCost
-        engine.CurrentBattleReward += upgradeCost
-
-        if budget > 10000000 {
-            panic("budget overflow")
-        }
+        budget -= spent
+        engine.CurrentBattleReward += spent
     }
 
     switch engine.Difficulty {
