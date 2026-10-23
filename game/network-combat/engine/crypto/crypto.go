@@ -3,6 +3,7 @@ package crypto
 import (
     "log"
     "fmt"
+    "time"
     "crypto/ecdh"
     "crypto/hkdf"
     "crypto/sha256"
@@ -35,6 +36,10 @@ type encryptedConn struct {
     sentPackets uint64
     receiveCipher cipher.AEAD
     receivedPackets uint64
+}
+
+func (encrypted *encryptedConn) SetReadDeadline(deadline time.Time) error {
+    return encrypted.conn.SetReadDeadline(deadline)
 }
 
 func (encrypted *encryptedConn) Read() ([]byte, error) {

@@ -14,6 +14,11 @@ type testPacketConn struct {
 	outgoing chan []byte
 }
 
+func (conn *testPacketConn) SetReadDeadline(t time.Time) error {
+    // dont need for now
+    return nil
+}
+
 func (conn *testPacketConn) Read() ([]byte, error) {
 	select {
 	case packet := <-conn.incoming:

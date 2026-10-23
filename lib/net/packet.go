@@ -5,6 +5,7 @@ import (
     "encoding/binary"
     "fmt"
     "io"
+    "time"
 )
 
 // send and receive a complete packet, not a stream of bytes
@@ -12,6 +13,7 @@ import (
 type PacketConn interface {
     Read() ([]byte, error)
     Send([]byte) error
+    SetReadDeadline(time.Time) error
 }
 
 type PacketNetConn struct {
@@ -26,6 +28,10 @@ func NewPacketNetConn(peer gonet.Conn, maxPacketSize uint32) *PacketNetConn {
         Conn: peer,
         MaxPacketSize: maxPacketSize,
     }
+}
+
+func (packet *PacketNetConn) SetReadDeadline(t time.Time) error {
+    return packet.Conn.SetReadDeadline(t)
 }
 
 func (packet *PacketNetConn) Read() ([]byte, error) {

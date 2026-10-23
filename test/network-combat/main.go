@@ -27,6 +27,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
     "github.com/kazzmir/master-of-magic/lib/lbx"
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
     "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
 
@@ -332,7 +333,7 @@ func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.C
 }
 
 func NewEngine(isServer bool, peer net.Conn, scenario int) (*Engine, error) {
-    model, combatScreen, err := MakeScenario(scenario, isServer, combat.MakeRemote(!isServer, !isServer, peer))
+    model, combatScreen, err := MakeScenario(scenario, isServer, combat.MakeRemote(!isServer, !isServer, netlib.NewPacketNetConn(peer, 1 << 20)))
 
     if err != nil {
         return nil, err
