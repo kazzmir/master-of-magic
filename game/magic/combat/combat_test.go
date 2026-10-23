@@ -23,6 +23,7 @@ import (
     "github.com/kazzmir/master-of-magic/lib/fraction"
     "github.com/kazzmir/master-of-magic/lib/optional"
     "github.com/kazzmir/master-of-magic/lib/set"
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
 
 func TestAngle(test *testing.T){
@@ -1409,7 +1410,7 @@ func TestRemoteRangeDamage(test *testing.T) {
     defer peer2.Close()
 
     // remote side is defender, so false for isAttacker
-    remote := MakeRemote(false, false, peer1)
+    remote := MakeRemote(false, false, netlib.NewPacketNetConn(peer1, 4096))
 
     defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
     attackingArmy := &Army{Player: makeTestCombatPlayer(false)}
@@ -1427,7 +1428,7 @@ func TestRemoteRangeDamage(test *testing.T) {
     defer cancel()
 
     // remote side is attacker, so true for isAttacker
-    remoteDefender := MakeRemote(true, true, peer2)
+    remoteDefender := MakeRemote(true, true, netlib.NewPacketNetConn(peer2, 4096))
 
     go remoteDefender.RunReceiveLoop(quit)
 
@@ -1692,7 +1693,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         defer peer2.Close()
 
         // the attacker's remote, which represents the defender, so false for isAttacker
-        remote := MakeRemote(false, false, peer1)
+        remote := MakeRemote(false, false, netlib.NewPacketNetConn(peer1, 4096))
 
         makeDefendingArmy := func() *Army {
             defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
@@ -1740,7 +1741,7 @@ func TestRemoteUnitCastProjectile(test *testing.T) {
         attackerModel.CracksCallChance = 100
 
         // the defender's remote, which represents the attacker, so true for isAttacker
-        remoteDefender := MakeRemote(true, true, peer2)
+        remoteDefender := MakeRemote(true, true, netlib.NewPacketNetConn(peer2, 4096))
 
         defenderModel := MakeCombatModel(allSpells, makeDefendingArmy(), makeAttackingArmy(), CombatLandscapeGrass, data.PlaneArcanus, ZoneType{}, data.MagicNone, 0, 0, make(chan CombatEvent, 10), remoteDefender)
         // probably don't really need this
@@ -2354,8 +2355,8 @@ func TestRemoteWallOfFireDeath(test *testing.T) {
             peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
             // The mover's owner is the non-authoritative peer. IsServer()
             // returns the inverse of Remote.IsServer.
-            attackerRemote := MakeRemote(movingTeam == TeamAttacker, false, peer1)
-            defenderRemote := MakeRemote(movingTeam == TeamDefender, true, peer2)
+            attackerRemote := MakeRemote(movingTeam == TeamAttacker, false, netlib.NewPacketNetConn(peer1, 4096))
+            defenderRemote := MakeRemote(movingTeam == TeamDefender, true, netlib.NewPacketNetConn(peer2, 4096))
             makeModel := func(remote *Remote) *CombatModel {
                 makeArmy := func() *Army {
                     army := &Army{Player: makeTestCombatPlayer(true)}
@@ -2660,8 +2661,8 @@ func TestRemoteTurnEnchantments(test *testing.T) {
                     peer1.SetWriteDeadline(time.Now().Add(5 * time.Second))
                     peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
                     // Remote.IsServer is inverted by CombatModel.IsServer().
-                    attackerRemote := MakeRemote(authorityTeam != TeamAttacker, false, peer1)
-                    defenderRemote := MakeRemote(authorityTeam != TeamDefender, true, peer2)
+                    attackerRemote := MakeRemote(authorityTeam != TeamAttacker, false, netlib.NewPacketNetConn(peer1, 4096))
+                    defenderRemote := MakeRemote(authorityTeam != TeamDefender, true, netlib.NewPacketNetConn(peer2, 4096))
                     makeModel := func(remote *Remote) *CombatModel {
                         makeArmy := func() *Army {
                             army := &Army{Player: makeTestCombatPlayer(false)}
@@ -2878,8 +2879,8 @@ func TestRemoteRaiseDead(test *testing.T) {
             peer1.SetWriteDeadline(time.Now().Add(5 * time.Second))
             peer2.SetWriteDeadline(time.Now().Add(5 * time.Second))
 
-            attackerRemote := MakeRemote(false, false, peer1)
-            defenderRemote := MakeRemote(true, true, peer2)
+            attackerRemote := MakeRemote(false, false, netlib.NewPacketNetConn(peer1, 4096))
+            defenderRemote := MakeRemote(true, true, netlib.NewPacketNetConn(peer2, 4096))
             makeModel := func(remote *Remote) *CombatModel {
                 makeArmy := func() *Army {
                     army := &Army{Player: makeTestCombatPlayer(false)}
@@ -2998,8 +2999,8 @@ func TestDisenchantArea(test *testing.T) {
     defer peer2.Close()
 
     // the attacker's remote, which represents the defender, so false for isAttacker
-    attackerRemote := MakeRemote(false, false, peer1)
-    defenderRemote := MakeRemote(true, true, peer2)
+    attackerRemote := MakeRemote(false, false, netlib.NewPacketNetConn(peer1, 4096))
+    defenderRemote := MakeRemote(true, true, netlib.NewPacketNetConn(peer2, 4096))
 
     defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
@@ -3082,8 +3083,8 @@ func TestCounterMagic(test *testing.T) {
     defer peer2.Close()
 
     // the attacker's remote, which represents the defender, so false for isAttacker
-    attackerRemote := MakeRemote(false, false, peer1)
-    defenderRemote := MakeRemote(true, true, peer2)
+    attackerRemote := MakeRemote(false, false, netlib.NewPacketNetConn(peer1, 4096))
+    defenderRemote := MakeRemote(true, true, netlib.NewPacketNetConn(peer2, 4096))
 
     defendingArmy := &Army{Player: makeTestCombatPlayer(false)}
 
@@ -3204,8 +3205,8 @@ func TestRemoteDefenderMeleeMutualDeathSelectsNextUnit(test *testing.T) {
 
 	// Remote flags describe the opposite peer: the server owns the attacker,
 	// and the client owns the defender.
-	serverRemote := MakeRemote(false, false, serverPeer)
-	clientRemote := MakeRemote(true, true, clientPeer)
+	serverRemote := MakeRemote(false, false, netlib.NewPacketNetConn(serverPeer, 4096))
+	clientRemote := MakeRemote(true, true, netlib.NewPacketNetConn(clientPeer, 4096))
 	makeModel := func(remote *Remote) *CombatModel {
 		makeArmy := func(banner data.BannerType) *Army {
 			army := &Army{Player: makeTestCombatPlayer(true)}
