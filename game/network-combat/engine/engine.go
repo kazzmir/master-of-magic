@@ -3,7 +3,9 @@ package engine
 import (
     "flag"
     "log"
+    "fmt"
     "time"
+    "net"
     "context"
     "sync"
     "os"
@@ -11,10 +13,58 @@ import (
     "syscall"
 )
 
-func doListen(port int, quit context.Context) {
+func doRun(peer net.Conn, quit context.Context) error {
+    return nil
 }
 
-func doConnect(peer string, quit context.Context) {
+func doListen(port int, quit context.Context) error {
+    listen, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
+    if err != nil {
+        return err
+    }
+
+    defer listen.Close()
+
+    ok := make(chan struct{})
+    defer close(ok)
+
+    stop := false
+
+    go func() {
+        select {
+            case <-quit.Done():
+                stop = true
+                log.Printf("Shutting down listener")
+                listen.Close()
+            case <-ok:
+        }
+    }()
+
+    for !stop {
+        peer, err := listen.Accept()
+        if err != nil {
+            if stop {
+                break
+            }
+
+            log.Printf("Failed to accept connection: %v", err)
+            continue
+        }
+
+        listen.Close()
+        return doRun(peer, quit)
+    }
+
+    return fmt.Errorf("Listener stopped")
+}
+
+func doConnect(peer string, quit context.Context) error {
+    conn, err := net.Dial("tcp", peer)
+    if err != nil {
+        return err
+    }
+
+    return doRun(conn, quit)
 }
 
 func Launch() {
@@ -24,16 +74,17 @@ func Launch() {
     peer := flag.String("peer", "", "Peer address to connect to")
     flag.Parse()
 
-    quit, cancel := context.WithCancel(context.Background())
+    quit, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
     defer cancel()
-
-    signal.NotifyContext(quit, os.Interrupt, syscall.SIGTERM)
 
     var wait sync.WaitGroup
 
     if *port != 0 {
         log.Printf("Listen for connections on port %d", *port)
-        doListen(*port, quit)
+        err := doListen(*port, quit)
+        if err != nil {
+            log.Fatalf("Failed to listen on port %d: %v", *port, err)
+        }
     } else if *peer != "" {
         // connect to peer
         doConnect(*peer, quit)
