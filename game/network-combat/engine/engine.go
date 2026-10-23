@@ -15,6 +15,7 @@ import (
     "syscall"
 
     "github.com/kazzmir/master-of-magic/game/network-combat/engine/crypto"
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
 
 type PacketNetConn struct {
@@ -59,6 +60,10 @@ func (packet *PacketNetConn) Send(data []byte) error {
     return nil
 }
 
+func runGame(conn netlib.PacketConn, quit context.Context) error {
+    return nil
+}
+
 func doRun(peer net.Conn, quit context.Context) error {
     defer peer.Close()
 
@@ -70,7 +75,7 @@ func doRun(peer net.Conn, quit context.Context) error {
 
     packetConn := PacketNetConn{peer}
 
-    didExchange := make(chan crypto.PacketConn)
+    didExchange := make(chan netlib.PacketConn)
 
     go func() {
         log.Printf("Starting key exchange with %s", peer.RemoteAddr())
@@ -82,7 +87,7 @@ func doRun(peer net.Conn, quit context.Context) error {
         didExchange <- encryptedConn
     }()
 
-    var encryptedConn crypto.PacketConn
+    var encryptedConn netlib.PacketConn
 
     select {
         case encryptedConn = <-didExchange:
@@ -93,6 +98,7 @@ func doRun(peer net.Conn, quit context.Context) error {
             return fmt.Errorf("Timeout waiting for key exchange to complete")
     }
 
+    /*
     go encryptedConn.Send([]byte("Hello from this side!"))
     message, err := encryptedConn.Read()
     if err != nil {
@@ -100,8 +106,9 @@ func doRun(peer net.Conn, quit context.Context) error {
     }
     
     log.Printf("Received message: %s", string(message))
+    */
 
-    return nil
+    return runGame(encryptedConn, quit)
 }
 
 func doListen(port int, quit context.Context) error {

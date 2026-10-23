@@ -8,12 +8,9 @@ import (
     "crypto/sha256"
     "crypto/cipher"
     "crypto/aes"
-)
 
-type PacketConn interface {
-    Read() ([]byte, error)
-    Send([]byte) error
-}
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
+)
 
 func deriveCipher(secret []byte, from []byte, to []byte) (cipher.AEAD, error) {
     key, err := hkdf.Key(sha256.New, secret, nil, fmt.Sprintf("key/%s/%s", string(from), string(to)), 32)
@@ -33,7 +30,7 @@ func deriveCipher(secret []byte, from []byte, to []byte) (cipher.AEAD, error) {
 const MAX_ENCRYPTED_PACKETS = 1 << 31
 
 type encryptedConn struct {
-    conn PacketConn
+    conn netlib.PacketConn
     sendCipher cipher.AEAD
     sentPackets uint64
     receiveCipher cipher.AEAD
@@ -64,7 +61,7 @@ func (encrypted *encryptedConn) Send(data []byte) error {
     return encrypted.conn.Send(encryptedData)
 }
 
-func NewEncryptedConn(conn PacketConn) (PacketConn, error) {
+func NewEncryptedConn(conn netlib.PacketConn) (netlib.PacketConn, error) {
     privateKey, err := ecdh.X25519().GenerateKey(nil)
     if err != nil {
         return nil, fmt.Errorf("Unable to generate private x25519 key: %v", err)

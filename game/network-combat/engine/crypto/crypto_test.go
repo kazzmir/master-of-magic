@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
 
 type testPacketConn struct {
@@ -37,7 +39,7 @@ func TestNewEncryptedConn(t *testing.T) {
 	rightTransport := &testPacketConn{incoming: leftToRight, outgoing: rightToLeft}
 
 	type result struct {
-		conn PacketConn
+		conn netlib.PacketConn
 		err  error
 	}
 	leftResult := make(chan result, 1)
@@ -57,8 +59,8 @@ func TestNewEncryptedConn(t *testing.T) {
 
 	for _, direction := range []struct {
 		name      string
-		sender    PacketConn
-		receiver  PacketConn
+		sender    netlib.PacketConn
+		receiver  netlib.PacketConn
 		transport *testPacketConn
 	}{
 		{"left to right", left.conn, right, rightTransport},
