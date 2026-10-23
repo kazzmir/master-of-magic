@@ -8,8 +8,6 @@ import (
     "net"
     "context"
     "sync"
-    "encoding/binary"
-    "io"
     "os"
     "os/signal"
     "syscall"
@@ -18,47 +16,7 @@ import (
     netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
 
-type PacketNetConn struct {
-    net.Conn
-}
-
 const MAX_PACKET_SIZE = 1024 * 1024 // 1 MB
-
-func (packet *PacketNetConn) Read() ([]byte, error) {
-    // read 4 byte length prefix
-    var length uint32
-    err := binary.Read(packet.Conn, binary.BigEndian, &length)
-    if err != nil {
-        return nil, err
-    }
-
-    if length > MAX_PACKET_SIZE {
-        return nil, fmt.Errorf("Packet size %d exceeds maximum allowed size %d", length, MAX_PACKET_SIZE)
-    }
-
-    data := make([]byte, length)
-    _, err = io.ReadFull(packet.Conn, data)
-    if err != nil {
-        return nil, err
-    }
-
-    return data, nil
-}
-
-func (packet *PacketNetConn) Send(data []byte) error {
-    length := uint32(len(data))
-    err := binary.Write(packet.Conn, binary.BigEndian, length)
-    if err != nil {
-        return err
-    }
-
-    _, err = packet.Conn.Write(data)
-    if err != nil {
-        return err
-    }
-
-    return nil
-}
 
 func runGame(conn netlib.PacketConn, quit context.Context) error {
     return nil
@@ -73,13 +31,13 @@ func doRun(peer net.Conn, quit context.Context) error {
         peer.Close()
     }()
 
-    packetConn := PacketNetConn{peer}
+    packetConn := netlib.NewPacketNetConn(peer, MAX_PACKET_SIZE)
 
     didExchange := make(chan netlib.PacketConn)
 
     go func() {
         log.Printf("Starting key exchange with %s", peer.RemoteAddr())
-        encryptedConn, err := crypto.NewEncryptedConn(&packetConn)
+        encryptedConn, err := crypto.NewEncryptedConn(packetConn)
         if err != nil {
             log.Printf("Failed to create encrypted connection: %v", err)
             return
