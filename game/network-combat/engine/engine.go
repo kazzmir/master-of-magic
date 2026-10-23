@@ -14,6 +14,10 @@ import (
     "os/signal"
     "syscall"
     "crypto/ecdh"
+    "crypto/hkdf"
+    "crypto/sha256"
+    "crypto/cipher"
+    "crypto/aes"
 )
 
 const MAX_PACKET_SIZE = 1024 * 1024 // 1 MB
@@ -54,6 +58,20 @@ func sendBytes(conn net.Conn, data []byte) error {
     return nil
 }
 
+func deriveCipher(secret []byte, from []byte, to []byte) (cipher.AEAD, error) {
+    key, err := hkdf.Key(sha256.New, secret, nil, fmt.Sprintf("key/%s/%s", string(from), string(to)), 32)
+    if err != nil {
+        return nil, err
+    }
+
+    block, err := aes.NewCipher(key)
+    if err != nil {
+        return nil, err
+    }
+
+    return cipher.NewGCMWithRandomNonce(block)
+}
+
 func doRun(peer net.Conn, quit context.Context) error {
     defer peer.Close()
 
@@ -75,6 +93,9 @@ func doRun(peer net.Conn, quit context.Context) error {
         const STATE_EXCHANCE_MESSAGES = 1
         state := STATE_READ_PUBLIC_KEY
 
+        var sendCipher cipher.AEAD
+        var receiveCipher cipher.AEAD
+
         for quit.Err() == nil {
             switch state {
                 case STATE_READ_PUBLIC_KEY:
@@ -85,13 +106,50 @@ func doRun(peer net.Conn, quit context.Context) error {
                     }
                     log.Printf("Received public key from peer: %x", publicKeyBytes)
                     state = STATE_EXCHANCE_MESSAGES
+
+                    peerPublicKey, err := ecdh.X25519().NewPublicKey(publicKeyBytes)
+                    if err != nil {
+                        log.Printf("Failed to create public key from bytes: %v", err)
+                        return
+                    }
+
+                    sharedSecret, err := privateKey.ECDH(peerPublicKey)
+                    if err != nil {
+                        log.Printf("Failed to compute shared secret: %v", err)
+                        return
+                    }
+
+                    sendCipher, err = deriveCipher(sharedSecret, privateKey.PublicKey().Bytes(), peerPublicKey.Bytes())
+                    if err != nil {
+                        log.Printf("Failed to derive send cipher: %v", err)
+                        return
+                    }
+
+                    receiveCipher, err = deriveCipher(sharedSecret, peerPublicKey.Bytes(), privateKey.PublicKey().Bytes())
+                    if err != nil {
+                        log.Printf("Failed to derive receive cipher: %v", err)
+                        return
+                    }
+
+                    go func() {
+                        encrypted := sendCipher.Seal(nil, nil, []byte("Hello from peer!"), nil)
+                        sendBytes(peer, encrypted)
+                    }()
+
                 case STATE_EXCHANCE_MESSAGES:
                     message, err := readBytes(peer)
                     if err != nil {
                         log.Printf("Failed to read message from peer: %v", err)
                         return
                     }
-                    log.Printf("Received message from peer: %s", string(message))
+
+                    decrypted, err := receiveCipher.Open(nil, nil, message, nil)
+                    if err != nil {
+                        log.Printf("Failed to decrypt message from peer: %v", err)
+                        return
+                    }
+
+                    log.Printf("Decrypted message from peer: %s", string(decrypted))
             }
         }
 
