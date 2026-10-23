@@ -8,12 +8,103 @@ import (
     "net"
     "context"
     "sync"
+    "encoding/binary"
+    "io"
     "os"
     "os/signal"
     "syscall"
+    "crypto/ecdh"
 )
 
+const MAX_PACKET_SIZE = 1024 * 1024 // 1 MB
+
+func readBytes(conn net.Conn) ([]byte, error) {
+    // read 4 byte length prefix
+    var length uint32
+    err := binary.Read(conn, binary.BigEndian, &length)
+    if err != nil {
+        return nil, err
+    }
+
+    if length > MAX_PACKET_SIZE {
+        return nil, fmt.Errorf("Packet size %d exceeds maximum allowed size %d", length, MAX_PACKET_SIZE)
+    }
+
+    data := make([]byte, length)
+    _, err = io.ReadFull(conn, data)
+    if err != nil {
+        return nil, err
+    }
+
+    return data, nil
+}
+
+func sendBytes(conn net.Conn, data []byte) error {
+    length := uint32(len(data))
+    err := binary.Write(conn, binary.BigEndian, length)
+    if err != nil {
+        return err
+    }
+
+    _, err = conn.Write(data)
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
 func doRun(peer net.Conn, quit context.Context) error {
+    defer peer.Close()
+
+    privateKey, err := ecdh.X25519().GenerateKey(nil)
+    if err != nil {
+        return fmt.Errorf("Unable to generate private x25519 key: %v", err)
+    }
+
+    go func() {
+        <-quit.Done()
+        log.Printf("Shutting down connection to %s", peer.RemoteAddr())
+        peer.Close()
+    }()
+
+    var wait sync.WaitGroup
+
+    wait.Go(func() {
+        const STATE_READ_PUBLIC_KEY = 0
+        const STATE_EXCHANCE_MESSAGES = 1
+        state := STATE_READ_PUBLIC_KEY
+
+        for quit.Err() == nil {
+            switch state {
+                case STATE_READ_PUBLIC_KEY:
+                    publicKeyBytes, err := readBytes(peer)
+                    if err != nil {
+                        log.Printf("Failed to read public key from peer: %v", err)
+                        return
+                    }
+                    log.Printf("Received public key from peer: %x", publicKeyBytes)
+                    state = STATE_EXCHANCE_MESSAGES
+                case STATE_EXCHANCE_MESSAGES:
+                    message, err := readBytes(peer)
+                    if err != nil {
+                        log.Printf("Failed to read message from peer: %v", err)
+                        return
+                    }
+                    log.Printf("Received message from peer: %s", string(message))
+            }
+        }
+
+    })
+
+    localPublicKey := privateKey.PublicKey()
+    err = sendBytes(peer, localPublicKey.Bytes())
+    if err != nil {
+        return err
+    }
+
+    wait.Wait()
+
     return nil
 }
 
