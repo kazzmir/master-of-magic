@@ -51,6 +51,11 @@ func (packet *PacketNetConn) Read() ([]byte, error) {
 
 func (packet *PacketNetConn) Send(data []byte) error {
     length := uint32(len(data))
+
+    if length > packet.MaxPacketSize {
+        return fmt.Errorf("Packet size %d exceeds maximum allowed size %d", length, packet.MaxPacketSize)
+    }
+
     err := binary.Write(packet.Conn, binary.BigEndian, length)
     if err != nil {
         return err
