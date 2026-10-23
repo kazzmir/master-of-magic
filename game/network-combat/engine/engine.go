@@ -51,6 +51,8 @@ func doListen(port int, quit context.Context) error {
             continue
         }
 
+        log.Printf("Accepted connection from %s", peer.RemoteAddr())
+
         listen.Close()
         return doRun(peer, quit)
     }
