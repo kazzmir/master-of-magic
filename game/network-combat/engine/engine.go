@@ -13,19 +13,20 @@ import (
     "os"
     "os/signal"
     "syscall"
-    "crypto/ecdh"
-    "crypto/hkdf"
-    "crypto/sha256"
-    "crypto/cipher"
-    "crypto/aes"
+
+    "github.com/kazzmir/master-of-magic/game/network-combat/engine/crypto"
 )
+
+type PacketNetConn struct {
+    net.Conn
+}
 
 const MAX_PACKET_SIZE = 1024 * 1024 // 1 MB
 
-func readBytes(conn net.Conn) ([]byte, error) {
+func (packet *PacketNetConn) Read() ([]byte, error) {
     // read 4 byte length prefix
     var length uint32
-    err := binary.Read(conn, binary.BigEndian, &length)
+    err := binary.Read(packet.Conn, binary.BigEndian, &length)
     if err != nil {
         return nil, err
     }
@@ -35,7 +36,7 @@ func readBytes(conn net.Conn) ([]byte, error) {
     }
 
     data := make([]byte, length)
-    _, err = io.ReadFull(conn, data)
+    _, err = io.ReadFull(packet.Conn, data)
     if err != nil {
         return nil, err
     }
@@ -43,14 +44,14 @@ func readBytes(conn net.Conn) ([]byte, error) {
     return data, nil
 }
 
-func sendBytes(conn net.Conn, data []byte) error {
+func (packet *PacketNetConn) Send(data []byte) error {
     length := uint32(len(data))
-    err := binary.Write(conn, binary.BigEndian, length)
+    err := binary.Write(packet.Conn, binary.BigEndian, length)
     if err != nil {
         return err
     }
 
-    _, err = conn.Write(data)
+    _, err = packet.Conn.Write(data)
     if err != nil {
         return err
     }
@@ -58,27 +59,8 @@ func sendBytes(conn net.Conn, data []byte) error {
     return nil
 }
 
-func deriveCipher(secret []byte, from []byte, to []byte) (cipher.AEAD, error) {
-    key, err := hkdf.Key(sha256.New, secret, nil, fmt.Sprintf("key/%s/%s", string(from), string(to)), 32)
-    if err != nil {
-        return nil, err
-    }
-
-    block, err := aes.NewCipher(key)
-    if err != nil {
-        return nil, err
-    }
-
-    return cipher.NewGCMWithRandomNonce(block)
-}
-
 func doRun(peer net.Conn, quit context.Context) error {
     defer peer.Close()
-
-    privateKey, err := ecdh.X25519().GenerateKey(nil)
-    if err != nil {
-        return fmt.Errorf("Unable to generate private x25519 key: %v", err)
-    }
 
     go func() {
         <-quit.Done()
@@ -86,82 +68,38 @@ func doRun(peer net.Conn, quit context.Context) error {
         peer.Close()
     }()
 
-    var wait sync.WaitGroup
+    packetConn := PacketNetConn{peer}
 
-    wait.Go(func() {
-        const STATE_READ_PUBLIC_KEY = 0
-        const STATE_EXCHANCE_MESSAGES = 1
-        state := STATE_READ_PUBLIC_KEY
+    didExchange := make(chan crypto.PacketConn)
 
-        var sendCipher cipher.AEAD
-        var receiveCipher cipher.AEAD
-
-        for quit.Err() == nil {
-            switch state {
-                case STATE_READ_PUBLIC_KEY:
-                    publicKeyBytes, err := readBytes(peer)
-                    if err != nil {
-                        log.Printf("Failed to read public key from peer: %v", err)
-                        return
-                    }
-                    log.Printf("Received public key from peer: %x", publicKeyBytes)
-                    state = STATE_EXCHANCE_MESSAGES
-
-                    peerPublicKey, err := ecdh.X25519().NewPublicKey(publicKeyBytes)
-                    if err != nil {
-                        log.Printf("Failed to create public key from bytes: %v", err)
-                        return
-                    }
-
-                    sharedSecret, err := privateKey.ECDH(peerPublicKey)
-                    if err != nil {
-                        log.Printf("Failed to compute shared secret: %v", err)
-                        return
-                    }
-
-                    sendCipher, err = deriveCipher(sharedSecret, privateKey.PublicKey().Bytes(), peerPublicKey.Bytes())
-                    if err != nil {
-                        log.Printf("Failed to derive send cipher: %v", err)
-                        return
-                    }
-
-                    receiveCipher, err = deriveCipher(sharedSecret, peerPublicKey.Bytes(), privateKey.PublicKey().Bytes())
-                    if err != nil {
-                        log.Printf("Failed to derive receive cipher: %v", err)
-                        return
-                    }
-
-                    go func() {
-                        encrypted := sendCipher.Seal(nil, nil, []byte("Hello from peer!"), nil)
-                        sendBytes(peer, encrypted)
-                    }()
-
-                case STATE_EXCHANCE_MESSAGES:
-                    message, err := readBytes(peer)
-                    if err != nil {
-                        log.Printf("Failed to read message from peer: %v", err)
-                        return
-                    }
-
-                    decrypted, err := receiveCipher.Open(nil, nil, message, nil)
-                    if err != nil {
-                        log.Printf("Failed to decrypt message from peer: %v", err)
-                        return
-                    }
-
-                    log.Printf("Decrypted message from peer: %s", string(decrypted))
-            }
+    go func() {
+        log.Printf("Starting key exchange with %s", peer.RemoteAddr())
+        encryptedConn, err := crypto.NewEncryptedConn(&packetConn)
+        if err != nil {
+            log.Printf("Failed to create encrypted connection: %v", err)
+            return
         }
+        didExchange <- encryptedConn
+    }()
 
-    })
+    var encryptedConn crypto.PacketConn
 
-    localPublicKey := privateKey.PublicKey()
-    err = sendBytes(peer, localPublicKey.Bytes())
+    select {
+        case encryptedConn = <-didExchange:
+            log.Printf("Key exchange completed with %s", peer.RemoteAddr())
+        case <-quit.Done():
+            return fmt.Errorf("Connection closed before key exchange completed")
+        case <-time.After(5 * time.Second):
+            return fmt.Errorf("Timeout waiting for key exchange to complete")
+    }
+
+    go encryptedConn.Send([]byte("Hello from this side!"))
+    message, err := encryptedConn.Read()
     if err != nil {
         return err
     }
-
-    wait.Wait()
+    
+    log.Printf("Received message: %s", string(message))
 
     return nil
 }
