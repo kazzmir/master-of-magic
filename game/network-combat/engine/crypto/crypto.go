@@ -29,10 +29,15 @@ func deriveCipher(secret []byte, from []byte, to []byte) (cipher.AEAD, error) {
     return cipher.NewGCMWithRandomNonce(block)
 }
 
+// the actual limit is 2^32
+const MAX_ENCRYPTED_PACKETS = 1 << 31
+
 type encryptedConn struct {
     conn PacketConn
     sendCipher cipher.AEAD
+    sentPackets uint64
     receiveCipher cipher.AEAD
+    receivedPackets uint64
 }
 
 func (encrypted *encryptedConn) Read() ([]byte, error) {
@@ -41,10 +46,20 @@ func (encrypted *encryptedConn) Read() ([]byte, error) {
         return nil, err
     }
 
+    encrypted.receivedPackets += 1
+    if encrypted.receivedPackets > MAX_ENCRYPTED_PACKETS {
+        return nil, fmt.Errorf("Maximum number of encrypted packets exceeded")
+    }
+
     return encrypted.receiveCipher.Open(nil, nil, encryptedData, nil)
 }
 
 func (encrypted *encryptedConn) Send(data []byte) error {
+    encrypted.sentPackets += 1
+    if encrypted.sentPackets > MAX_ENCRYPTED_PACKETS {
+        return fmt.Errorf("Maximum number of encrypted packets exceeded")
+    }
+
     encryptedData := encrypted.sendCipher.Seal(nil, nil, data, nil)
     return encrypted.conn.Send(encryptedData)
 }
