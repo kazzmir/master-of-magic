@@ -52,16 +52,6 @@ func doRun(peer net.Conn, quit context.Context, isServer bool) error {
             return fmt.Errorf("Timeout waiting for key exchange to complete")
     }
 
-    /*
-    go encryptedConn.Send([]byte("Hello from this side!"))
-    message, err := encryptedConn.Read()
-    if err != nil {
-        return err
-    }
-    
-    log.Printf("Received message: %s", string(message))
-    */
-
     return runGame(encryptedConn, quit, isServer)
 }
 
