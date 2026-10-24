@@ -3,6 +3,7 @@ module github.com/kazzmir/master-of-magic/util/combat-simulator/server
 go 1.27.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/sendgrid/sendgrid-go v3.16.1+incompatible
 	golang.org/x/crypto v0.58.0
 )

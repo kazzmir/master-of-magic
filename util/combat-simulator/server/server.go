@@ -11,12 +11,16 @@ import (
     "crypto/tls"
     "embed"
     "strings"
+    "context"
+    "flag"
 
     "golang.org/x/crypto/acme/autocert"
     // "golang.org/x/crypto/acme"
 
     "github.com/sendgrid/sendgrid-go"
     "github.com/sendgrid/sendgrid-go/helpers/mail"
+    "github.com/coder/websocket"
+    "github.com/coder/websocket/wsjson"
 )
 
 //go:embed key/*
@@ -70,9 +74,9 @@ func doSendEmail(report string) {
     }
 }
 
-func runServer(certManager *autocert.Manager) error {
-    log.Printf("HTTPS server listening on :5000")
+type TLSGetCertificateFunc func(hello *tls.ClientHelloInfo) (*tls.Certificate, error)
 
+func runServer(certificateFunc TLSGetCertificateFunc) error {
     key, err := loadKey()
     if err != nil {
         return err
@@ -118,38 +122,99 @@ func runServer(certManager *autocert.Manager) error {
         fmt.Fprintf(writer, "OK")
     })
 
+    mux.HandleFunc("/multiplayer", func(writer http.ResponseWriter, request *http.Request) {
+        connection, err := websocket.Accept(writer, request, nil)
+        if err != nil {
+            log.Printf("Error accepting websocket connection: %v", err)
+            return
+        }
+
+        defer connection.CloseNow()
+
+        log.Printf("Websocket connection established from %s", request.RemoteAddr)
+
+        stop := false
+        for !stop {
+            f := func() error {
+                var message any
+                quit, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+                defer cancel()
+
+                err = wsjson.Read(quit, connection, &message)
+                if err != nil {
+                    if websocket.CloseStatus(err) == websocket.StatusNoStatusRcvd {
+                        stop = true
+                        return nil
+                    }
+
+                    return fmt.Errorf("Error reading websocket message: %v", err)
+                }
+
+                log.Printf("Received websocket message: %v", message)
+                return nil
+            }
+
+            err = f()
+            if err != nil {
+                log.Printf("Error: %v", err)
+                return
+            }
+        }
+
+        log.Printf("Websocket connection closed from %s", request.RemoteAddr)
+    })
+
     server := &http.Server{
         Addr: ":5000",
         Handler: mux,
         ReadTimeout: 10 * time.Second,
         WriteTimeout: 10 * time.Second,
-        TLSConfig: &tls.Config{
-            GetCertificate: certManager.GetCertificate,
-            MinVersion: tls.VersionTLS12,
-        },
     }
 
-    return server.ListenAndServeTLS("", "")
+    if certificateFunc != nil {
+        server.TLSConfig = &tls.Config{
+            GetCertificate: certificateFunc,
+            MinVersion: tls.VersionTLS12,
+        }
+
+        log.Printf("HTTPS server listening on :5000")
+
+        return server.ListenAndServeTLS("", "")
+    } else {
+        log.Printf("HTTP server listening on :5000")
+
+        return server.ListenAndServe()
+    }
 }
 
 func main(){
     log.Printf("Server starting")
 
-    // acmeClient := &acme.Client{DirectoryURL: "https://acme-staging-v02.api.letsencrypt.org/directory"}
+    tls := flag.Bool("tls", true, "Run server with TLS")
+    flag.Parse()
 
-    certManager := autocert.Manager{
-        Prompt: autocert.AcceptTOS,
-        HostPolicy: autocert.HostWhitelist("magic.jonrafkind.com"),
-        // Client: acmeClient,
-        Cache: autocert.DirCache("certs"),
-    }
+    if *tls {
+        // acmeClient := &acme.Client{DirectoryURL: "https://acme-staging-v02.api.letsencrypt.org/directory"}
 
-    log.Printf("HTTP server listening on :5001")
-    // lets encrypt stuff listens on http
-    go http.ListenAndServe(":5001", certManager.HTTPHandler(nil))
+        certManager := autocert.Manager{
+            Prompt: autocert.AcceptTOS,
+            HostPolicy: autocert.HostWhitelist("magic.jonrafkind.com"),
+            // Client: acmeClient,
+            Cache: autocert.DirCache("certs"),
+        }
 
-    err := runServer(&certManager)
-    if err != nil {
-        log.Fatalf("Error running server: %v", err)
+        log.Printf("HTTP server listening on :5001")
+        // lets encrypt stuff listens on http
+        go http.ListenAndServe(":5001", certManager.HTTPHandler(nil))
+
+        err := runServer(certManager.GetCertificate)
+        if err != nil {
+            log.Fatalf("Error running server: %v", err)
+        }
+    } else {
+        err := runServer(nil)
+        if err != nil {
+            log.Fatalf("Error running server: %v", err)
+        }
     }
 }
