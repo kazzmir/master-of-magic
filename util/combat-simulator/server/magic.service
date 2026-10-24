@@ -12,5 +12,8 @@ WorkingDirectory=/opt/magic
 User=nobody
 Group=nogroup
 
+TimeoutStopSec=5s
+LimitNOFILE=1048576
+
 [Install]
 WantedBy=multi-user.target
