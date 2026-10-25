@@ -24,6 +24,10 @@ type Message struct {
 	Games      []GameState `json:"games,omitempty"`
 	Game       *GameState  `json:"game,omitempty"`
 	Ready      bool        `json:"ready,omitempty"`
+	Budget     uint64      `json:"budget,omitempty"`
+	AttackerID uint64      `json:"attacker_id,omitempty"`
+	Revision   uint64      `json:"revision,omitempty"`
+	Loadout    *Loadout    `json:"loadout,omitempty"`
 	RelayToken string      `json:"relay_token,omitempty"`
 	Attacker   bool        `json:"attacker,omitempty"`
 	Room       string      `json:"room,omitempty"`

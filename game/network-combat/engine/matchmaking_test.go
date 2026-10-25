@@ -33,7 +33,7 @@ func TestMatchmakingUI(t *testing.T) {
 	if !match.create.GetWidget().Disabled {
 		t.Fatal("creation not disabled while pending")
 	}
-	state := protocol.GameState{ID: 7, Room: "Public", HostID: 1, Players: []protocol.GamePlayer{{ClientID: 1, Name: "Host"}}}
+	state := protocol.GameState{ID: 7, Room: "Public", HostID: 1, Budget: protocol.DefaultBudget, AttackerID: 1, Players: []protocol.GamePlayer{{ClientID: 1, Name: "Host", Loadout: protocol.DefaultLoadout(true)}}}
 	deliver(protocol.Message{Type: "game-state", Game: &state})
 	if !game.ui.IsWindowOpen(match.window) || match.active.ID != 7 || !match.create.GetWidget().Disabled {
 		t.Fatal("host game window missing")

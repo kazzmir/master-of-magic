@@ -27,6 +27,7 @@ type matchmakingUI struct {
 	active                  protocol.GameState
 	pending                 bool
 	inviting                bool
+	editor                  *gameSetupUI
 }
 
 func makeReadinessIcon(ready bool) *ebiten.Image {
@@ -78,7 +79,7 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 	)
 	match.container.AddChild(header, match.list)
 
-	contents := lobbyColumn(0, 0, 0, 1, 0, 0)
+	contents := lobbyColumn(0, 0, 1, 0, 0)
 	contents.GetWidget().SetTheme(theme)
 	contents.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 24, G: 28, B: 36, A: 255}))
 	match.readyIcon, match.notReadyIcon = makeReadinessIcon(true), makeReadinessIcon(false)
@@ -100,7 +101,7 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 			}
 		}
 		if match.active.ID != 0 && !match.active.Started {
-			match.send(protocol.Message{Type: "game-ready", GameID: match.active.ID, Ready: !ready})
+			match.send(protocol.Message{Type: "game-ready", GameID: match.active.ID, Ready: !ready, Revision: match.active.Revision})
 		}
 	})
 	match.exit = button("Exit", func() {
@@ -116,7 +117,8 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 		widget.RowLayoutOpts.Direction(widget.DirectionHorizontal), widget.RowLayoutOpts.Spacing(8),
 	)))
 	buttons.AddChild(match.ready, match.exit)
-	contents.AddChild(playerRows[0], playerRows[1], label("Game setup"), label("Setup options will be added here."), match.status, buttons)
+	match.editor = newGameSetupUI(match, theme)
+	contents.AddChild(playerRows[0], playerRows[1], match.editor.container, match.status, buttons)
 	title := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
 		widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(6)),
 	)), widget.ContainerOpts.BackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 255})))
@@ -137,10 +139,11 @@ func (match *matchmakingUI) send(message protocol.Message) {
 }
 
 func (match *matchmakingUI) setEnabled() {
+	match.editor.setEnabled()
 	available := match.game.connected && match.game.room != "" && !match.pending
 	match.create.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
 	match.list.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
-	match.ready.GetWidget().Disabled = !available || match.active.ID == 0 || match.active.Started || match.inviting
+	match.ready.GetWidget().Disabled = !available || match.active.ID == 0 || match.active.Started || match.inviting || !match.editor.canReady()
 	match.exit.GetWidget().Disabled = !available || match.active.ID == 0
 	if match.inviting {
 		invites := match.game.invitations
@@ -153,13 +156,18 @@ func (match *matchmakingUI) openWindow() {
 		return
 	}
 	rect := match.game.ui.Container.GetWidget().Rect
-	x, y := max(0, (rect.Dx()-600)/2), max(0, (rect.Dy()-340)/2)
-	match.window.SetLocation(image.Rect(x, y, x+600, y+340))
+	if rect.Empty() {
+		rect = image.Rect(0, 0, 1100, 700)
+	}
+	width, height := min(1000, max(760, rect.Dx()-40)), min(680, max(520, rect.Dy()-40))
+	x, y := max(0, (rect.Dx()-width)/2), max(0, (rect.Dy()-height)/2)
+	match.window.SetLocation(image.Rect(x, y, x+width, y+height))
 	match.game.ui.AddWindow(match.window)
 }
 
 func (match *matchmakingUI) showInvitation(targetID uint64) {
 	match.inviting = true
+	match.editor.container.GetWidget().SetVisibility(widget.Visibility_Hide)
 	match.players[0].Label = match.game.userLabel(match.game.clientID)
 	match.players[1].Label = match.game.userLabel(targetID) + ": waiting for player"
 	for i := range match.players {
@@ -230,6 +238,8 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 		}
 		match.active = *state
 		match.inviting = false
+		match.editor.container.GetWidget().SetVisibility(widget.Visibility_Show)
+		match.editor.sync()
 		match.pending = false
 		match.ready.SetText("Ready")
 		for i := range match.players {
@@ -246,7 +256,15 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 					match.indicators[i].Image = match.readyIcon
 					match.readiness[i].Label = "ready"
 				}
-				value = fmt.Sprintf("Player %d: %s —", i+1, player.Name)
+				role := "defender"
+				attackerID := state.AttackerID
+				if attackerID == 0 {
+					attackerID = state.HostID
+				}
+				if player.ClientID == attackerID {
+					role = "attacker"
+				}
+				value = fmt.Sprintf("Player %d: %s (%s) —", i+1, player.Name, role)
 				if player.ClientID == match.game.clientID && player.Ready {
 					match.ready.SetText("Not ready")
 				}

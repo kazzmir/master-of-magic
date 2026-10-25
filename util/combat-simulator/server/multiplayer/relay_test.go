@@ -3,6 +3,7 @@ package multiplayer
 import (
 	"bytes"
 	"context"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -64,12 +65,27 @@ func TestCombatRelay(t *testing.T) {
 	write(host, protocol.Message{Type: "create-game"})
 	id := readKind(host, "game-state").Game.ID
 	write(guest, protocol.Message{Type: "join-game", GameID: id})
-	readKind(host, "game-state")
+	state := readKind(host, "game-state").Game
 	readKind(guest, "game-state")
-	write(host, protocol.Message{Type: "game-ready", GameID: id, Ready: true})
-	write(guest, protocol.Message{Type: "game-ready", GameID: id, Ready: true})
+	write(host, protocol.Message{Type: "game-settings", GameID: id, Budget: math.MaxUint64, AttackerID: state.Players[1].ClientID})
+	state = readKind(host, "game-state").Game
+	if snapshot := readKind(guest, "game-state").Game; snapshot.Budget != math.MaxUint64 || snapshot.AttackerID != state.Players[1].ClientID {
+		t.Fatal("host settings not transmitted exactly")
+	}
+	loadout := state.Players[0].Loadout.Clone()
+	loadout.Mana = 100
+	loadout.Portrait = 8
+	loadout.Books[4] = 1
+	loadout.Spells = []string{"Fire Bolt"}
+	write(host, protocol.Message{Type: "game-loadout", GameID: id, Revision: state.Revision, Loadout: &loadout})
+	state = readKind(host, "game-state").Game
+	if snapshot := readKind(guest, "game-state").Game; !snapshot.Players[0].Loadout.Equal(loadout) {
+		t.Fatal("approved loadout not synchronized")
+	}
+	write(host, protocol.Message{Type: "game-ready", GameID: id, Ready: true, Revision: state.Revision})
+	write(guest, protocol.Message{Type: "game-ready", GameID: id, Ready: true, Revision: state.Revision})
 	starts := []protocol.Message{readKind(host, "combat-start"), readKind(guest, "combat-start")}
-	if !starts[0].Attacker || starts[1].Attacker || starts[0].RelayToken == "" || starts[0].RelayToken == starts[1].RelayToken {
+	if starts[0].Attacker || !starts[1].Attacker || starts[0].RelayToken == "" || starts[0].RelayToken == starts[1].RelayToken {
 		t.Fatal("incorrect private combat capabilities/roles")
 	}
 	dialCombat := func(hello protocol.Message) *websocket.Conn {

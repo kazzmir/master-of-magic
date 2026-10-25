@@ -10,28 +10,30 @@ import (
 
 // All matchmaking state is accessed within manager.lock.With.
 type Game struct {
-	id       uint64
-	room     string
-	hostID   uint64
-	inviteID uint64
-	players  map[uint64]*User
-	ready    map[uint64]bool
-	started  bool
-	relay    *combatRelay
+	id                           uint64
+	room                         string
+	hostID                       uint64
+	inviteID                     uint64
+	players                      map[uint64]*User
+	ready                        map[uint64]bool
+	started                      bool
+	relay                        *combatRelay
+	budget, attackerID, revision uint64
+	loadouts                     map[uint64]protocol.Loadout
 }
 
 func (game *Game) snapshot() protocol.GameState {
-	state := protocol.GameState{ID: game.id, Room: game.room, HostID: game.hostID, Started: game.started}
+	state := protocol.GameState{ID: game.id, Room: game.room, HostID: game.hostID, Started: game.started, Budget: game.budget, AttackerID: game.attackerID, Revision: game.revision}
 	ids := make([]uint64, 0, len(game.players))
 	for id := range game.players {
 		ids = append(ids, id)
 	}
 	slices.Sort(ids)
 	// Keep the host in the first slot even if a guest has a lower ID.
-	state.Players = append(state.Players, protocol.GamePlayer{ClientID: game.hostID, Name: game.players[game.hostID].name, Ready: game.ready[game.hostID]})
+	state.Players = append(state.Players, protocol.GamePlayer{ClientID: game.hostID, Name: game.players[game.hostID].name, Ready: game.ready[game.hostID], Loadout: game.loadouts[game.hostID].Clone()})
 	for _, id := range ids {
 		if id != game.hostID {
-			state.Players = append(state.Players, protocol.GamePlayer{ClientID: id, Name: game.players[id].name, Ready: game.ready[id]})
+			state.Players = append(state.Players, protocol.GamePlayer{ClientID: id, Name: game.players[id].name, Ready: game.ready[id], Loadout: game.loadouts[id].Clone()})
 		}
 	}
 	return state
@@ -86,12 +88,13 @@ func (manager *Manager) newGame(hostID uint64, host *User, guestID uint64, guest
 	if manager.Games == nil {
 		manager.Games = make(map[uint64]*Game)
 	}
-	game := &Game{id: manager.newGameID(), room: host.room, hostID: hostID, players: map[uint64]*User{hostID: host}, ready: map[uint64]bool{hostID: false}}
+	game := &Game{id: manager.newGameID(), room: host.room, hostID: hostID, players: map[uint64]*User{hostID: host}, ready: map[uint64]bool{hostID: false}, budget: protocol.DefaultBudget, attackerID: hostID, loadouts: map[uint64]protocol.Loadout{hostID: protocol.DefaultLoadout(true)}}
 	manager.Games[game.id] = game
 	host.gameID = game.id
 	if guest != nil {
 		game.players[guestID] = guest
 		game.ready[guestID] = false
+		game.loadouts[guestID] = protocol.DefaultLoadout(false)
 		guest.gameID = game.id
 	}
 	game.broadcastState()
@@ -120,6 +123,11 @@ func (manager *Manager) leaveGame(user *User, clientID uint64) {
 	} else {
 		delete(game.players, clientID)
 		delete(game.ready, clientID)
+		delete(game.loadouts, clientID)
+		if game.attackerID == clientID {
+			game.attackerID = game.hostID
+		}
+		game.revision++
 		user.gameID = 0
 		user.send(protocol.Message{Type: "game-left", GameID: game.id})
 		game.started = false
@@ -135,16 +143,20 @@ func (manager *Manager) leaveGame(user *User, clientID uint64) {
 // Each player may participate in one game, which also limits hosts to one game.
 func (manager *Manager) handleGameCommand(user *User, clientID uint64, command protocol.Message) bool {
 	switch command.Type {
-	case "list-games", "create-game", "join-game", "game-ready", "leave-game":
+	case "list-games", "create-game", "join-game", "game-ready", "leave-game", "game-settings", "game-loadout":
 	default:
 		return false
 	}
-	fail := func(reason string) { user.send(protocol.Message{ID: command.ID, Error: reason}) }
+	fail := func(reason string) {
+		user.send(protocol.Message{ID: command.ID, GameID: command.GameID, Error: reason})
+	}
 	if manager.Lobbies[user.room] == nil {
 		fail("Join a room first")
 		return true
 	}
 	switch command.Type {
+	case "game-settings", "game-loadout":
+		manager.handleGameSetup(user, clientID, command)
 	case "list-games":
 		user.send(protocol.Message{Type: "list-games", ID: command.ID, Room: user.room, Games: manager.waitingGames(user.room)})
 	case "create-game":
@@ -164,6 +176,7 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 		} else {
 			manager.cancelInvitations(clientID, "Game request cancelled: a player joined another game")
 			game.players[clientID] = user
+			game.loadouts[clientID] = protocol.DefaultLoadout(false)
 			user.gameID = game.id
 			for id := range game.players {
 				game.ready[id] = false
@@ -178,6 +191,16 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 		} else if game.started {
 			fail("Both players are already ready")
 		} else {
+			if command.Revision != game.revision {
+				fail("Game setup changed; review it before becoming ready")
+				break
+			}
+			if command.Ready {
+				if _, err := protocol.ValidateLoadout(game.loadouts[clientID], game.budget, true); err != nil {
+					fail(err.Error())
+					break
+				}
+			}
 			game.ready[clientID] = command.Ready
 			if len(game.players) == 2 {
 				game.started = true

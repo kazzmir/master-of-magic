@@ -97,11 +97,12 @@ func (game *lobbyGame) startNetworkCombat(message protocol.Message) {
 	game.networkCombat = run
 	game.matches.status.Label = "Connecting to combat and exchanging keys…"
 	address := game.server.GetText()
+	state, localID := game.matches.active.Clone(), game.clientID
 	go func() {
 		encrypted, packet, err := connectCombat(ctx, address, message)
 		var engine *Engine
 		if err == nil {
-			engine, err = NewEngine(message.Attacker, encrypted, networkCombatScenario)
+			engine, err = newConfiguredCombat(encrypted, localID, state)
 		}
 		if err != nil && packet != nil {
 			packet.Close()

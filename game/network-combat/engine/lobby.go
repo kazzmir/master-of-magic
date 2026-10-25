@@ -571,6 +571,9 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 	if message.Error != "" {
 		delete(game.pendingRoomPasswords, message.Room)
 		game.status.Label = message.Error
+		if message.GameID != 0 && message.GameID == game.matches.active.ID {
+			game.matches.status.Label = message.Error
+		}
 		game.invitations.handleError(message)
 		game.matches.pending = false
 		game.matches.setEnabled()

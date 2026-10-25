@@ -1,0 +1,1632 @@
+{
+  "units": [
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 37
+      },
+      "name": "All Catapult",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 36
+      },
+      "name": "All Galley",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 35
+      },
+      "name": "All Trireme",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 38
+      },
+      "name": "All Warship",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 45
+      },
+      "name": "Barbarian Berserkers",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 41
+      },
+      "name": "Barbarian Bowmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 42
+      },
+      "name": "Barbarian Cavalry",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 43
+      },
+      "name": "Barbarian Shaman",
+      "cost": 50
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 39
+      },
+      "name": "Barbarian Spearmen",
+      "cost": 15
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 40
+      },
+      "name": "Barbarian Swordsmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 49
+      },
+      "name": "Beastmen Bowmen",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 54
+      },
+      "name": "Beastmen Centaurs",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 52
+      },
+      "name": "Beastmen Engineers",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 48
+      },
+      "name": "Beastmen Halberdiers",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 51
+      },
+      "name": "Beastmen Magicians",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 55
+      },
+      "name": "Beastmen Manticores",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 56
+      },
+      "name": "Beastmen Minotaurs",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 50
+      },
+      "name": "Beastmen Priests",
+      "cost": 150
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 53
+      },
+      "name": "Beastmen Settlers",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 46
+      },
+      "name": "Beastmen Spearmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 47
+      },
+      "name": "Beastmen Swordsmen",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 60
+      },
+      "name": "Dark Elf Cavalry",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 59
+      },
+      "name": "Dark Elf Halberdiers",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 63
+      },
+      "name": "Dark Elf Nightblades",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 65
+      },
+      "name": "Dark Elf Nightmares",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 61
+      },
+      "name": "Dark Elf Priests",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 57
+      },
+      "name": "Dark Elf Spearmen",
+      "cost": 25
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 58
+      },
+      "name": "Dark Elf Swordsmen",
+      "cost": 50
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 64
+      },
+      "name": "Dark Elf Warlocks",
+      "cost": 240
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 75
+      },
+      "name": "Draconian Air Ship",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 69
+      },
+      "name": "Draconian Bowmen",
+      "cost": 45
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 74
+      },
+      "name": "Draconian Doom Drake",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 68
+      },
+      "name": "Draconian Halberdiers",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 71
+      },
+      "name": "Draconian Magicians",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 70
+      },
+      "name": "Draconian Shaman",
+      "cost": 75
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 66
+      },
+      "name": "Draconian Spearmen",
+      "cost": 25
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 67
+      },
+      "name": "Draconian Swordsmen",
+      "cost": 50
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 78
+      },
+      "name": "Dwarf Engineers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 81
+      },
+      "name": "Dwarf Golem",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 77
+      },
+      "name": "Dwarf Halberdiers",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 79
+      },
+      "name": "Dwarf Hammerhands",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 80
+      },
+      "name": "Dwarf Steam Cannon",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 76
+      },
+      "name": "Dwarf Swordsmen",
+      "cost": 50
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 74
+      },
+      "name": "Fantastic Air Elemental",
+      "cost": 50
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 57
+      },
+      "name": "Fantastic Angel",
+      "cost": 550
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 58
+      },
+      "name": "Fantastic Arch Angel",
+      "cost": 950
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 62
+      },
+      "name": "Fantastic Basilisk",
+      "cost": 325
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 68
+      },
+      "name": "Fantastic Behemoth",
+      "cost": 700
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 39
+      },
+      "name": "Fantastic Chaos Spawn",
+      "cost": 500
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 40
+      },
+      "name": "Fantastic Chimeras",
+      "cost": 350
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 61
+      },
+      "name": "Fantastic Cockatrices",
+      "cost": 275
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 65
+      },
+      "name": "Fantastic Colossus",
+      "cost": 800
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 52
+      },
+      "name": "Fantastic Death Knights",
+      "cost": 600
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 53
+      },
+      "name": "Fantastic Demon Lord",
+      "cost": 1000
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 75
+      },
+      "name": "Fantastic Djinn",
+      "cost": 650
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 41
+      },
+      "name": "Fantastic Doom Bat",
+      "cost": 300
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 67
+      },
+      "name": "Fantastic Earth Elemental",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 42
+      },
+      "name": "Fantastic Efreet",
+      "cost": 550
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 38
+      },
+      "name": "Fantastic Fire Elemental",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 37
+      },
+      "name": "Fantastic Fire Giant",
+      "cost": 150
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 36
+      },
+      "name": "Fantastic Gargoyles",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 46
+      },
+      "name": "Fantastic Ghouls",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 63
+      },
+      "name": "Fantastic Giant Spiders",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 66
+      },
+      "name": "Fantastic Gorgons",
+      "cost": 600
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 44
+      },
+      "name": "Fantastic Great Drake",
+      "cost": 900
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 69
+      },
+      "name": "Fantastic Great Wyrm",
+      "cost": 1000
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 56
+      },
+      "name": "Fantastic Guardian Spirit",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 35
+      },
+      "name": "Fantastic Hell Hounds",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 43
+      },
+      "name": "Fantastic Hydra",
+      "cost": 650
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 34
+      },
+      "name": "Fantastic Magic Spirit",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 77
+      },
+      "name": "Fantastic Nagas",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 47
+      },
+      "name": "Fantastic Night Stalker",
+      "cost": 250
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 71
+      },
+      "name": "Fantastic Phantom Beast",
+      "cost": 35
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 72
+      },
+      "name": "Fantastic Phantom Warriors",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 51
+      },
+      "name": "Fantastic Shadow Demons",
+      "cost": 325
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 45
+      },
+      "name": "Fantastic Skeletons",
+      "cost": 25
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 76
+      },
+      "name": "Fantastic Sky Drake",
+      "cost": 1000
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 60
+      },
+      "name": "Fantastic Sprites",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 64
+      },
+      "name": "Fantastic Stone Giant",
+      "cost": 450
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 73
+      },
+      "name": "Fantastic Storm Giant",
+      "cost": 500
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 55
+      },
+      "name": "Fantastic Unicorns",
+      "cost": 250
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 59
+      },
+      "name": "Fantastic War Bears",
+      "cost": 70
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 48
+      },
+      "name": "Fantastic WereWolves",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 50
+      },
+      "name": "Fantastic Wraiths",
+      "cost": 500
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 86
+      },
+      "name": "Gnoll Bowmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 85
+      },
+      "name": "Gnoll Halberdiers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 87
+      },
+      "name": "Gnoll Settlers",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 83
+      },
+      "name": "Gnoll Spearmen",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 84
+      },
+      "name": "Gnoll Swordsmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 88
+      },
+      "name": "Gnoll Wolf Riders",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 91
+      },
+      "name": "Halfling Bowmen",
+      "cost": 45
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 92
+      },
+      "name": "Halfling Shamans",
+      "cost": 75
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 94
+      },
+      "name": "Halfling Slingers",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 89
+      },
+      "name": "Halfling Spearmen",
+      "cost": 15
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 90
+      },
+      "name": "Halfling Swordsmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 98
+      },
+      "name": "High Elf Cavalry",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 102
+      },
+      "name": "High Elf ElvenLord",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 97
+      },
+      "name": "High Elf Halberdiers",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 101
+      },
+      "name": "High Elf Longbowmen",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 99
+      },
+      "name": "High Elf Magicians",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 103
+      },
+      "name": "High Elf Pegasai",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 100
+      },
+      "name": "High Elf Settlers",
+      "cost": 90
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 95
+      },
+      "name": "High Elf Spearmen",
+      "cost": 15
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 96
+      },
+      "name": "High Elf Swordsmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 106
+      },
+      "name": "High Men Bowmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 107
+      },
+      "name": "High Men Cavalry",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 110
+      },
+      "name": "High Men Engineers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 109
+      },
+      "name": "High Men Magicians",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 113
+      },
+      "name": "High Men Paladins",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 112
+      },
+      "name": "High Men Pikemen",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 108
+      },
+      "name": "High Men Priests",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 104
+      },
+      "name": "High Men Spearmen",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 105
+      },
+      "name": "High Men Swordsmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 117
+      },
+      "name": "Klackon Engineers",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 116
+      },
+      "name": "Klackon Halberdiers",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 114
+      },
+      "name": "Klackon Spearmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 119
+      },
+      "name": "Klackon Stag Beetle",
+      "cost": 160
+    },
+    {
+      "id": {
+        "lbx_file": "units1.lbx",
+        "index": 115
+      },
+      "name": "Klackon Swordsmen",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 6
+      },
+      "name": "Lizardmen Dragon Turtle",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 2
+      },
+      "name": "Lizardmen Halberdiers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 3
+      },
+      "name": "Lizardmen Javelineers",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 4
+      },
+      "name": "Lizardmen Shamans",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 0
+      },
+      "name": "Lizardmen Spearmen",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 1
+      },
+      "name": "Lizardmen Swordsmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 9
+      },
+      "name": "Nomad Bowmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 16
+      },
+      "name": "Nomad Griffins",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 13
+      },
+      "name": "Nomad Horsebowmen",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 14
+      },
+      "name": "Nomad Pikemen",
+      "cost": 80
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 10
+      },
+      "name": "Nomad Priests",
+      "cost": 100
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 15
+      },
+      "name": "Nomad Rangers",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 7
+      },
+      "name": "Nomad Spearmen",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 8
+      },
+      "name": "Nomad Swordsmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 20
+      },
+      "name": "Orc Bowmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 21
+      },
+      "name": "Orc Calvary",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 24
+      },
+      "name": "Orc Engineers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 19
+      },
+      "name": "Orc Halberdiers",
+      "cost": 40
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 23
+      },
+      "name": "Orc Magicians",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 22
+      },
+      "name": "Orc Shamans",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 17
+      },
+      "name": "Orc Spearmen",
+      "cost": 10
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 18
+      },
+      "name": "Orc Swordsmen",
+      "cost": 20
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 26
+      },
+      "name": "Orc Wyvern Riders",
+      "cost": 200
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 29
+      },
+      "name": "Troll Halberdiers",
+      "cost": 120
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 30
+      },
+      "name": "Troll Shamans",
+      "cost": 180
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 27
+      },
+      "name": "Troll Spearmen",
+      "cost": 30
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 28
+      },
+      "name": "Troll Swordsmen",
+      "cost": 60
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 33
+      },
+      "name": "Troll War Mammoths",
+      "cost": 240
+    },
+    {
+      "id": {
+        "lbx_file": "units2.lbx",
+        "index": 32
+      },
+      "name": "Troll War Trolls",
+      "cost": 160
+    }
+  ],
+  "spells": [
+    {
+      "name": "Air Elemental",
+      "cost": 130,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Animate Dead",
+      "cost": 300,
+      "magic": "death"
+    },
+    {
+      "name": "Banish",
+      "cost": 112,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Berserk",
+      "cost": 74,
+      "magic": "death"
+    },
+    {
+      "name": "Black Prayer",
+      "cost": 45,
+      "magic": "death"
+    },
+    {
+      "name": "Black Sleep",
+      "cost": 10,
+      "magic": "death"
+    },
+    {
+      "name": "Bless",
+      "cost": 2,
+      "magic": "life"
+    },
+    {
+      "name": "Blur",
+      "cost": 30,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Call Chaos",
+      "cost": 300,
+      "magic": "chaos"
+    },
+    {
+      "name": "Call Lightning",
+      "cost": 300,
+      "magic": "nature"
+    },
+    {
+      "name": "Cloak of Fear",
+      "cost": 8,
+      "magic": "death"
+    },
+    {
+      "name": "Confusion",
+      "cost": 13,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Counter Magic",
+      "cost": 19,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Cracks Call",
+      "cost": 30,
+      "magic": "nature"
+    },
+    {
+      "name": "Creature Binding",
+      "cost": 225,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Darkness",
+      "cost": 25,
+      "magic": "death"
+    },
+    {
+      "name": "Death Spell",
+      "cost": 250,
+      "magic": "death"
+    },
+    {
+      "name": "Disenchant Area",
+      "cost": 30,
+      "magic": "arcane"
+    },
+    {
+      "name": "Disenchant True",
+      "cost": 35,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Disintegrate",
+      "cost": 200,
+      "magic": "chaos"
+    },
+    {
+      "name": "Dispel Evil",
+      "cost": 45,
+      "magic": "life"
+    },
+    {
+      "name": "Dispel Magic",
+      "cost": 10,
+      "magic": "arcane"
+    },
+    {
+      "name": "Dispel Magic True",
+      "cost": 4,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Disrupt",
+      "cost": 4,
+      "magic": "chaos"
+    },
+    {
+      "name": "Doom Bolt",
+      "cost": 112,
+      "magic": "chaos"
+    },
+    {
+      "name": "Earth Elemental",
+      "cost": 170,
+      "magic": "nature"
+    },
+    {
+      "name": "Earth to Mud",
+      "cost": 2,
+      "magic": "nature"
+    },
+    {
+      "name": "Eldritch Weapon",
+      "cost": 13,
+      "magic": "chaos"
+    },
+    {
+      "name": "Elemental Armor",
+      "cost": 88,
+      "magic": "nature"
+    },
+    {
+      "name": "Entangle",
+      "cost": 225,
+      "magic": "nature"
+    },
+    {
+      "name": "Fire Bolt",
+      "cost": 6,
+      "magic": "chaos"
+    },
+    {
+      "name": "Fire Elemental",
+      "cost": 25,
+      "magic": "chaos"
+    },
+    {
+      "name": "Fireball",
+      "cost": 56,
+      "magic": "chaos"
+    },
+    {
+      "name": "Flame Blade",
+      "cost": 45,
+      "magic": "chaos"
+    },
+    {
+      "name": "Flame Strike",
+      "cost": 160,
+      "magic": "chaos"
+    },
+    {
+      "name": "Flight",
+      "cost": 56,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Giant Strength",
+      "cost": 8,
+      "magic": "nature"
+    },
+    {
+      "name": "Guardian Wind",
+      "cost": 8,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Haste",
+      "cost": 170,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Healing",
+      "cost": 10,
+      "magic": "life"
+    },
+    {
+      "name": "Heroism",
+      "cost": 25,
+      "magic": "life"
+    },
+    {
+      "name": "High Prayer",
+      "cost": 185,
+      "magic": "life"
+    },
+    {
+      "name": "Holy Armor",
+      "cost": 13,
+      "magic": "life"
+    },
+    {
+      "name": "Holy Weapon",
+      "cost": 8,
+      "magic": "life"
+    },
+    {
+      "name": "Holy Word",
+      "cost": 170,
+      "magic": "life"
+    },
+    {
+      "name": "Ice Bolt",
+      "cost": 40,
+      "magic": "nature"
+    },
+    {
+      "name": "Immolation",
+      "cost": 74,
+      "magic": "chaos"
+    },
+    {
+      "name": "Invisiblity",
+      "cost": 96,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Invulnerability",
+      "cost": 104,
+      "magic": "life"
+    },
+    {
+      "name": "Iron Skin",
+      "cost": 112,
+      "magic": "nature"
+    },
+    {
+      "name": "Life Drain",
+      "cost": 16,
+      "magic": "death"
+    },
+    {
+      "name": "Lightning Bolt",
+      "cost": 30,
+      "magic": "chaos"
+    },
+    {
+      "name": "Lionheart",
+      "cost": 88,
+      "magic": "life"
+    },
+    {
+      "name": "Magic Immunity",
+      "cost": 160,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Magic Vortex",
+      "cost": 120,
+      "magic": "chaos"
+    },
+    {
+      "name": "Mana Leak",
+      "cost": 22,
+      "magic": "death"
+    },
+    {
+      "name": "Mass Healing",
+      "cost": 160,
+      "magic": "life"
+    },
+    {
+      "name": "Mass Invisibility",
+      "cost": 250,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Metal Fires",
+      "cost": 96,
+      "magic": "chaos"
+    },
+    {
+      "name": "Mind Storm",
+      "cost": 140,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Petrify",
+      "cost": 96,
+      "magic": "nature"
+    },
+    {
+      "name": "Phantom Beast",
+      "cost": 80,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Phantom Warriors",
+      "cost": 10,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Possession",
+      "cost": 35,
+      "magic": "death"
+    },
+    {
+      "name": "Prayer",
+      "cost": 80,
+      "magic": "life"
+    },
+    {
+      "name": "Psionic Blast",
+      "cost": 25,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Raise Dead",
+      "cost": 62,
+      "magic": "life"
+    },
+    {
+      "name": "Recall Hero",
+      "cost": 35,
+      "magic": "arcane"
+    },
+    {
+      "name": "Regeneration",
+      "cost": 185,
+      "magic": "nature"
+    },
+    {
+      "name": "Resist Elements",
+      "cost": 4,
+      "magic": "nature"
+    },
+    {
+      "name": "Resist Magic",
+      "cost": 2,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Righteousness",
+      "cost": 112,
+      "magic": "life"
+    },
+    {
+      "name": "Shatter",
+      "cost": 19,
+      "magic": "chaos"
+    },
+    {
+      "name": "Spell Lock",
+      "cost": 45,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Star Fires",
+      "cost": 4,
+      "magic": "life"
+    },
+    {
+      "name": "Stone Skin",
+      "cost": 16,
+      "magic": "nature"
+    },
+    {
+      "name": "Terror",
+      "cost": 19,
+      "magic": "death"
+    },
+    {
+      "name": "True Light",
+      "cost": 19,
+      "magic": "life"
+    },
+    {
+      "name": "True Sight",
+      "cost": 30,
+      "magic": "life"
+    },
+    {
+      "name": "Vertigo",
+      "cost": 40,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Warp Creature",
+      "cost": 22,
+      "magic": "chaos"
+    },
+    {
+      "name": "Warp Lightning",
+      "cost": 88,
+      "magic": "chaos"
+    },
+    {
+      "name": "Warp Reality",
+      "cost": 150,
+      "magic": "chaos"
+    },
+    {
+      "name": "Warp Wood",
+      "cost": 2,
+      "magic": "chaos"
+    },
+    {
+      "name": "Weakness",
+      "cost": 4,
+      "magic": "death"
+    },
+    {
+      "name": "Web",
+      "cost": 10,
+      "magic": "nature"
+    },
+    {
+      "name": "Word of Death",
+      "cost": 200,
+      "magic": "death"
+    },
+    {
+      "name": "Word of Recall",
+      "cost": 16,
+      "magic": "sorcery"
+    },
+    {
+      "name": "Wrack",
+      "cost": 96,
+      "magic": "death"
+    },
+    {
+      "name": "Wraith Form",
+      "cost": 88,
+      "magic": "death"
+    }
+  ]
+}

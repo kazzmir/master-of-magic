@@ -196,7 +196,7 @@ func (manager *Manager) startCombat(game *Game) {
 		if id == game.hostID {
 			slot = 0
 		}
-		user.send(protocol.Message{Type: "combat-start", GameID: game.id, RelayToken: relay.slots[slot].token, Attacker: id == game.hostID})
+		user.send(protocol.Message{Type: "combat-start", GameID: game.id, RelayToken: relay.slots[slot].token, Attacker: id == game.attackerID})
 	}
 }
 
