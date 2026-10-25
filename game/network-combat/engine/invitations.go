@@ -17,6 +17,7 @@ type gameInvitationsUI struct {
 	accept, decline            *widget.Button
 	incomingID, outgoingID     uint64
 	requestPending, responding bool
+	cancelPending              bool
 }
 
 func newGameInvitationsUI(game *lobbyGame, theme *widget.Theme) *gameInvitationsUI {
@@ -65,7 +66,7 @@ func (invites *gameInvitationsUI) request(clientID uint64) {
 	if !game.connected || game.room == "" || clientID == game.clientID {
 		return
 	}
-	if game.matches.active.ID != 0 {
+	if game.matches.active.ID != 0 || game.matches.pending {
 		game.status.Label = "Exit your current game before requesting another player"
 		return
 	}
@@ -75,6 +76,17 @@ func (invites *gameInvitationsUI) request(clientID uint64) {
 	}
 	if game.send(protocol.Message{Type: "request-game", TargetID: clientID}) {
 		invites.requestPending = true
+		game.matches.showInvitation(clientID)
+	}
+}
+
+func (invites *gameInvitationsUI) cancelRequest() {
+	if invites.outgoingID == 0 || invites.cancelPending {
+		return
+	}
+	if invites.game.send(protocol.Message{Type: "cancel-game-invite", InviteID: invites.outgoingID}) {
+		invites.cancelPending = true
+		invites.game.matches.setEnabled()
 	}
 }
 
@@ -91,12 +103,17 @@ func (invites *gameInvitationsUI) respond(accept bool) {
 
 func (invites *gameInvitationsUI) reset() {
 	invites.incomingID, invites.outgoingID = 0, 0
-	invites.requestPending, invites.responding = false, false
+	invites.requestPending, invites.responding, invites.cancelPending = false, false, false
 	invites.window.Close()
+	invites.game.matches.closeInvitationPreview()
 }
 
 func (invites *gameInvitationsUI) handleError(message protocol.Message) {
-	invites.requestPending = false
+	if message.Type == "request-game" || message.Type == "cancel-game-invite" {
+		invites.requestPending, invites.cancelPending = false, false
+		invites.outgoingID = 0
+		invites.game.matches.closeInvitationPreview()
+	}
 	if message.InviteID != 0 && message.InviteID == invites.incomingID {
 		invites.incomingID = 0
 		invites.responding = false
@@ -109,6 +126,7 @@ func (invites *gameInvitationsUI) handleMessage(message protocol.Message) bool {
 	case "invite-sent":
 		invites.requestPending = false
 		invites.outgoingID = message.InviteID
+		invites.game.matches.setEnabled()
 		invites.game.status.Label = "Game request sent to " + invites.game.userLabel(message.TargetID)
 	case "game-invite":
 		if message.Room != invites.game.room || invites.game.room == "" {
@@ -135,7 +153,10 @@ func (invites *gameInvitationsUI) handleMessage(message protocol.Message) bool {
 		}
 		if message.InviteID == invites.outgoingID && invites.outgoingID != 0 {
 			invites.outgoingID = 0
-			invites.requestPending = false
+			invites.requestPending, invites.cancelPending = false, false
+			if !message.Accept {
+				invites.game.matches.closeInvitationPreview()
+			}
 			matched = true
 		}
 		if matched {

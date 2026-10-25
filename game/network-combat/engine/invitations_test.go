@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"image"
 	"strings"
 	"testing"
 
@@ -31,7 +32,13 @@ func TestPlayerContextMenuRequestsGame(t *testing.T) {
 	default:
 		t.Fatal("context menu did not request the clicked player")
 	}
-	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Error: "Busy player is already in a game"}})
+	if !game.ui.IsWindowOpen(game.matches.window) || !game.matches.inviting {
+		t.Fatal("request did not immediately open a pending game window")
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "request-game", Error: "Busy player is already in a game"}})
+	if game.ui.IsWindowOpen(game.matches.window) || game.matches.inviting {
+		t.Fatal("rejected request left game preview open")
+	}
 	if invites.requestPending || !strings.Contains(game.status.Label, "already in a game") || game.ui.IsWindowOpen(invites.window) {
 		t.Fatal("busy target rejection not shown to requester")
 	}
@@ -44,6 +51,66 @@ func TestPlayerContextMenuRequestsGame(t *testing.T) {
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "invite-closed", InviteID: 5, Text: "Player declined the game request"}})
 	if invites.outgoingID != 0 || game.status.Label != "Player declined the game request" {
 		t.Fatal("decline was not displayed")
+	}
+}
+
+func TestRequesterGamePreview(t *testing.T) {
+	for _, outcome := range []string{"accept", "decline", "cancel"} {
+		t.Run(outcome, func(t *testing.T) {
+			game := newLobbyGame()
+			session := &lobbySession{cancel: func() {}, commands: make(chan protocol.Message, 4)}
+			game.session = session
+			deliver := func(message protocol.Message) { game.handleEvent(lobbyEvent{session: session, message: message}) }
+			deliver(protocol.Message{Type: "connected", ClientID: 1})
+			deliver(protocol.Message{Type: "join-room", Room: "Public"})
+			deliver(protocol.Message{Type: "room-users", Room: "Public", Users: []uint64{1, 2}, Names: map[uint64]string{1: "Me", 2: "Playerxyz"}})
+			game.Update()
+			game.invitations.request(2)
+			<-session.commands
+			match := game.matches
+			if !game.ui.IsWindowOpen(match.window) || !match.inviting || match.active.ID != 0 {
+				t.Fatal("preview missing or real game prematurely created")
+			}
+			if match.players[1].Label != "Playerxyz: waiting for player" {
+				t.Fatal(match.players[1].Label)
+			}
+			if !match.ready.GetWidget().Disabled || !match.create.GetWidget().Disabled {
+				t.Fatal("game actions enabled while awaiting acceptance")
+			}
+			deliver(protocol.Message{Type: "invite-sent", InviteID: 5, TargetID: 2})
+			if match.exit.GetWidget().Disabled {
+				t.Fatal("pending request cannot be cancelled")
+			}
+			window := match.window
+			location := image.Rect(30, 40, 630, 380)
+			window.SetLocation(location)
+			if outcome == "cancel" {
+				match.exit.Click()
+				game.Update()
+				select {
+				case command := <-session.commands:
+					if command.Type != "cancel-game-invite" || command.InviteID != 5 {
+						t.Fatal(command)
+					}
+				default:
+					t.Fatal("Exit did not cancel request")
+				}
+			}
+			deliver(protocol.Message{Type: "invite-closed", InviteID: 5, Accept: outcome == "accept", Text: "Request resolved"})
+			if outcome == "accept" {
+				if !game.ui.IsWindowOpen(window) {
+					t.Fatal("acceptance closed the preview before game state")
+				}
+				state := protocol.GameState{ID: 11, Room: "Public", HostID: 1, Players: []protocol.GamePlayer{{ClientID: 1, Name: "Me"}, {ClientID: 2, Name: "Playerxyz"}}}
+				deliver(protocol.Message{Type: "game-state", Game: &state})
+				if match.window != window || !game.ui.IsWindowOpen(window) || window.GetContainer().GetWidget().Rect != location || match.inviting || match.active.ID != 11 {
+					t.Fatal("acceptance did not update the same window")
+				}
+			} else if game.ui.IsWindowOpen(window) || match.inviting || match.create.GetWidget().Disabled {
+				t.Fatal("decline/cancellation did not close and release preview")
+			}
+			game.disconnect("Disconnected")
+		})
 	}
 }
 

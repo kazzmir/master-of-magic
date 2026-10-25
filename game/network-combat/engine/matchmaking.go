@@ -26,6 +26,7 @@ type matchmakingUI struct {
 	waiting                 map[uint64]protocol.GameState
 	active                  protocol.GameState
 	pending                 bool
+	inviting                bool
 }
 
 func makeReadinessIcon(ready bool) *ebiten.Image {
@@ -103,6 +104,10 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 		}
 	})
 	match.exit = button("Exit", func() {
+		if match.inviting {
+			game.invitations.cancelRequest()
+			return
+		}
 		if match.active.ID != 0 {
 			match.send(protocol.Message{Type: "leave-game", GameID: match.active.ID})
 		}
@@ -122,7 +127,7 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 }
 
 func (match *matchmakingUI) send(message protocol.Message) {
-	if match.pending || !match.game.connected || match.game.room == "" {
+	if match.pending || match.inviting || !match.game.connected || match.game.room == "" {
 		return
 	}
 	if match.game.send(message) {
@@ -133,10 +138,47 @@ func (match *matchmakingUI) send(message protocol.Message) {
 
 func (match *matchmakingUI) setEnabled() {
 	available := match.game.connected && match.game.room != "" && !match.pending
-	match.create.GetWidget().Disabled = !available || match.active.ID != 0
-	match.list.GetWidget().Disabled = !available || match.active.ID != 0
-	match.ready.GetWidget().Disabled = !available || match.active.ID == 0 || match.active.Started
+	match.create.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
+	match.list.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
+	match.ready.GetWidget().Disabled = !available || match.active.ID == 0 || match.active.Started || match.inviting
 	match.exit.GetWidget().Disabled = !available || match.active.ID == 0
+	if match.inviting {
+		invites := match.game.invitations
+		match.exit.GetWidget().Disabled = !available || invites.outgoingID == 0 || invites.cancelPending
+	}
+}
+
+func (match *matchmakingUI) openWindow() {
+	if match.game.ui.IsWindowOpen(match.window) {
+		return
+	}
+	rect := match.game.ui.Container.GetWidget().Rect
+	x, y := max(0, (rect.Dx()-600)/2), max(0, (rect.Dy()-340)/2)
+	match.window.SetLocation(image.Rect(x, y, x+600, y+340))
+	match.game.ui.AddWindow(match.window)
+}
+
+func (match *matchmakingUI) showInvitation(targetID uint64) {
+	match.inviting = true
+	match.players[0].Label = match.game.userLabel(match.game.clientID)
+	match.players[1].Label = match.game.userLabel(targetID) + ": waiting for player"
+	for i := range match.players {
+		match.indicators[i].GetWidget().SetVisibility(widget.Visibility_Hide)
+		match.readiness[i].GetWidget().SetVisibility(widget.Visibility_Hide)
+	}
+	match.ready.SetText("Ready")
+	match.status.Label = "Waiting for the player to accept your game request."
+	match.openWindow()
+	match.setEnabled()
+}
+
+func (match *matchmakingUI) closeInvitationPreview() {
+	if !match.inviting {
+		return
+	}
+	match.inviting = false
+	match.window.Close()
+	match.setEnabled()
 }
 
 func (match *matchmakingUI) updateList(states []protocol.GameState) {
@@ -155,6 +197,7 @@ func (match *matchmakingUI) updateList(states []protocol.GameState) {
 func (match *matchmakingUI) reset() {
 	match.active = protocol.GameState{}
 	match.pending = false
+	match.inviting = false
 	match.window.Close()
 	match.updateList(nil)
 	match.setEnabled()
@@ -186,6 +229,7 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 			return true
 		}
 		match.active = *state
+		match.inviting = false
 		match.pending = false
 		match.ready.SetText("Ready")
 		for i := range match.players {
@@ -216,12 +260,7 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 		if state.Started {
 			match.status.Label = "Both players ready — game start is not implemented yet."
 		}
-		if !match.game.ui.IsWindowOpen(match.window) {
-			rect := match.game.ui.Container.GetWidget().Rect
-			x, y := max(0, (rect.Dx()-600)/2), max(0, (rect.Dy()-340)/2)
-			match.window.SetLocation(image.Rect(x, y, x+600, y+340))
-			match.game.ui.AddWindow(match.window)
-		}
+		match.openWindow()
 		match.setEnabled()
 	default:
 		return false

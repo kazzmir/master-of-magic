@@ -14,9 +14,9 @@ type GameInvitation struct {
 	requester, target     *User
 }
 
-func (manager *Manager) closeInvitation(invite *GameInvitation, reason string) {
+func (manager *Manager) closeInvitation(invite *GameInvitation, reason string, accepted bool) {
 	delete(manager.Invitations, invite.id)
-	message := protocol.Message{Type: "invite-closed", InviteID: invite.id, Text: reason}
+	message := protocol.Message{Type: "invite-closed", InviteID: invite.id, Text: reason, Accept: accepted}
 	invite.requester.send(message)
 	invite.target.send(message)
 }
@@ -24,7 +24,7 @@ func (manager *Manager) closeInvitation(invite *GameInvitation, reason string) {
 func (manager *Manager) cancelInvitations(clientID uint64, reason string) {
 	for _, invite := range manager.Invitations {
 		if invite.requesterID == clientID || invite.targetID == clientID {
-			manager.closeInvitation(invite, reason)
+			manager.closeInvitation(invite, reason, false)
 		}
 	}
 }
@@ -40,12 +40,12 @@ func (manager *Manager) hasInvitation(clientID uint64) bool {
 
 func (manager *Manager) handleInvitationCommand(user *User, clientID uint64, command protocol.Message) bool {
 	switch command.Type {
-	case "request-game", "respond-game-invite":
+	case "request-game", "respond-game-invite", "cancel-game-invite":
 	default:
 		return false
 	}
 	fail := func(reason string) {
-		user.send(protocol.Message{ID: command.ID, InviteID: command.InviteID, Error: reason})
+		user.send(protocol.Message{Type: command.Type, ID: command.ID, InviteID: command.InviteID, Error: reason})
 	}
 	if command.Type == "request-game" {
 		lobby := manager.Lobbies[user.room]
@@ -80,22 +80,35 @@ func (manager *Manager) handleInvitationCommand(user *User, clientID uint64, com
 		return true
 	}
 	invite := manager.Invitations[command.InviteID]
+	if command.Type == "cancel-game-invite" {
+		if invite != nil && invite.requesterID == clientID && invite.requester == user {
+			manager.closeInvitation(invite, "Game request cancelled by requester", false)
+		} else if game := manager.Games[user.gameID]; game != nil && game.hostID == clientID && game.inviteID == command.InviteID && command.InviteID != 0 {
+			// Acceptance may have won the race with Exit. Exit still releases
+			// the requester, but must never affect a different, newer game.
+			manager.leaveGame(user, clientID)
+		} else {
+			fail("Game request is no longer available")
+		}
+		return true
+	}
 	if invite == nil || invite.targetID != clientID || invite.target != user {
 		fail("Game request is no longer available")
 		return true
 	}
 	if !command.Accept {
-		manager.closeInvitation(invite, fmt.Sprintf("%s declined the game request", user.name))
+		manager.closeInvitation(invite, fmt.Sprintf("%s declined the game request", user.name), false)
 		return true
 	}
 	lobby := manager.Lobbies[invite.room]
 	if lobby == nil || invite.requester.room != invite.room || user.room != invite.room || lobby.Users[invite.requesterID] != invite.requester || lobby.Users[clientID] != user {
-		manager.closeInvitation(invite, "Game request cancelled: a player left the room")
+		manager.closeInvitation(invite, "Game request cancelled: a player left the room", false)
 	} else if invite.requester.gameID != 0 || user.gameID != 0 {
-		manager.closeInvitation(invite, "Game request cancelled: a player is already in a game")
+		manager.closeInvitation(invite, "Game request cancelled: a player is already in a game", false)
 	} else {
-		manager.closeInvitation(invite, "Game request accepted")
-		manager.newGame(invite.requesterID, invite.requester, clientID, user)
+		manager.closeInvitation(invite, "Game request accepted", true)
+		game := manager.newGame(invite.requesterID, invite.requester, clientID, user)
+		game.inviteID = invite.id
 	}
 	return true
 }

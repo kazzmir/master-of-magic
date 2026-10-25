@@ -8,12 +8,13 @@ import (
 
 // All matchmaking state is accessed within manager.lock.With.
 type Game struct {
-	id      uint64
-	room    string
-	hostID  uint64
-	players map[uint64]*User
-	ready   map[uint64]bool
-	started bool
+	id       uint64
+	room     string
+	hostID   uint64
+	inviteID uint64
+	players  map[uint64]*User
+	ready    map[uint64]bool
+	started  bool
 }
 
 func (game *Game) snapshot() protocol.GameState {

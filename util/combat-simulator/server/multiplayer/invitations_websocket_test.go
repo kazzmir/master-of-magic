@@ -33,7 +33,10 @@ func TestInvitationWebsocketFlow(t *testing.T) {
 			if err := wsjson.Read(ctx, conn, &message); err != nil {
 				t.Fatal(err)
 			}
-			if message.Error != "" && kind != "" {
+			if message.Error != "" {
+				if kind == "" {
+					return message
+				}
 				t.Fatal(message)
 			}
 			if message.Type == kind {

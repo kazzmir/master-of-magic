@@ -93,7 +93,7 @@ func TestBusyInvitationRejectedImmediately(t *testing.T) {
 }
 
 func TestInvitationDeclineAndCancellation(t *testing.T) {
-	for _, action := range []string{"decline", "disconnect", "create-game", "join-game"} {
+	for _, action := range []string{"decline", "cancel", "disconnect", "create-game", "join-game"} {
 		t.Run(action, func(t *testing.T) {
 			manager, users := testGameManager()
 			if action == "join-game" {
@@ -106,6 +106,8 @@ func TestInvitationDeclineAndCancellation(t *testing.T) {
 			switch action {
 			case "decline":
 				invitationCommand(manager, users[2], 2, protocol.Message{Type: "respond-game-invite", InviteID: invite.id})
+			case "cancel":
+				invitationCommand(manager, users[1], 1, protocol.Message{Type: "cancel-game-invite", InviteID: invite.id})
 			case "disconnect":
 				manager.lock.With(func() error { manager.leave(users[1], 1); return nil })
 			case "create-game":
