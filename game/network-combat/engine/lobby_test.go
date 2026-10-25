@@ -16,6 +16,27 @@ import (
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 )
 
+// chatText verifies local-time prefixes while allowing content assertions to
+// remain independent of the wall clock.
+func chatText(t *testing.T, game *lobbyGame) string {
+	t.Helper()
+	value := game.chat.GetText()
+	if value == "" {
+		return ""
+	}
+	lines := strings.Split(value, "\n")
+	for i, line := range lines {
+		if len(line) < 12 {
+			t.Fatalf("missing chat timestamp: %q", line)
+		}
+		if _, err := time.ParseInLocation("03:04:05 PM", line[:11], time.Local); err != nil || line[11] != ' ' {
+			t.Fatalf("invalid chat timestamp: %q", line)
+		}
+		lines[i] = line[12:]
+	}
+	return strings.Join(lines, "\n")
+}
+
 func TestMultiplayerURL(t *testing.T) {
 	for input, want := range map[string]string{
 		"localhost:5000":                "ws://localhost:5000/multiplayer",
@@ -57,7 +78,7 @@ func TestLobbyUI(t *testing.T) {
 	if game.clientID != 1 || !game.connected {
 		t.Fatal("server-assigned client ID not stored")
 	}
-	if game.chat.GetText() != "Other: [hello]" {
+	if chatText(t, game) != "Other: [hello]" {
 		t.Fatal(game.chat.GetText())
 	}
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "name-updated", Room: "Elsewhere", ClientID: 2, Name: "Ignored"}})
@@ -69,11 +90,11 @@ func TestLobbyUI(t *testing.T) {
 		t.Fatal("rename changed identity")
 	}
 	wantChat := "Other: [hello]\n** Other is now known as New name"
-	if game.chat.GetText() != wantChat {
+	if chatText(t, game) != wantChat {
 		t.Fatal("missing rename announcement", game.chat.GetText())
 	}
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "name-updated", Room: "Lobby", ClientID: 2, Name: "New name"}})
-	if game.chat.GetText() != wantChat {
+	if chatText(t, game) != wantChat {
 		t.Fatal("unchanged name produced an announcement", game.chat.GetText())
 	}
 	game.name.SetText("My new name")
@@ -127,7 +148,7 @@ func TestLobbyMembershipAnnouncements(t *testing.T) {
 	for range 2 {
 		deliver(protocol.Message{Type: "user-joined", Room: "Lobby", ClientID: 2, Name: "Player1234"})
 	}
-	if game.chat.GetText() != "** Player1234 has joined" {
+	if chatText(t, game) != "** Player1234 has joined" {
 		t.Fatal(game.chat.GetText())
 	}
 	if !slices.Equal(game.userIDs, []uint64{1, 2, 3}) {
@@ -139,11 +160,39 @@ func TestLobbyMembershipAnnouncements(t *testing.T) {
 		deliver(protocol.Message{Type: "user-left", Room: "Lobby", ClientID: 2})
 	}
 	want := "** Player1234 has joined\n** Player1234 is now known as newname\n** newname has left"
-	if game.chat.GetText() != want {
+	if chatText(t, game) != want {
 		t.Fatal(game.chat.GetText())
 	}
 	if !slices.Equal(game.userIDs, []uint64{1, 3}) {
 		t.Fatal(game.userIDs)
+	}
+}
+
+func TestJoinSelectedRoomButton(t *testing.T) {
+	game := newLobbyGame()
+	if !game.joinButton.GetWidget().Disabled {
+		t.Fatal("join enabled while disconnected")
+	}
+	session := &lobbySession{cancel: func() {}, commands: make(chan protocol.Message, 4)}
+	game.session = session
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "connected", ClientID: 1}})
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "list-rooms", Rooms: []string{"First", "Selected"}}})
+	game.Update()
+	game.joinButton.Click()
+	game.Update()
+	if len(session.commands) != 0 {
+		t.Fatal("join sent without a selection")
+	}
+	game.rooms.SetSelectedEntry("Selected")
+	game.joinButton.Click()
+	game.Update()
+	select {
+	case command := <-session.commands:
+		if command.Type != "join-room" || command.Room != "Selected" {
+			t.Fatal(command)
+		}
+	default:
+		t.Fatal("join button did not send command")
 	}
 }
 

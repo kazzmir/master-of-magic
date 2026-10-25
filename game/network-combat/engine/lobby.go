@@ -14,6 +14,7 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/ebitenui/ebitenui"
+	uiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/themes"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -143,6 +144,7 @@ type lobbyGame struct {
 	chat                                   *widget.TextArea
 	input                                  *widget.TextInput
 	sendButton, leaveButton, refreshButton *widget.Button
+	joinButton                             *widget.Button
 	room                                   string
 	history                                []string
 	userIDs                                []uint64
@@ -204,7 +206,7 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Columns(3),
 		widget.GridLayoutOpts.Weights([]float64{0.2, 0.2, 0.6}, []float64{1}),
 	)))
-	rooms := lobbyColumn(0, 1, 0)
+	rooms := lobbyColumn(0, 1, 0, 0)
 	game.rooms = widget.NewList(
 		widget.ListOpts.EntryLabelFunc(func(entry any) string { return entry.(string) }),
 		widget.ListOpts.AllowReselect(),
@@ -219,8 +221,22 @@ func newLobbyGame() *lobbyGame {
 			}
 		}),
 	)
+	game.joinButton = widget.NewButton(
+		widget.ButtonOpts.Text("Join room", nil, nil),
+		widget.ButtonOpts.Image(&widget.ButtonImage{
+			Idle:     uiimage.NewNineSliceColor(color.NRGBA{R: 35, G: 125, B: 60, A: 255}),
+			Hover:    uiimage.NewNineSliceColor(color.NRGBA{R: 45, G: 155, B: 75, A: 255}),
+			Pressed:  uiimage.NewNineSliceColor(color.NRGBA{R: 25, G: 95, B: 45, A: 255}),
+			Disabled: uiimage.NewNineSliceColor(color.NRGBA{R: 50, G: 65, B: 55, A: 255}),
+		}),
+		widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) {
+			if room, ok := game.rooms.SelectedEntry().(string); ok {
+				game.send(protocol.Message{Type: "join-room", Room: room})
+			}
+		}),
+	)
 	game.refreshButton = button("Refresh rooms", func() { game.send(protocol.Message{Type: "list-rooms"}) })
-	rooms.AddChild(label("Rooms"), game.rooms, game.refreshButton)
+	rooms.AddChild(label("Rooms"), game.rooms, game.joinButton, game.refreshButton)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
 	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
@@ -245,6 +261,7 @@ func (game *lobbyGame) setEnabled() {
 	game.server.GetWidget().Disabled = game.session != nil
 	game.rooms.GetWidget().Disabled = !game.connected
 	game.refreshButton.GetWidget().Disabled = !game.connected
+	game.joinButton.GetWidget().Disabled = !game.connected
 	inRoom := game.connected && game.room != ""
 	game.input.GetWidget().Disabled = !inRoom
 	game.sendButton.GetWidget().Disabled = !inRoom
@@ -342,7 +359,7 @@ func (game *lobbyGame) updateUsers() {
 }
 
 func (game *lobbyGame) appendChat(message string) {
-	game.history = append(game.history, message)
+	game.history = append(game.history, time.Now().Local().Format("03:04:05 PM")+" "+message)
 	if len(game.history) > 500 {
 		game.history = game.history[len(game.history)-500:]
 	}
