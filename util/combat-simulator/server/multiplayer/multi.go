@@ -9,6 +9,7 @@ import (
     "context"
     "encoding/json/v2"
     "net/http"
+    "sync/atomic"
 
     netlib "github.com/kazzmir/master-of-magic/lib/net"
 
@@ -61,7 +62,7 @@ func (manager *Manager) ListPublicLobbies() []string {
     return out
 }
 
-func handleWebsocket(connection *websocket.Conn, manager *Manager) {
+func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionId uint64) {
     stop := false
     needAuth := true
 
@@ -162,6 +163,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager) {
 
 func InitMux(mux *http.ServeMux) {
     var manager Manager
+    var counter atomic.Uint64
     mux.HandleFunc("/multiplayer", func(writer http.ResponseWriter, request *http.Request) {
         connection, err := websocket.Accept(writer, request, nil)
         if err != nil {
@@ -169,11 +171,13 @@ func InitMux(mux *http.ServeMux) {
             return
         }
 
+        id := counter.Add(1)
+
         defer connection.CloseNow()
 
-        log.Printf("Websocket connection established from %s", request.RemoteAddr)
-        defer log.Printf("Websocket connection closed from %s", request.RemoteAddr)
+        log.Printf("[%06x] Websocket connection established from %s", id, request.RemoteAddr)
+        defer log.Printf("[%06x] Websocket connection closed from %s", id, request.RemoteAddr)
 
-        handleWebsocket(connection, &manager)
+        handleWebsocket(connection, &manager, id)
     })
 }
