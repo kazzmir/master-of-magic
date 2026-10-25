@@ -20,6 +20,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const MaxRooms = 1000
+
 type User struct {
 	messages   chan protocol.Message
 	connection *websocket.Conn
@@ -242,6 +244,8 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Room name must contain 1–30 characters without control characters"})
 				} else if _, exists := manager.Lobbies[room]; exists {
 					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Room already exists"})
+				} else if len(manager.Lobbies) >= MaxRooms {
+					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Server room limit reached (1000 rooms)"})
 				} else {
 					manager.Lobbies[room] = &Lobby{Public: !command.Private, Name: room, Users: make(map[uint64]*User), passwordHash: passwordHash}
 					user.send(protocol.Message{Type: "create-room", ID: command.ID, Room: room})
