@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"image/color"
+	"maps"
+	"math/rand/v2"
 	"net/url"
 	"slices"
 	"strings"
@@ -56,7 +58,7 @@ type lobbyEvent struct {
 
 // runLobbySession keeps all network I/O off Ebiten's update thread. A session
 // owns its connection; events from cancelled/older sessions are ignored by UI.
-func runLobbySession(ctx context.Context, session *lobbySession, address string, events chan<- lobbyEvent) {
+func runLobbySession(ctx context.Context, session *lobbySession, address, name string, events chan<- lobbyEvent) {
 	defer session.cancel()
 	emit := func(event lobbyEvent) {
 		event.session = session
@@ -84,7 +86,7 @@ func runLobbySession(ctx context.Context, session *lobbySession, address string,
 		defer cancel()
 		return wsjson.Write(writeCtx, connection, message)
 	}
-	if err := write(map[string]string{"auth": "x"}); err != nil {
+	if err := write(map[string]string{"auth": "x", "name": name}); err != nil {
 		emit(lobbyEvent{err: err})
 		return
 	}
@@ -131,6 +133,10 @@ type lobbyGame struct {
 	connected                              bool
 	clientID                               uint64
 	server                                 *widget.TextInput
+	name                                   *widget.TextInput
+	nameDirty                              bool
+	nameChanged                            time.Time
+	userNames                              map[uint64]string
 	toggle                                 *widget.Button
 	status, roomLabel                      *widget.Text
 	rooms, users                           *widget.List
@@ -162,7 +168,7 @@ func newLobbyGame() *lobbyGame {
 		return widget.NewButton(widget.ButtonOpts.Text(text, nil, nil),
 			widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) { action() }))
 	}
-	root := lobbyColumn(0, 0, 1)
+	root := lobbyColumn(0, 0, 0, 1)
 	theme := themes.GetBasicDarkTheme()
 	root.GetWidget().SetTheme(theme)
 	game.ui = ebitenui.UI{Container: root, PrimaryTheme: theme}
@@ -180,8 +186,19 @@ func newLobbyGame() *lobbyGame {
 		}
 	})
 	connectionRow.AddChild(label("Server"), game.server, game.toggle)
+	nameRow := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(2), widget.GridLayoutOpts.Weights([]float64{0, 1}, nil),
+		widget.GridLayoutOpts.Spacing(8, 0),
+	)))
+	game.name = widget.NewTextInput(widget.TextInputOpts.Placeholder("Your name"),
+		widget.TextInputOpts.ChangedHandler(func(*widget.TextInputChangedEventArgs) {
+			game.nameDirty = true
+			game.nameChanged = time.Now()
+		}))
+	game.name.SetText(fmt.Sprintf("Player%04d", rand.IntN(10000)))
+	nameRow.AddChild(label("Name"), game.name)
 	game.status = label("Disconnected")
-	root.AddChild(connectionRow, game.status)
+	root.AddChild(connectionRow, nameRow, game.status)
 
 	body := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(3),
@@ -206,7 +223,7 @@ func newLobbyGame() *lobbyGame {
 	rooms.AddChild(label("Rooms (double-click to join)"), game.rooms, game.refreshButton)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
-	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return clientLabel(entry.(uint64)) }))
+	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
 	game.leaveButton = button("Leave room", func() { game.send(protocol.Message{Type: "leave-room"}) })
 	users.AddChild(game.roomLabel, game.users, game.leaveButton)
 	chat := lobbyColumn(0, 1, 0, 0)
@@ -241,13 +258,15 @@ func (game *lobbyGame) connect() {
 	game.toggle.SetText("Disconnect")
 	game.status.Label = "Connecting..."
 	game.setEnabled()
-	go runLobbySession(ctx, session, game.server.GetText(), game.events)
+	game.nameDirty = false
+	go runLobbySession(ctx, session, game.server.GetText(), strings.TrimSpace(game.name.GetText()), game.events)
 }
 
 func (game *lobbyGame) clearRoom() {
 	game.room = ""
 	game.roomLabel.Label = "Not in a room"
 	game.userIDs = nil
+	game.userNames = nil
 	game.users.SetEntries(nil)
 	game.history = nil
 	game.chat.SetText("")
@@ -307,12 +326,27 @@ func stringEntries(values []string) []any {
 // Labels are presentation only; membership and events always use client IDs.
 func clientLabel(id uint64) string { return fmt.Sprintf("Player-%06x", id) }
 
+func (game *lobbyGame) userLabel(id uint64) string {
+	if name := game.userNames[id]; name != "" {
+		return name
+	}
+	return clientLabel(id)
+}
+
 func (game *lobbyGame) updateUsers() {
 	entries := make([]any, len(game.userIDs))
 	for i, id := range game.userIDs {
 		entries[i] = id
 	}
 	game.users.SetEntries(entries)
+}
+
+func (game *lobbyGame) appendChat(message string) {
+	game.history = append(game.history, message)
+	if len(game.history) > 500 {
+		game.history = game.history[len(game.history)-500:]
+	}
+	game.chat.SetText(strings.Join(game.history, "\n"))
 }
 
 func (game *lobbyGame) handleEvent(event lobbyEvent) {
@@ -332,7 +366,7 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 	case "connected":
 		game.clientID = message.ClientID
 		game.connected = true
-		game.status.Label = "Connected as " + clientLabel(game.clientID)
+		game.status.Label = "Connected as " + message.Name
 		game.setEnabled()
 	case "list-rooms":
 		game.rooms.SetEntries(stringEntries(message.Rooms))
@@ -342,32 +376,63 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.clearRoom()
 		game.room = message.Room
 		game.roomLabel.Label = "Users in " + message.Room
-		game.status.Label = "Joined " + message.Room + " as " + clientLabel(game.clientID)
+		game.status.Label = "Joined " + message.Room
 		game.setEnabled()
 	case "leave-room":
 		game.clearRoom()
 	case "room-users":
 		if message.Room == game.room {
 			game.userIDs = slices.Clone(message.Users)
+			game.userNames = maps.Clone(message.Names)
 			game.updateUsers()
+		}
+	case "user-joined":
+		if message.Room == game.room && game.room != "" && message.ClientID != game.clientID && !slices.Contains(game.userIDs, message.ClientID) {
+			game.userIDs = append(game.userIDs, message.ClientID)
+			slices.Sort(game.userIDs)
+			if game.userNames == nil {
+				game.userNames = make(map[uint64]string)
+			}
+			game.userNames[message.ClientID] = message.Name
+			game.updateUsers()
+			game.appendChat("** " + game.userLabel(message.ClientID) + " has joined")
 		}
 	case "user-left":
 		if message.Room == game.room {
+			if message.ClientID != game.clientID && slices.Contains(game.userIDs, message.ClientID) {
+				game.appendChat("** " + game.userLabel(message.ClientID) + " has left")
+			}
 			game.userIDs = slices.DeleteFunc(game.userIDs, func(id uint64) bool { return id == message.ClientID })
+			delete(game.userNames, message.ClientID)
 			game.updateUsers()
+		}
+	case "name-updated":
+		if message.Room == game.room && game.room != "" && slices.Contains(game.userIDs, message.ClientID) {
+			oldName := game.userLabel(message.ClientID)
+			if game.userNames == nil {
+				game.userNames = make(map[uint64]string)
+			}
+			game.userNames[message.ClientID] = message.Name
+			game.updateUsers()
+			if oldName != message.Name {
+				game.appendChat("** " + oldName + " is now known as " + message.Name)
+			}
 		}
 	case "chat":
 		if message.Room == game.room {
-			game.history = append(game.history, clientLabel(message.ClientID)+": "+message.Text)
-			if len(game.history) > 500 {
-				game.history = game.history[len(game.history)-500:]
-			}
-			game.chat.SetText(strings.Join(game.history, "\n"))
+			game.appendChat(game.userLabel(message.ClientID) + ": " + message.Text)
 		}
 	}
 }
 
 func (game *lobbyGame) Update() error {
+	// Coalesce typing so name edits do not flood the server's command queue.
+	if game.connected && game.nameDirty && time.Since(game.nameChanged) >= 400*time.Millisecond {
+		name := strings.TrimSpace(game.name.GetText())
+		if name != "" && game.send(protocol.Message{Type: "set-name", Name: name}) {
+			game.nameDirty = false
+		}
+	}
 	for i := 0; i < 128; i++ {
 		select {
 		case event := <-game.events:

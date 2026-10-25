@@ -2,7 +2,7 @@
 package protocol
 
 // Message is used for both commands and events. Replies echo the command ID.
-// Authentication is the initial, separate {"auth":"x"} message. The server
+// Authentication is the initial, separate {"auth":"x","name":"Player1234"} message. The server
 // replies with "connected" and ClientID, which identifies this connection.
 // ClientID and Users identify clients, independently of request/reply ID.
 type Message struct {
@@ -12,6 +12,9 @@ type Message struct {
 	Rooms    []string `json:"rooms,omitempty"`
 	Users    []uint64 `json:"users,omitempty"`
 	ClientID uint64   `json:"client_id,omitempty"`
-	Text     string   `json:"text,omitempty"`
-	Error    string   `json:"error,omitempty"`
+	Name     string   `json:"name,omitempty"`
+	// Names accompanies room-users snapshots; keys are client IDs, not names.
+	Names map[uint64]string `json:"names,omitempty"`
+	Text  string            `json:"text,omitempty"`
+	Error string            `json:"error,omitempty"`
 }

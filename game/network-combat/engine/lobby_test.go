@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -35,6 +36,9 @@ func TestMultiplayerURL(t *testing.T) {
 
 func TestLobbyUI(t *testing.T) {
 	game := newLobbyGame()
+	if !regexp.MustCompile(`^Player[0-9]{4}$`).MatchString(game.name.GetText()) {
+		t.Fatal("invalid default name", game.name.GetText())
+	}
 	if err := game.Update(); err != nil {
 		t.Fatal(err)
 	}
@@ -45,7 +49,7 @@ func TestLobbyUI(t *testing.T) {
 		{Type: "connected", ClientID: 1},
 		{Type: "list-rooms", Rooms: []string{"Lobby"}},
 		{Type: "join-room", Room: "Lobby", ClientID: 1},
-		{Type: "room-users", Room: "Lobby", Users: []uint64{1, 2}},
+		{Type: "room-users", Room: "Lobby", Users: []uint64{1, 2}, Names: map[uint64]string{1: "Me", 2: "Other"}},
 		{Type: "chat", Room: "Lobby", ClientID: 2, Text: "[hello]"},
 	} {
 		game.handleEvent(lobbyEvent{session: session, message: message})
@@ -53,8 +57,30 @@ func TestLobbyUI(t *testing.T) {
 	if game.clientID != 1 || !game.connected {
 		t.Fatal("server-assigned client ID not stored")
 	}
-	if game.chat.GetText() != "Player-000002: [hello]" {
+	if game.chat.GetText() != "Other: [hello]" {
 		t.Fatal(game.chat.GetText())
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "name-updated", Room: "Elsewhere", ClientID: 2, Name: "Ignored"}})
+	if game.userLabel(2) != "Other" {
+		t.Fatal("name update from another room applied")
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "name-updated", Room: "Lobby", ClientID: 2, Name: "New name"}})
+	if game.userLabel(2) != "New name" || !slices.Equal(game.userIDs, []uint64{1, 2}) {
+		t.Fatal("rename changed identity")
+	}
+	wantChat := "Other: [hello]\n** Other is now known as New name"
+	if game.chat.GetText() != wantChat {
+		t.Fatal("missing rename announcement", game.chat.GetText())
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "name-updated", Room: "Lobby", ClientID: 2, Name: "New name"}})
+	if game.chat.GetText() != wantChat {
+		t.Fatal("unchanged name produced an announcement", game.chat.GetText())
+	}
+	game.name.SetText("My new name")
+	game.nameChanged = time.Now().Add(-time.Second)
+	game.Update()
+	if command := <-session.commands; command.Type != "set-name" || command.Name != "My new name" {
+		t.Fatal(command)
 	}
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "user-left", Room: "Elsewhere", ClientID: 2}})
 	if !slices.Equal(game.userIDs, []uint64{1, 2}) {
@@ -65,6 +91,9 @@ func TestLobbyUI(t *testing.T) {
 		if !slices.Equal(game.userIDs, []uint64{1}) {
 			t.Fatal("incorrect membership after departure", game.userIDs)
 		}
+	}
+	if _, exists := game.userNames[2]; exists {
+		t.Fatal("departed user's name retained")
 	}
 	game.input.SetText("hello")
 	game.sendChat()
@@ -78,6 +107,44 @@ func TestLobbyUI(t *testing.T) {
 	}
 	game.Update()
 	game.Draw(ebiten.NewImage(800, 500))
+}
+
+func TestLobbyMembershipAnnouncements(t *testing.T) {
+	game := newLobbyGame()
+	session := &lobbySession{cancel: func() {}}
+	game.session = session
+	deliver := func(message protocol.Message) {
+		game.handleEvent(lobbyEvent{session: session, message: message})
+	}
+	deliver(protocol.Message{Type: "connected", ClientID: 1})
+	deliver(protocol.Message{Type: "join-room", Room: "Lobby", ClientID: 1})
+	deliver(protocol.Message{Type: "room-users", Room: "Lobby", Users: []uint64{1, 3}, Names: map[uint64]string{1: "Me", 3: "Existing"}})
+	deliver(protocol.Message{Type: "user-joined", Room: "Elsewhere", ClientID: 2, Name: "Other"})
+	deliver(protocol.Message{Type: "user-joined", Room: "Lobby", ClientID: 1, Name: "Me"})
+	if game.chat.GetText() != "" {
+		t.Fatal("snapshot or unrelated join produced announcement")
+	}
+	for range 2 {
+		deliver(protocol.Message{Type: "user-joined", Room: "Lobby", ClientID: 2, Name: "Player1234"})
+	}
+	if game.chat.GetText() != "** Player1234 has joined" {
+		t.Fatal(game.chat.GetText())
+	}
+	if !slices.Equal(game.userIDs, []uint64{1, 2, 3}) {
+		t.Fatal(game.userIDs)
+	}
+	deliver(protocol.Message{Type: "name-updated", Room: "Lobby", ClientID: 2, Name: "newname"})
+	deliver(protocol.Message{Type: "user-left", Room: "Elsewhere", ClientID: 2})
+	for range 2 {
+		deliver(protocol.Message{Type: "user-left", Room: "Lobby", ClientID: 2})
+	}
+	want := "** Player1234 has joined\n** Player1234 is now known as newname\n** newname has left"
+	if game.chat.GetText() != want {
+		t.Fatal(game.chat.GetText())
+	}
+	if !slices.Equal(game.userIDs, []uint64{1, 3}) {
+		t.Fatal(game.userIDs)
+	}
 }
 
 func TestLobbySessionHandshake(t *testing.T) {
@@ -99,8 +166,8 @@ func TestLobbySessionHandshake(t *testing.T) {
 			errors <- err
 			return
 		}
-		if auth["auth"] != "x" {
-			t.Error("missing placeholder auth")
+		if auth["auth"] != "x" || auth["name"] != "Player1234" {
+			t.Error("missing placeholder auth or initial name", auth)
 		}
 		if err := wsjson.Write(ctx, conn, protocol.Message{Type: "connected", ClientID: 42}); err != nil {
 			errors <- err
@@ -122,7 +189,7 @@ func TestLobbySessionHandshake(t *testing.T) {
 	defer cancel()
 	session := &lobbySession{cancel: cancel, commands: make(chan protocol.Message, 4)}
 	events := make(chan lobbyEvent, 8)
-	go runLobbySession(ctx, session, strings.TrimPrefix(server.URL, "http://"), events)
+	go runLobbySession(ctx, session, strings.TrimPrefix(server.URL, "http://"), "Player1234", events)
 	var clientID uint64
 	for {
 		select {

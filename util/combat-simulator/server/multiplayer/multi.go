@@ -10,6 +10,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -21,6 +23,7 @@ type User struct {
 	messages   chan protocol.Message
 	connection *websocket.Conn
 	room       string
+	name       string
 }
 
 type Lobby struct {
@@ -83,11 +86,13 @@ func broadcast(lobby *Lobby, message protocol.Message) {
 
 func broadcastUsers(lobby *Lobby) {
 	users := make([]uint64, 0, len(lobby.Users))
-	for clientID := range lobby.Users {
+	names := make(map[uint64]string, len(lobby.Users))
+	for clientID, user := range lobby.Users {
 		users = append(users, clientID)
+		names[clientID] = user.name
 	}
 	slices.Sort(users)
-	broadcast(lobby, protocol.Message{Type: "room-users", Room: lobby.Name, Users: users})
+	broadcast(lobby, protocol.Message{Type: "room-users", Room: lobby.Name, Users: users, Names: names})
 }
 
 // leave is called with manager.lock held.
@@ -101,6 +106,10 @@ func (manager *Manager) leave(user *User, clientID uint64) {
 	user.room = ""
 }
 
+func validName(name string) bool {
+	return name != "" && utf8.ValidString(name) && utf8.RuneCountInString(name) <= 32 && !strings.ContainsFunc(name, unicode.IsControl)
+}
+
 func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID uint64) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -109,6 +118,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 	authCtx, authCancel := context.WithTimeout(ctx, 10*time.Second)
 	var auth struct {
 		Auth string `json:"auth"`
+		Name string `json:"name"`
 	}
 	err := wsjson.Read(authCtx, connection, &auth)
 	authCancel()
@@ -117,7 +127,15 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		return
 	}
 	// Authentication is deliberately a placeholder for now.
-	user := &User{messages: make(chan protocol.Message, 64), connection: connection}
+	name := strings.TrimSpace(auth.Name)
+	if auth.Name == "" {
+		name = fmt.Sprintf("Player%04d", connectionID%10000)
+	}
+	if !validName(name) {
+		connection.Close(websocket.StatusPolicyViolation, "Name must contain 1–32 characters without control characters")
+		return
+	}
+	user := &User{messages: make(chan protocol.Message, 64), connection: connection, name: name}
 	defer manager.lock.With(func() error {
 		manager.leave(user, connectionID)
 		return nil
@@ -140,7 +158,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		}
 	}()
 
-	user.send(protocol.Message{Type: "connected", ClientID: connectionID})
+	user.send(protocol.Message{Type: "connected", ClientID: connectionID, Name: user.name})
 
 	limiter := netlib.RateLimiter{WindowSize: time.Second, MaxEvents: 2}
 	for {
@@ -155,6 +173,19 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		}
 		manager.lock.With(func() error {
 			switch command.Type {
+			case "set-name":
+				name := strings.TrimSpace(command.Name)
+				if !validName(name) {
+					user.send(protocol.Message{ID: command.ID, Error: "Name must contain 1–32 characters without control characters"})
+				} else {
+					user.name = name
+					message := protocol.Message{Type: "name-updated", ID: command.ID, ClientID: connectionID, Room: user.room, Name: name}
+					if lobby := manager.Lobbies[user.room]; lobby != nil {
+						broadcast(lobby, message)
+					} else {
+						user.send(message)
+					}
+				}
 			case "join-room":
 				lobby := manager.Lobbies[command.Room]
 				if lobby == nil || !lobby.Public {
@@ -164,6 +195,8 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 				} else {
 					manager.leave(user, connectionID)
 					user.room = lobby.Name
+					// Notify existing members before inserting the joining player.
+					broadcast(lobby, protocol.Message{Type: "user-joined", Room: lobby.Name, ClientID: connectionID, Name: user.name})
 					lobby.Users[connectionID] = user
 					user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID})
 					broadcastUsers(lobby)
