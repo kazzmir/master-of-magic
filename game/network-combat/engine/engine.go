@@ -12,6 +12,7 @@ import (
     "os/signal"
     "syscall"
 
+    "github.com/hajimehoshi/ebiten/v2"
     "github.com/kazzmir/master-of-magic/game/network-combat/engine/crypto"
     netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
@@ -107,7 +108,7 @@ func doConnect(peer string, quit context.Context) error {
     return doRun(conn, quit, false)
 }
 
-func Launch() {
+func CliLaunch() {
     log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
 
     port := flag.Int("port", 0, "Port to listen on")
@@ -145,4 +146,17 @@ func Launch() {
     }
 
     log.Printf("Shutting down")
+}
+
+func Launch() {
+    ebiten.SetWindowSize(1100, 700)
+    ebiten.SetWindowTitle("Master of Magic — Multiplayer")
+    ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
+    ebiten.SetWindowSizeLimits(800, 500, -1, -1)
+    game := newLobbyGame()
+    defer func() { game.disconnect("Disconnected") }()
+    game.connect()
+    if err := ebiten.RunGame(game); err != nil {
+        log.Printf("Multiplayer window: %v", err)
+    }
 }
