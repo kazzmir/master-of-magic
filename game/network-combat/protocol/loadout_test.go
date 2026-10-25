@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"fmt"
 	"math"
 	"testing"
 )
@@ -80,8 +81,9 @@ func TestLoadoutBudget(t *testing.T) {
 	if err != nil || spent != want {
 		t.Fatal(spent, want, err)
 	}
-	if _, err := ValidateLoadout(loadout, want-1, true); err == nil {
-		t.Fatal("overspending accepted")
+	budget := uint64(1) // Exceed the budget early, but still count the whole loadout.
+	if spent, err := ValidateLoadout(loadout, budget, true); err == nil || spent != want || err.Error() != fmt.Sprintf("loadout exceeds budget: used %d / %d", want, budget) {
+		t.Fatal("overspending error missing full spending total/budget", spent, err)
 	}
 	if _, err := ValidateLoadout(loadout, want, true); err != nil {
 		t.Fatal(err)

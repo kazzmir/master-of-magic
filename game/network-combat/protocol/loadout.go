@@ -105,16 +105,16 @@ func DefaultLoadout(host bool) Loadout {
 	return Loadout{Army: []UnitID{id, id}, Portrait: rand.IntN(len(PortraitNames))}
 }
 
-// ValidateLoadout computes spending with subtraction to avoid uint64 overflow.
+// ValidateLoadout computes the complete spending total with overflow checks.
 // Portraits are free; units cost production/casting cost, books cost 100 each,
 // mana costs 20 each, and known combat spells cost research cost / 10 (rounded down).
 func ValidateLoadout(loadout Loadout, budget uint64, requireArmy bool) (uint64, error) {
-	remaining := budget
+	var total uint64
 	spend := func(cost uint64) error {
-		if cost > remaining {
-			return fmt.Errorf("loadout exceeds budget %d", budget)
+		if cost > ^uint64(0)-total {
+			return fmt.Errorf("loadout cost exceeds uint64 range")
 		}
-		remaining -= cost
+		total += cost
 		return nil
 	}
 	if loadout.Portrait < 0 || loadout.Portrait >= len(PortraitNames) {
@@ -168,7 +168,10 @@ func ValidateLoadout(loadout Loadout, budget uint64, requireArmy bool) (uint64, 
 			return 0, err
 		}
 	}
-	return budget - remaining, nil
+	if total > budget {
+		return total, fmt.Errorf("loadout exceeds budget: used %d / %d", total, budget)
+	}
+	return total, nil
 }
 
 // CombatSetup is exchanged directly between peers over the encrypted relay.
