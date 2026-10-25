@@ -80,6 +80,9 @@ func runServer(certificateFunc TLSGetCertificateFunc) error {
     if err != nil {
         return err
     }
+    if key == "" {
+        return errors.New("key/key.txt must contain a non-empty auth key")
+    }
 
     mux := http.NewServeMux()
     mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
@@ -121,7 +124,7 @@ func runServer(certificateFunc TLSGetCertificateFunc) error {
         fmt.Fprintf(writer, "OK")
     })
 
-    multiplayer.InitMux(mux)
+    multiplayer.InitMux(mux, key)
 
     server := &http.Server{
         Addr: ":5000",

@@ -15,7 +15,7 @@ import (
 
 func TestInvitationWebsocketFlow(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -51,7 +51,7 @@ func TestInvitationWebsocketFlow(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x", "name": name})
+		write(conn, map[string]string{"auth": testAuth, "name": name})
 		id := readKind(conn, "connected").ClientID
 		readKind(conn, "version")
 		write(conn, protocol.Message{Type: "version", Version: 1})

@@ -15,7 +15,7 @@ import (
 
 func TestGameWebsocketFlow(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -48,7 +48,7 @@ func TestGameWebsocketFlow(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x", "name": name})
+		write(conn, map[string]string{"auth": testAuth, "name": name})
 		readKind(conn, "connected")
 		readKind(conn, "version")
 		write(conn, protocol.Message{Type: "version", Version: 1})

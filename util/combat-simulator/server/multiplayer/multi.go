@@ -2,6 +2,7 @@ package multiplayer
 
 import (
 	"context"
+	"crypto/subtle"
 	"fmt"
 	"log"
 	"net/http"
@@ -58,6 +59,7 @@ func (cs *CriticalSection) With2[T any](f func() (T, error)) (T, error) {
 // hold lock: each connection has a bounded outbound queue and a single writer.
 type Manager struct {
 	lock         CriticalSection
+	authKey      string
 	Lobbies      map[string]*Lobby
 	Games        map[uint64]*Game
 	Invitations  map[uint64]*GameInvitation
@@ -137,11 +139,11 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 	}
 	err := wsjson.Read(authCtx, connection, &auth)
 	authCancel()
-	if err != nil || auth.Auth == "" {
+	if err != nil || manager.authKey == "" || subtle.ConstantTimeCompare([]byte(auth.Auth), []byte(manager.authKey)) != 1 {
 		connection.Close(websocket.StatusPolicyViolation, "Missing or invalid auth field")
 		return
 	}
-	// Authentication is deliberately a placeholder for now.
+	// Shared-key authentication; per-user accounts may be added later.
 	name := strings.TrimSpace(auth.Name)
 	if auth.Name == "" {
 		name = fmt.Sprintf("Player%04d", connectionID%10000)
@@ -293,8 +295,8 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 	}
 }
 
-func InitMux(mux *http.ServeMux) {
-	manager := &Manager{Lobbies: map[string]*Lobby{
+func InitMux(mux *http.ServeMux, authKey string) {
+	manager := &Manager{authKey: strings.TrimSpace(authKey), Lobbies: map[string]*Lobby{
 		"Public": {Public: true, Name: "Public", Users: make(map[uint64]*User), persistent: true},
 	}}
 	mux.HandleFunc("/multiplayer/combat", manager.acceptCombat)

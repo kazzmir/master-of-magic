@@ -70,6 +70,11 @@ func runLobbySession(ctx context.Context, session *lobbySession, address, name s
 		case <-ctx.Done():
 		}
 	}
+	authKey := clientAuthKey()
+	if authKey == "" {
+		emit(lobbyEvent{err: fmt.Errorf("client auth key is empty")})
+		return
+	}
 	endpoint, err := multiplayerURL(address)
 	if err != nil {
 		emit(lobbyEvent{err: err})
@@ -89,7 +94,7 @@ func runLobbySession(ctx context.Context, session *lobbySession, address, name s
 		defer cancel()
 		return wsjson.Write(writeCtx, connection, message)
 	}
-	if err := write(map[string]string{"auth": "x", "name": name}); err != nil {
+	if err := write(map[string]string{"auth": authKey, "name": name}); err != nil {
 		emit(lobbyEvent{err: err})
 		return
 	}

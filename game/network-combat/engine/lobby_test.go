@@ -389,8 +389,8 @@ func TestLobbySessionHandshake(t *testing.T) {
 			errors <- err
 			return
 		}
-		if auth["auth"] != "x" || auth["name"] != "Player1234" {
-			t.Error("missing placeholder auth or initial name", auth)
+		if auth["auth"] != clientAuthKey() || auth["auth"] == "" || auth["name"] != "Player1234" {
+			t.Error("missing client auth or initial name")
 		}
 		if err := wsjson.Write(ctx, conn, protocol.Message{Type: "connected", ClientID: 42}); err != nil {
 			errors <- err

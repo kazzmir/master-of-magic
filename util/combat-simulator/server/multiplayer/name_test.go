@@ -18,7 +18,7 @@ func TestServerUserNameLimits(t *testing.T) {
 		for _, phase := range []string{"auth", "rename"} {
 			t.Run(phase+"/"+character, func(t *testing.T) {
 				mux := http.NewServeMux()
-				InitMux(mux)
+				InitMux(mux, testAuth)
 				server := httptest.NewServer(mux)
 				defer server.Close()
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -44,14 +44,14 @@ func TestServerUserNameLimits(t *testing.T) {
 				}
 				tooLong := strings.Repeat(character, 31)
 				if phase == "auth" {
-					write(map[string]string{"auth": "x", "name": tooLong})
+					write(map[string]string{"auth": testAuth, "name": tooLong})
 					_, _, err := conn.Read(ctx)
 					if websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
 						t.Fatal("overlong initial name accepted", err)
 					}
 					return
 				}
-				write(map[string]string{"auth": "x", "name": "Original"})
+				write(map[string]string{"auth": testAuth, "name": "Original"})
 				connected := read()
 				if connected.Type != "connected" {
 					t.Fatal(connected)

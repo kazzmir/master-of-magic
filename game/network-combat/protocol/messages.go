@@ -8,7 +8,7 @@ const ClientVersion = 1
 const ServerVersion = 1
 
 // Message is used for both commands and events. Replies echo the command ID.
-// Authentication is the initial, separate {"auth":"x","name":"Player1234"} message. The server
+// Authentication is the initial, separate {"auth":"<shared key>","name":"Player1234"} message. The server
 // replies with "connected" and ClientID, which identifies this connection.
 // Both sides send a "version" message after authentication succeeds; versions
 // are informational for now. ClientID and Users identify clients, independently

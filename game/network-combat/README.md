@@ -1,5 +1,14 @@
 # Network combat setup
 
+## Authentication
+
+The server uses the trimmed contents of `util/combat-simulator/server/key/key.txt`
+for multiplayer authentication. The client embeds
+`game/network-combat/engine/key/key.txt` and sends its trimmed contents in the
+initial auth message. Keep these files identical and rebuild both binaries after
+changing the key. Empty keys are rejected. Use `wss://` outside local development;
+an embedded shared key is not a substitute for per-user authentication.
+
 The creator sets a **uint64 budget per player** (default: 1,000) and chooses the
 attacker. The other participant is the defender; the creator can play either
 side. Apply shared settings before marking ready.

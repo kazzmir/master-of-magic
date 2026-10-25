@@ -16,7 +16,7 @@ import (
 
 func TestDeleteEmptyRooms(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -45,7 +45,7 @@ func TestDeleteEmptyRooms(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x"})
+		write(conn, map[string]string{"auth": testAuth})
 		read(conn, "connected")
 		if version := read(conn, "version"); version.Version != 1 {
 			t.Fatal(version)

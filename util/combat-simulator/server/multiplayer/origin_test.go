@@ -15,7 +15,7 @@ import (
 
 func TestAcceptAnyOrigin(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -27,7 +27,7 @@ func TestAcceptAnyOrigin(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer conn.CloseNow()
-	if err := wsjson.Write(ctx, conn, map[string]string{"auth": "x"}); err != nil {
+	if err := wsjson.Write(ctx, conn, map[string]string{"auth": testAuth}); err != nil {
 		t.Fatal(err)
 	}
 	var connected protocol.Message

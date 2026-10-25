@@ -16,7 +16,7 @@ import (
 
 func TestCreateRoom(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
@@ -42,7 +42,7 @@ func TestCreateRoom(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x", "name": "Creator"})
+		write(conn, map[string]string{"auth": testAuth, "name": "Creator"})
 		if reply := read(conn); reply.Type != "connected" {
 			t.Fatal(reply)
 		}

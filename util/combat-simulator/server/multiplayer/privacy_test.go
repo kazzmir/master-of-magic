@@ -16,7 +16,7 @@ import (
 
 func TestPrivateAndPasswordRooms(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -45,7 +45,7 @@ func TestPrivateAndPasswordRooms(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x", "name": "Player1234"})
+		write(conn, map[string]string{"auth": testAuth, "name": "Player1234"})
 		read(conn, "connected")
 		if version := read(conn, "version"); version.Version != 1 {
 			t.Fatal(version)

@@ -20,7 +20,7 @@ import (
 
 func TestCombatRelay(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
@@ -54,7 +54,7 @@ func TestCombatRelay(t *testing.T) {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { conn.CloseNow() })
-		write(conn, map[string]string{"auth": "x"})
+		write(conn, map[string]string{"auth": testAuth})
 		readKind(conn, "connected")
 		readKind(conn, "version")
 		write(conn, protocol.Message{Type: "join-room", Room: "Public"})
@@ -160,7 +160,7 @@ func TestCombatRelay(t *testing.T) {
 
 func TestUnknownCombatGameDelayed(t *testing.T) {
 	mux := http.NewServeMux()
-	InitMux(mux)
+	InitMux(mux, testAuth)
 	server := httptest.NewServer(mux)
 	defer server.Close()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
