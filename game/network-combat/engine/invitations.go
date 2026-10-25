@@ -31,9 +31,21 @@ func newGameInvitationsUI(game *lobbyGame, theme *widget.Theme) *gameInvitations
 	buttons.AddChild(invites.accept, invites.decline)
 	contents.AddChild(invites.prompt, buttons)
 	title := lobbyColumn(0)
+	title.GetWidget().SetTheme(theme)
+	title.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 128}))
 	title.AddChild(widget.NewText(widget.TextOpts.Text("Game request", nil, color.White)))
 	invites.window = widget.NewWindow(widget.WindowOpts.Contents(contents), widget.WindowOpts.TitleBar(title, 36),
 		widget.WindowOpts.Draggable(), widget.WindowOpts.Modal(), widget.WindowOpts.MinSize(500, 200))
+	frame := invites.window.GetContainer().(*widget.Container)
+	frame.GetWidget().SetTheme(theme)
+	frame.SetBackgroundImage(uiimage.NewBorderedNineSliceColor(
+		color.NRGBA{}, color.NRGBA{R: 210, G: 190, B: 105, A: 255}, 2,
+	))
+	widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(1),
+		widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false, true}),
+		widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(2)),
+	))(frame)
 	return invites
 }
 
