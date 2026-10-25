@@ -17,6 +17,7 @@ import (
 	"github.com/coder/websocket/wsjson"
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 	netlib "github.com/kazzmir/master-of-magic/lib/net"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
@@ -27,9 +28,11 @@ type User struct {
 }
 
 type Lobby struct {
-	Public bool
-	Name   string
-	Users  map[uint64]*User
+	Public       bool
+	Name         string
+	Users        map[uint64]*User
+	passwordHash []byte
+	persistent   bool
 }
 
 type CriticalSection struct {
@@ -100,7 +103,11 @@ func (manager *Manager) leave(user *User, clientID uint64) {
 	if lobby := manager.Lobbies[user.room]; lobby != nil {
 		if _, exists := lobby.Users[clientID]; exists {
 			delete(lobby.Users, clientID)
-			broadcast(lobby, protocol.Message{Type: "user-left", Room: lobby.Name, ClientID: clientID})
+			if len(lobby.Users) == 0 && !lobby.persistent {
+				delete(manager.Lobbies, lobby.Name)
+			} else {
+				broadcast(lobby, protocol.Message{Type: "user-left", Room: lobby.Name, ClientID: clientID})
+			}
 		}
 	}
 	user.room = ""
@@ -171,6 +178,28 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 			user.send(protocol.Message{Type: "list-rooms", ID: command.ID, Rooms: manager.ListPublicLobbies()})
 			continue
 		}
+		// Password hashing/comparison is deliberately outside the manager lock.
+		// Room passwords are immutable after creation. Keep the room identity
+		// too, since a deleted room's name can be reused during verification.
+		var joiningLobby *Lobby
+		var passwordHash []byte
+		if command.Type == "create-room" && command.Password != "" {
+			var err error
+			passwordHash, err = bcrypt.GenerateFromPassword([]byte(command.Password), bcrypt.DefaultCost)
+			if err != nil {
+				user.send(protocol.Message{ID: command.ID, Room: strings.TrimSpace(command.Room), Error: "Room password must be at most 72 bytes"})
+				continue
+			}
+		}
+		if command.Type == "join-room" {
+			joiningLobby, _ = manager.lock.With2(func() (*Lobby, error) {
+				return manager.Lobbies[command.Room], nil
+			})
+			if joiningLobby != nil && len(joiningLobby.passwordHash) != 0 && bcrypt.CompareHashAndPassword(joiningLobby.passwordHash, []byte(command.Password)) != nil {
+				user.send(protocol.Message{ID: command.ID, Error: "Incorrect room password"})
+				continue
+			}
+		}
 		manager.lock.With(func() error {
 			switch command.Type {
 			case "set-name":
@@ -189,20 +218,25 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 			case "create-room":
 				room := strings.TrimSpace(command.Room)
 				if room == "" || !utf8.ValidString(room) || utf8.RuneCountInString(room) > protocol.MaxRoomNameLength || strings.ContainsFunc(room, unicode.IsControl) {
-					user.send(protocol.Message{ID: command.ID, Error: "Room name must contain 1–30 characters without control characters"})
+					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Room name must contain 1–30 characters without control characters"})
 				} else if _, exists := manager.Lobbies[room]; exists {
-					user.send(protocol.Message{ID: command.ID, Error: "Room already exists"})
+					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Room already exists"})
 				} else {
-					manager.Lobbies[room] = &Lobby{Public: true, Name: room, Users: make(map[uint64]*User)}
+					manager.Lobbies[room] = &Lobby{Public: !command.Private, Name: room, Users: make(map[uint64]*User), passwordHash: passwordHash}
 					user.send(protocol.Message{Type: "create-room", ID: command.ID, Room: room})
 				}
 			case "join-room":
 				lobby := manager.Lobbies[command.Room]
-				if lobby == nil || !lobby.Public {
+				if lobby == nil || lobby != joiningLobby {
 					user.send(protocol.Message{ID: command.ID, Error: "Room not found"})
 				} else if len(lobby.Users) >= 100 && user.room != command.Room {
 					user.send(protocol.Message{ID: command.ID, Error: "Room is full"})
 				} else {
+					if user.room == lobby.Name {
+						user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID})
+						broadcastUsers(lobby)
+						return nil
+					}
 					manager.leave(user, connectionID)
 					user.room = lobby.Name
 					// Notify existing members before inserting the joining player.
@@ -233,7 +267,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 
 func InitMux(mux *http.ServeMux) {
 	manager := &Manager{Lobbies: map[string]*Lobby{
-		"Public": {Public: true, Name: "Public", Users: make(map[uint64]*User)},
+		"Public": {Public: true, Name: "Public", Users: make(map[uint64]*User), persistent: true},
 	}}
 	var counter atomic.Uint64
 	mux.HandleFunc("/multiplayer", func(writer http.ResponseWriter, request *http.Request) {

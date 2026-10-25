@@ -148,6 +148,10 @@ type lobbyGame struct {
 	joinButton                             *widget.Button
 	newRoom                                *widget.TextInput
 	createButton                           *widget.Button
+	joinRoomName, joinPassword             *widget.TextInput
+	newRoomPassword                        *widget.TextInput
+	privateRoom                            *widget.Checkbox
+	pendingRoomPasswords                   map[string]string
 	room                                   string
 	history                                []string
 	userIDs                                []uint64
@@ -173,7 +177,7 @@ func newLobbyGame() *lobbyGame {
 		return widget.NewButton(widget.ButtonOpts.Text(text, nil, nil),
 			widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) { action() }))
 	}
-	root := lobbyColumn(0, 0, 0, 1)
+	root := lobbyColumn(0, 0, 0, 0.4, 0.6)
 	theme := themes.GetBasicDarkTheme()
 	root.GetWidget().SetTheme(theme)
 	game.ui = ebitenui.UI{Container: root, PrimaryTheme: theme}
@@ -209,24 +213,39 @@ func newLobbyGame() *lobbyGame {
 	root.AddChild(connectionRow, nameRow, game.status)
 
 	body := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
-		widget.GridLayoutOpts.Columns(3),
-		widget.GridLayoutOpts.Weights([]float64{0.2, 0.2, 0.6}, []float64{1}),
+		widget.GridLayoutOpts.Columns(2),
+		widget.GridLayoutOpts.Weights([]float64{0.2, 0.8}, []float64{1}),
 	)))
-	rooms := lobbyColumn(0, 1, 0, 0, 0, 0)
+	roomSection := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(3),
+		widget.GridLayoutOpts.Weights([]float64{0.3, 0.35, 0.35}, []float64{1}),
+	)))
+	rooms := lobbyColumn(0, 1)
+	joinControls := lobbyColumn(0, 0, 0, 0, 0)
+	createControls := lobbyColumn(0, 0, 0, 0, 0)
 	game.rooms = widget.NewList(
 		widget.ListOpts.EntryLabelFunc(func(entry any) string { return entry.(string) }),
 		widget.ListOpts.AllowReselect(),
 		widget.ListOpts.EntrySelectedHandler(func(args *widget.ListEntrySelectedEventArgs) {
 			room := args.Entry.(string)
+			if game.joinRoomName.GetText() != room {
+				game.joinPassword.SetText("")
+			}
+			game.joinRoomName.SetText(room)
 			now := time.Now()
 			if game.connected && room == game.lastRoom && now.Sub(game.lastClick) < 400*time.Millisecond {
-				game.send(protocol.Message{Type: "join-room", Room: room})
+				game.joinRoom(room)
 				game.lastRoom = ""
 			} else {
 				game.lastRoom, game.lastClick = room, now
 			}
 		}),
 	)
+	game.joinRoomName = widget.NewTextInput(widget.TextInputOpts.Placeholder("Room name (including private rooms)"),
+		widget.TextInputOpts.Validation(func(value string) (bool, *string) {
+			return utf8.RuneCountInString(value) <= protocol.MaxRoomNameLength, nil
+		}))
+	game.joinPassword = widget.NewTextInput(widget.TextInputOpts.Placeholder("Room password (if required)"), widget.TextInputOpts.Secure(true))
 	game.joinButton = widget.NewButton(
 		widget.ButtonOpts.Text("Join room", nil, nil),
 		widget.ButtonOpts.Image(&widget.ButtonImage{
@@ -236,20 +255,30 @@ func newLobbyGame() *lobbyGame {
 			Disabled: uiimage.NewNineSliceColor(color.NRGBA{R: 50, G: 65, B: 55, A: 255}),
 		}),
 		widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) {
-			if room, ok := game.rooms.SelectedEntry().(string); ok {
-				game.send(protocol.Message{Type: "join-room", Room: room})
+			room := strings.TrimSpace(game.joinRoomName.GetText())
+			if room == "" {
+				room, _ = game.rooms.SelectedEntry().(string)
 			}
+			game.joinRoom(room)
 		}),
 	)
 	game.refreshButton = button("Refresh rooms", func() { game.send(protocol.Message{Type: "list-rooms"}) })
-	game.newRoom = widget.NewTextInput(widget.TextInputOpts.Placeholder("New room name (max 30 characters)"),
+	game.newRoom = widget.NewTextInput(widget.TextInputOpts.Placeholder("New room name"),
 		widget.TextInputOpts.Validation(func(value string) (bool, *string) {
 			return utf8.RuneCountInString(value) <= protocol.MaxRoomNameLength, nil
 		}),
 		widget.TextInputOpts.AllowDuplicateSubmit(true),
 		widget.TextInputOpts.SubmitHandler(func(*widget.TextInputChangedEventArgs) { game.createRoom() }))
+	game.privateRoom = widget.NewCheckbox(widget.CheckboxOpts.Text("Private", nil, nil))
+	game.newRoomPassword = widget.NewTextInput(widget.TextInputOpts.Placeholder("Password (optional, max 72 bytes)"),
+		widget.TextInputOpts.Secure(true),
+		widget.TextInputOpts.Validation(func(value string) (bool, *string) { return len(value) <= 72, nil }))
 	game.createButton = button("Create room", game.createRoom)
-	rooms.AddChild(label("Rooms"), game.rooms, game.joinButton, game.refreshButton, game.newRoom, game.createButton)
+	rooms.AddChild(label("Public rooms"), game.rooms)
+	joinControls.AddChild(label("Join a room"), game.joinRoomName, game.joinPassword, game.joinButton, game.refreshButton)
+	createControls.AddChild(label("Create a room"), game.newRoom, game.privateRoom, game.newRoomPassword, game.createButton)
+	roomSection.AddChild(rooms, joinControls, createControls)
+	root.AddChild(roomSection)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
 	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
@@ -264,7 +293,7 @@ func newLobbyGame() *lobbyGame {
 		widget.TextInputOpts.SubmitHandler(func(*widget.TextInputChangedEventArgs) { game.sendChat() }))
 	game.sendButton = button("Send", game.sendChat)
 	chat.AddChild(label("Chat"), game.chat, game.input, game.sendButton)
-	body.AddChild(rooms, users, chat)
+	body.AddChild(users, chat)
 	root.AddChild(body)
 	game.setEnabled()
 	return game
@@ -277,6 +306,10 @@ func (game *lobbyGame) setEnabled() {
 	game.joinButton.GetWidget().Disabled = !game.connected
 	game.newRoom.GetWidget().Disabled = !game.connected
 	game.createButton.GetWidget().Disabled = !game.connected
+	game.joinRoomName.GetWidget().Disabled = !game.connected
+	game.joinPassword.GetWidget().Disabled = !game.connected
+	game.privateRoom.GetWidget().Disabled = !game.connected
+	game.newRoomPassword.GetWidget().Disabled = !game.connected
 	inRoom := game.connected && game.room != ""
 	game.input.GetWidget().Disabled = !inRoom
 	game.sendButton.GetWidget().Disabled = !inRoom
@@ -313,6 +346,9 @@ func (game *lobbyGame) disconnect(status string) {
 	game.session = nil
 	game.connected = false
 	game.clientID = 0
+	game.pendingRoomPasswords = nil
+	game.joinPassword.SetText("")
+	game.newRoomPassword.SetText("")
 	game.toggle.SetText("Connect")
 	game.status.Label = status
 	game.rooms.SetEntries(nil)
@@ -333,6 +369,12 @@ func (game *lobbyGame) send(message protocol.Message) bool {
 	}
 }
 
+func (game *lobbyGame) joinRoom(room string) {
+	if room != "" {
+		game.send(protocol.Message{Type: "join-room", Room: room, Password: game.joinPassword.GetText()})
+	}
+}
+
 func (game *lobbyGame) createRoom() {
 	room := strings.TrimSpace(game.newRoom.GetText())
 	if room == "" {
@@ -343,7 +385,13 @@ func (game *lobbyGame) createRoom() {
 		game.status.Label = "Room names must be at most 30 characters"
 		return
 	}
-	game.send(protocol.Message{Type: "create-room", Room: room})
+	password := game.newRoomPassword.GetText()
+	if game.send(protocol.Message{Type: "create-room", Room: room, Private: game.privateRoom.State() == widget.WidgetChecked, Password: password}) {
+		if game.pendingRoomPasswords == nil {
+			game.pendingRoomPasswords = make(map[string]string)
+		}
+		game.pendingRoomPasswords[room] = password
+	}
 }
 
 func (game *lobbyGame) sendChat() {
@@ -404,6 +452,7 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 	}
 	message := event.message
 	if message.Error != "" {
+		delete(game.pendingRoomPasswords, message.Room)
 		game.status.Label = message.Error
 		return
 	}
@@ -418,13 +467,18 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.lastRoom = ""
 		game.status.Label = fmt.Sprintf("Connected — %d rooms", len(message.Rooms))
 	case "create-room":
+		password := game.pendingRoomPasswords[message.Room]
+		delete(game.pendingRoomPasswords, message.Room)
 		game.newRoom.SetText("")
+		game.newRoomPassword.SetText("")
 		game.status.Label = "Created " + message.Room
 		game.send(protocol.Message{Type: "list-rooms"})
-		game.send(protocol.Message{Type: "join-room", Room: message.Room})
+		game.send(protocol.Message{Type: "join-room", Room: message.Room, Password: password})
 	case "join-room":
 		game.clearRoom()
 		game.room = message.Room
+		game.joinRoomName.SetText(message.Room)
+		game.joinPassword.SetText("")
 		game.roomLabel.Label = "Users in " + message.Room
 		game.status.Label = "Joined " + message.Room
 		game.setEnabled()

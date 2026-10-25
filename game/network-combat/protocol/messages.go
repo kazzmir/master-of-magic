@@ -12,6 +12,8 @@ type Message struct {
 	Type     string   `json:"type,omitempty"`
 	ID       uint64   `json:"id,omitempty"`
 	Room     string   `json:"room,omitempty"`
+	Private  bool     `json:"private,omitempty"`
+	Password string   `json:"password,omitempty"`
 	Rooms    []string `json:"rooms,omitempty"`
 	Users    []uint64 `json:"users,omitempty"`
 	ClientID uint64   `json:"client_id,omitempty"`

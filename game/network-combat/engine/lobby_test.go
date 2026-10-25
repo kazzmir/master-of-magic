@@ -12,6 +12,7 @@ import (
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 )
@@ -211,29 +212,51 @@ func TestCreateRoomUI(t *testing.T) {
 		t.Fatal("empty room creation sent")
 	}
 	game.newRoom.SetText("  New lobby  ")
+	game.privateRoom.SetState(widget.WidgetChecked)
+	game.newRoomPassword.SetText("secret")
 	game.createButton.Click()
 	game.Update()
 	select {
 	case command := <-session.commands:
-		if command.Type != "create-room" || command.Room != "New lobby" {
+		if command.Type != "create-room" || command.Room != "New lobby" || !command.Private || command.Password != "secret" {
 			t.Fatal(command)
 		}
 	default:
 		t.Fatal("create button did not send command")
 	}
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "create-room", Room: "New lobby"}})
-	if game.newRoom.GetText() != "" {
-		t.Fatal("room input not cleared")
+	if game.newRoom.GetText() != "" || game.newRoomPassword.GetText() != "" || len(game.pendingRoomPasswords) != 0 {
+		t.Fatal("room inputs or pending credentials not cleared")
 	}
-	for _, want := range []protocol.Message{{Type: "list-rooms"}, {Type: "join-room", Room: "New lobby"}} {
+	for _, want := range []protocol.Message{{Type: "list-rooms"}, {Type: "join-room", Room: "New lobby", Password: "secret"}} {
 		select {
 		case got := <-session.commands:
-			if got.Type != want.Type || got.Room != want.Room {
+			if got.Type != want.Type || got.Room != want.Room || got.Password != want.Password {
 				t.Fatal(got)
 			}
 		default:
 			t.Fatal("missing room refresh/join command")
 		}
+	}
+}
+
+func TestJoinPrivateRoomByName(t *testing.T) {
+	game := newLobbyGame()
+	session := &lobbySession{cancel: func() {}, commands: make(chan protocol.Message, 4)}
+	game.session = session
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "connected", ClientID: 1}})
+	game.Update()
+	game.joinRoomName.SetText("Hidden room")
+	game.joinPassword.SetText("password")
+	game.joinButton.Click()
+	game.Update()
+	select {
+	case command := <-session.commands:
+		if command.Type != "join-room" || command.Room != "Hidden room" || command.Password != "password" {
+			t.Fatal(command)
+		}
+	default:
+		t.Fatal("no private room join command")
 	}
 }
 
