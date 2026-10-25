@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"fmt"
+	"image"
 	"image/color"
 	"maps"
 	"math/rand/v2"
@@ -158,8 +159,12 @@ type lobbyGame struct {
 	nameChanged                            time.Time
 	userNames                              map[uint64]string
 	toggle                                 *widget.Button
+	connectImage, disconnectImage          *widget.ButtonImage
 	status, roomLabel                      *widget.Text
 	roomsRefreshed                         *widget.Text
+	roomsButton                            *widget.Button
+	joinPublicButton                       *widget.Button
+	roomsWindow                            *widget.Window
 	rooms, users                           *widget.List
 	chat                                   *widget.TextArea
 	input                                  *widget.TextInput
@@ -196,7 +201,7 @@ func newLobbyGame() *lobbyGame {
 		return widget.NewButton(widget.ButtonOpts.Text(text, nil, nil),
 			widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) { action() }))
 	}
-	root := lobbyColumn(0, 0, 0, 0.4, 0.6)
+	root := lobbyColumn(0, 0, 0, 0, 1)
 	theme := themes.GetBasicDarkTheme()
 	root.GetWidget().SetTheme(theme)
 	game.ui = ebitenui.UI{Container: root, PrimaryTheme: theme}
@@ -206,13 +211,26 @@ func newLobbyGame() *lobbyGame {
 	)))
 	game.server = widget.NewTextInput(widget.TextInputOpts.Placeholder("localhost:5000"))
 	game.server.SetText("localhost:5000")
-	game.toggle = button("Connect", func() {
-		if game.session != nil {
-			game.disconnect("Disconnected")
-		} else {
-			game.connect()
+	connectionImage := func(r, g, b uint8) *widget.ButtonImage {
+		return &widget.ButtonImage{
+			Idle:         uiimage.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255}),
+			Hover:        uiimage.NewNineSliceColor(color.NRGBA{R: r + 20, G: g + 20, B: b + 20, A: 255}),
+			Pressed:      uiimage.NewNineSliceColor(color.NRGBA{R: r - r/4, G: g - g/4, B: b - b/4, A: 255}),
+			PressedHover: uiimage.NewNineSliceColor(color.NRGBA{R: r - r/4, G: g - g/4, B: b - b/4, A: 255}),
 		}
-	})
+	}
+	game.connectImage = connectionImage(35, 125, 60)
+	game.disconnectImage = connectionImage(160, 40, 40)
+	game.toggle = widget.NewButton(
+		widget.ButtonOpts.Text("Connect", nil, nil), widget.ButtonOpts.Image(game.connectImage),
+		widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) {
+			if game.session != nil {
+				game.disconnect("Disconnected")
+			} else {
+				game.connect()
+			}
+		}),
+	)
 	connectionRow.AddChild(label("Server"), game.server, game.toggle)
 	nameRow := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(2), widget.GridLayoutOpts.Weights([]float64{0, 1}, nil),
@@ -229,7 +247,27 @@ func newLobbyGame() *lobbyGame {
 	game.name.SetText(fmt.Sprintf("Player%04d", rand.IntN(10000)))
 	nameRow.AddChild(label("Name"), game.name)
 	game.status = label("Disconnected")
-	root.AddChild(connectionRow, nameRow, game.status)
+	game.roomsButton = button("Rooms", game.openRooms)
+	game.joinPublicButton = widget.NewButton(
+		widget.ButtonOpts.Text("Join public room", nil, nil),
+		widget.ButtonOpts.Image(&widget.ButtonImage{
+			Idle:     uiimage.NewNineSliceColor(color.NRGBA{R: 35, G: 125, B: 60, A: 255}),
+			Hover:    uiimage.NewNineSliceColor(color.NRGBA{R: 45, G: 155, B: 75, A: 255}),
+			Pressed:  uiimage.NewNineSliceColor(color.NRGBA{R: 25, G: 95, B: 45, A: 255}),
+			Disabled: uiimage.NewNineSliceColor(color.NRGBA{R: 25, G: 60, B: 35, A: 255}),
+		}),
+		widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) {
+			if game.room != "Public" {
+				game.send(protocol.Message{Type: "join-room", Room: "Public"})
+			}
+		}),
+	)
+	roomsRow := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
+		widget.RowLayoutOpts.Direction(widget.DirectionHorizontal),
+		widget.RowLayoutOpts.Spacing(8),
+	)))
+	roomsRow.AddChild(game.roomsButton, game.joinPublicButton)
+	root.AddChild(connectionRow, nameRow, game.status, roomsRow)
 
 	body := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(2),
@@ -239,6 +277,8 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Columns(3),
 		widget.GridLayoutOpts.Weights([]float64{0.3, 0.35, 0.35}, []float64{1}),
 	)))
+	// The room controls live outside the main tree, including while closed.
+	roomSection.GetWidget().SetTheme(theme)
 	rooms := lobbyColumn(0, 1)
 	joinControls := lobbyColumn(0, 0, 0, 0, 0, 0)
 	createControls := lobbyColumn(0, 0, 0, 0, 0)
@@ -298,7 +338,29 @@ func newLobbyGame() *lobbyGame {
 	joinControls.AddChild(label("Join a room"), game.joinRoomName, game.joinPassword, game.joinButton, game.refreshButton, game.roomsRefreshed)
 	createControls.AddChild(label("Create a room"), game.newRoom, game.privateRoom, game.newRoomPassword, game.createButton)
 	roomSection.AddChild(rooms, joinControls, createControls)
-	root.AddChild(roomSection)
+	roomSection.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 24, G: 28, B: 36, A: 255}))
+	titleBar := widget.NewContainer(
+		widget.ContainerOpts.BackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 255})),
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			widget.GridLayoutOpts.Columns(2), widget.GridLayoutOpts.Weights([]float64{1, 0}, nil),
+			widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(4)),
+		)),
+	)
+	titleBar.AddChild(label("Rooms"), button("Close", func() { game.roomsWindow.Close() }))
+	game.roomsWindow = widget.NewWindow(
+		widget.WindowOpts.Contents(roomSection), widget.WindowOpts.TitleBar(titleBar, 40),
+		widget.WindowOpts.Draggable(), widget.WindowOpts.Resizeable(), widget.WindowOpts.MinSize(700, 320),
+	)
+	frame := game.roomsWindow.GetContainer().(*widget.Container)
+	frame.GetWidget().SetTheme(theme)
+	frame.SetBackgroundImage(uiimage.NewBorderedNineSliceColor(
+		color.NRGBA{R: 24, G: 28, B: 36, A: 255}, color.NRGBA{R: 210, G: 190, B: 105, A: 255}, 2,
+	))
+	widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(1),
+		widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false, true}),
+		widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(2)),
+	))(frame)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
 	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
@@ -319,8 +381,23 @@ func newLobbyGame() *lobbyGame {
 	return game
 }
 
+func (game *lobbyGame) openRooms() {
+	if game.ui.IsWindowOpen(game.roomsWindow) {
+		return
+	}
+	rect := game.ui.Container.GetWidget().Rect
+	if rect.Empty() {
+		rect = image.Rect(0, 0, 1100, 700)
+	}
+	width, height := min(1000, max(700, rect.Dx()-40)), min(480, max(320, rect.Dy()-40))
+	x, y := max(0, (rect.Dx()-width)/2), max(0, (rect.Dy()-height)/2)
+	game.roomsWindow.SetLocation(image.Rect(x, y, x+width, y+height))
+	game.ui.AddWindow(game.roomsWindow)
+}
+
 func (game *lobbyGame) setEnabled() {
 	game.server.GetWidget().Disabled = game.session != nil
+	game.joinPublicButton.GetWidget().Disabled = !game.connected || game.room == "Public"
 	game.rooms.GetWidget().Disabled = !game.connected
 	game.refreshButton.GetWidget().Disabled = !game.connected
 	game.joinButton.GetWidget().Disabled = !game.connected
@@ -341,6 +418,7 @@ func (game *lobbyGame) connect() {
 	session := &lobbySession{cancel: cancel, commands: make(chan protocol.Message, 32)}
 	game.session = session
 	game.toggle.SetText("Disconnect")
+	game.toggle.SetImage(game.disconnectImage)
 	game.status.Label = "Connecting..."
 	game.setEnabled()
 	game.nameDirty = false
@@ -370,6 +448,7 @@ func (game *lobbyGame) disconnect(status string) {
 	game.joinPassword.SetText("")
 	game.newRoomPassword.SetText("")
 	game.toggle.SetText("Connect")
+	game.toggle.SetImage(game.connectImage)
 	game.status.Label = status
 	game.rooms.SetEntries(nil)
 	game.lastRoom = ""

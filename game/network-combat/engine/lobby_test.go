@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"image"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -166,6 +167,96 @@ func TestLobbyMembershipAnnouncements(t *testing.T) {
 	}
 	if !slices.Equal(game.userIDs, []uint64{1, 3}) {
 		t.Fatal(game.userIDs)
+	}
+}
+
+func TestRoomsFloatingWindow(t *testing.T) {
+	game := newLobbyGame()
+	game.Update()
+	if game.ui.IsWindowOpen(game.roomsWindow) {
+		t.Fatal("rooms window opened without a click")
+	}
+	game.roomsButton.Click()
+	game.Update()
+	if !game.ui.IsWindowOpen(game.roomsWindow) {
+		t.Fatal("rooms button did not open window")
+	}
+	game.Draw(ebiten.NewImage(1100, 700))
+	window := game.roomsWindow
+	location := image.Rect(20, 30, 740, 390)
+	window.SetLocation(location)
+	for range 3 {
+		game.roomsButton.Click()
+		game.Update()
+	}
+	if game.roomsWindow != window || window.GetContainer().GetWidget().Rect != location {
+		t.Fatal("repeated clicks recreated or reset the open rooms window")
+	}
+	window.Close()
+	if game.ui.IsWindowOpen(window) {
+		t.Fatal("window did not close")
+	}
+	game.roomsButton.Click()
+	game.Update()
+	if game.roomsWindow != window || !game.ui.IsWindowOpen(window) {
+		t.Fatal("window did not reopen")
+	}
+	window.Close()
+	if game.ui.IsWindowOpen(window) {
+		t.Fatal("duplicate rooms window remained open")
+	}
+}
+
+func TestConnectionButtonColors(t *testing.T) {
+	game := newLobbyGame()
+	game.Update()
+	if game.toggle.Image().Idle != game.connectImage.Idle {
+		t.Fatal("Connect did not use green image")
+	}
+	game.server.SetText("invalid://server")
+	game.connect()
+	defer game.disconnect("Disconnected")
+	if game.toggle.Image().Idle != game.disconnectImage.Idle {
+		t.Fatal("Disconnect did not use red image")
+	}
+	game.disconnect("Disconnected")
+	if game.toggle.Image().Idle != game.connectImage.Idle {
+		t.Fatal("green image not restored after disconnect")
+	}
+}
+
+func TestJoinPublicRoomButton(t *testing.T) {
+	game := newLobbyGame()
+	if !game.joinPublicButton.GetWidget().Disabled {
+		t.Fatal("public join enabled offline")
+	}
+	session := &lobbySession{cancel: func() {}, commands: make(chan protocol.Message, 4)}
+	game.session = session
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "connected", ClientID: 1}})
+	game.Update()
+	game.joinPassword.SetText("unrelated room password")
+	game.joinPublicButton.Click()
+	game.Update()
+	select {
+	case command := <-session.commands:
+		if command.Type != "join-room" || command.Room != "Public" || command.Password != "" {
+			t.Fatal(command)
+		}
+	default:
+		t.Fatal("public join button sent no command")
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "join-room", Room: "Public"}})
+	if !game.joinPublicButton.GetWidget().Disabled {
+		t.Fatal("public join enabled while already in Public")
+	}
+	game.joinPublicButton.Click()
+	game.Update()
+	if len(session.commands) != 0 {
+		t.Fatal("duplicate public join sent")
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "leave-room"}})
+	if game.joinPublicButton.GetWidget().Disabled {
+		t.Fatal("public join stayed disabled after leaving")
 	}
 }
 
