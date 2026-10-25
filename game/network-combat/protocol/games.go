@@ -1,7 +1,8 @@
 package protocol
 
 // GameState is an authoritative game setup snapshot. IDs, not display names,
-// identify games and their players. Started currently marks a future start hook.
+// identify games and their players. Started means both players are ready; each
+// participant then receives a private combat-start message with a relay token.
 type GameState struct {
 	ID      uint64       `json:"id"`
 	Room    string       `json:"room"`

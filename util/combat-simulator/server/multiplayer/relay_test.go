@@ -142,6 +142,31 @@ func TestCombatRelay(t *testing.T) {
 	}
 }
 
+func TestUnknownCombatGameDelayed(t *testing.T) {
+	mux := http.NewServeMux()
+	InitMux(mux)
+	server := httptest.NewServer(mux)
+	defer server.Close()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	conn, _, err := websocket.Dial(ctx, "ws"+strings.TrimPrefix(server.URL, "http")+"/multiplayer/combat", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer conn.CloseNow()
+	began := time.Now()
+	if err := wsjson.Write(ctx, conn, protocol.Message{GameID: 123, RelayToken: "invalid"}); err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = conn.Read(ctx)
+	if websocket.CloseStatus(err) != websocket.StatusPolicyViolation {
+		t.Fatal("invalid game ID was not rejected", err)
+	}
+	if elapsed := time.Since(began); elapsed < time.Second {
+		t.Fatal("invalid game ID response was not delayed", elapsed)
+	}
+}
+
 func TestRelayPacerCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

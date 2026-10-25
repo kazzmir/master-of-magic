@@ -221,6 +221,14 @@ func (manager *Manager) acceptCombat(writer http.ResponseWriter, request *http.R
 		return nil, nil
 	})
 	if relay == nil {
+		// Slow invalid game-ID probes without holding the manager lock.
+		timer := time.NewTimer(time.Second)
+		defer timer.Stop()
+		select {
+		case <-timer.C:
+		case <-request.Context().Done():
+			return
+		}
 		connection.Close(websocket.StatusPolicyViolation, "Combat game is not available")
 		return
 	}
