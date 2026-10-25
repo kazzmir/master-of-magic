@@ -114,6 +114,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionId 
                     return errors.New(reason)
                 }
                 needAuth = false
+                log.Printf("[%06x] Websocket connection authenticated", connectionId)
                 return nil
             }
 

@@ -147,6 +147,7 @@ func runServer(certificateFunc TLSGetCertificateFunc) error {
 }
 
 func main(){
+    log.SetFlags(log.LstdFlags | log.Lshortfile | log.Lmicroseconds)
     log.Printf("Server starting")
 
     tls := flag.Bool("tls", true, "Run server with TLS")
