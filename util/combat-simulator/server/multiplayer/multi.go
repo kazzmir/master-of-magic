@@ -107,7 +107,7 @@ func (manager *Manager) leave(user *User, clientID uint64) {
 }
 
 func validName(name string) bool {
-	return name != "" && utf8.ValidString(name) && utf8.RuneCountInString(name) <= 32 && !strings.ContainsFunc(name, unicode.IsControl)
+	return name != "" && utf8.ValidString(name) && utf8.RuneCountInString(name) <= protocol.MaxUserNameLength && !strings.ContainsFunc(name, unicode.IsControl)
 }
 
 func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID uint64) {
@@ -132,7 +132,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		name = fmt.Sprintf("Player%04d", connectionID%10000)
 	}
 	if !validName(name) {
-		connection.Close(websocket.StatusPolicyViolation, "Name must contain 1–32 characters without control characters")
+		connection.Close(websocket.StatusPolicyViolation, "Name must contain 1–30 characters without control characters")
 		return
 	}
 	user := &User{messages: make(chan protocol.Message, 64), connection: connection, name: name}
@@ -176,7 +176,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 			case "set-name":
 				name := strings.TrimSpace(command.Name)
 				if !validName(name) {
-					user.send(protocol.Message{ID: command.ID, Error: "Name must contain 1–32 characters without control characters"})
+					user.send(protocol.Message{ID: command.ID, Error: "Name must contain 1–30 characters without control characters"})
 				} else {
 					user.name = name
 					message := protocol.Message{Type: "name-updated", ID: command.ID, ClientID: connectionID, Room: user.room, Name: name}
@@ -185,6 +185,16 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					} else {
 						user.send(message)
 					}
+				}
+			case "create-room":
+				room := strings.TrimSpace(command.Room)
+				if room == "" || !utf8.ValidString(room) || utf8.RuneCountInString(room) > protocol.MaxRoomNameLength || strings.ContainsFunc(room, unicode.IsControl) {
+					user.send(protocol.Message{ID: command.ID, Error: "Room name must contain 1–30 characters without control characters"})
+				} else if _, exists := manager.Lobbies[room]; exists {
+					user.send(protocol.Message{ID: command.ID, Error: "Room already exists"})
+				} else {
+					manager.Lobbies[room] = &Lobby{Public: true, Name: room, Users: make(map[uint64]*User)}
+					user.send(protocol.Message{Type: "create-room", ID: command.ID, Room: room})
 				}
 			case "join-room":
 				lobby := manager.Lobbies[command.Room]

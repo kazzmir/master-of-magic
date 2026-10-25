@@ -196,6 +196,47 @@ func TestJoinSelectedRoomButton(t *testing.T) {
 	}
 }
 
+func TestCreateRoomUI(t *testing.T) {
+	game := newLobbyGame()
+	if !game.createButton.GetWidget().Disabled || !game.newRoom.GetWidget().Disabled {
+		t.Fatal("room creation enabled while disconnected")
+	}
+	session := &lobbySession{cancel: func() {}, commands: make(chan protocol.Message, 4)}
+	game.session = session
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "connected", ClientID: 1}})
+	game.Update()
+	game.createButton.Click()
+	game.Update()
+	if len(session.commands) != 0 {
+		t.Fatal("empty room creation sent")
+	}
+	game.newRoom.SetText("  New lobby  ")
+	game.createButton.Click()
+	game.Update()
+	select {
+	case command := <-session.commands:
+		if command.Type != "create-room" || command.Room != "New lobby" {
+			t.Fatal(command)
+		}
+	default:
+		t.Fatal("create button did not send command")
+	}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "create-room", Room: "New lobby"}})
+	if game.newRoom.GetText() != "" {
+		t.Fatal("room input not cleared")
+	}
+	for _, want := range []protocol.Message{{Type: "list-rooms"}, {Type: "join-room", Room: "New lobby"}} {
+		select {
+		case got := <-session.commands:
+			if got.Type != want.Type || got.Room != want.Room {
+				t.Fatal(got)
+			}
+		default:
+			t.Fatal("missing room refresh/join command")
+		}
+	}
+}
+
 func TestLobbySessionHandshake(t *testing.T) {
 	errors := make(chan error, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

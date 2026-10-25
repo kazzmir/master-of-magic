@@ -1,6 +1,9 @@
 // Package protocol defines the JSON messages exchanged over /multiplayer.
 package protocol
 
+const MaxRoomNameLength = 30
+const MaxUserNameLength = 30
+
 // Message is used for both commands and events. Replies echo the command ID.
 // Authentication is the initial, separate {"auth":"x","name":"Player1234"} message. The server
 // replies with "connected" and ClientID, which identifies this connection.

@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
@@ -145,6 +146,8 @@ type lobbyGame struct {
 	input                                  *widget.TextInput
 	sendButton, leaveButton, refreshButton *widget.Button
 	joinButton                             *widget.Button
+	newRoom                                *widget.TextInput
+	createButton                           *widget.Button
 	room                                   string
 	history                                []string
 	userIDs                                []uint64
@@ -192,7 +195,10 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Columns(2), widget.GridLayoutOpts.Weights([]float64{0, 1}, nil),
 		widget.GridLayoutOpts.Spacing(8, 0),
 	)))
-	game.name = widget.NewTextInput(widget.TextInputOpts.Placeholder("Your name"),
+	game.name = widget.NewTextInput(widget.TextInputOpts.Placeholder("Your name (max 30 characters)"),
+		widget.TextInputOpts.Validation(func(value string) (bool, *string) {
+			return utf8.RuneCountInString(value) <= protocol.MaxUserNameLength, nil
+		}),
 		widget.TextInputOpts.ChangedHandler(func(*widget.TextInputChangedEventArgs) {
 			game.nameDirty = true
 			game.nameChanged = time.Now()
@@ -206,7 +212,7 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Columns(3),
 		widget.GridLayoutOpts.Weights([]float64{0.2, 0.2, 0.6}, []float64{1}),
 	)))
-	rooms := lobbyColumn(0, 1, 0, 0)
+	rooms := lobbyColumn(0, 1, 0, 0, 0, 0)
 	game.rooms = widget.NewList(
 		widget.ListOpts.EntryLabelFunc(func(entry any) string { return entry.(string) }),
 		widget.ListOpts.AllowReselect(),
@@ -236,7 +242,14 @@ func newLobbyGame() *lobbyGame {
 		}),
 	)
 	game.refreshButton = button("Refresh rooms", func() { game.send(protocol.Message{Type: "list-rooms"}) })
-	rooms.AddChild(label("Rooms"), game.rooms, game.joinButton, game.refreshButton)
+	game.newRoom = widget.NewTextInput(widget.TextInputOpts.Placeholder("New room name (max 30 characters)"),
+		widget.TextInputOpts.Validation(func(value string) (bool, *string) {
+			return utf8.RuneCountInString(value) <= protocol.MaxRoomNameLength, nil
+		}),
+		widget.TextInputOpts.AllowDuplicateSubmit(true),
+		widget.TextInputOpts.SubmitHandler(func(*widget.TextInputChangedEventArgs) { game.createRoom() }))
+	game.createButton = button("Create room", game.createRoom)
+	rooms.AddChild(label("Rooms"), game.rooms, game.joinButton, game.refreshButton, game.newRoom, game.createButton)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
 	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
@@ -262,6 +275,8 @@ func (game *lobbyGame) setEnabled() {
 	game.rooms.GetWidget().Disabled = !game.connected
 	game.refreshButton.GetWidget().Disabled = !game.connected
 	game.joinButton.GetWidget().Disabled = !game.connected
+	game.newRoom.GetWidget().Disabled = !game.connected
+	game.createButton.GetWidget().Disabled = !game.connected
 	inRoom := game.connected && game.room != ""
 	game.input.GetWidget().Disabled = !inRoom
 	game.sendButton.GetWidget().Disabled = !inRoom
@@ -316,6 +331,19 @@ func (game *lobbyGame) send(message protocol.Message) bool {
 		game.status.Label = "Too many pending commands; try again shortly"
 		return false
 	}
+}
+
+func (game *lobbyGame) createRoom() {
+	room := strings.TrimSpace(game.newRoom.GetText())
+	if room == "" {
+		game.status.Label = "Enter a name for the new room"
+		return
+	}
+	if utf8.RuneCountInString(room) > protocol.MaxRoomNameLength {
+		game.status.Label = "Room names must be at most 30 characters"
+		return
+	}
+	game.send(protocol.Message{Type: "create-room", Room: room})
 }
 
 func (game *lobbyGame) sendChat() {
@@ -389,6 +417,11 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.rooms.SetEntries(stringEntries(message.Rooms))
 		game.lastRoom = ""
 		game.status.Label = fmt.Sprintf("Connected — %d rooms", len(message.Rooms))
+	case "create-room":
+		game.newRoom.SetText("")
+		game.status.Label = "Created " + message.Room
+		game.send(protocol.Message{Type: "list-rooms"})
+		game.send(protocol.Message{Type: "join-room", Room: message.Room})
 	case "join-room":
 		game.clearRoom()
 		game.room = message.Room
