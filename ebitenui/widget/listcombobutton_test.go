@@ -29,6 +29,23 @@ func TestListComboButton_SelectedEntry_Initial(t *testing.T) {
 	is.Equal(l.Label(), "label first")
 }
 
+func TestListComboButton_DeferredSelectionReplacement(t *testing.T) {
+	var seen []any
+	label := func(entry any) string { return entry.(string) }
+	list := newListComboButton(t,
+		ListComboButtonOpts.Entries([]any{"first", "second", "third"}),
+		ListComboButtonOpts.EntryLabelFunc(label, label),
+		ListComboButtonOpts.EntrySelectedHandler(func(args *ListComboButtonEntrySelectedEventArgs) { seen = append(seen, args.Entry) }),
+	)
+	seen = nil
+	list.SetSelectedEntry("second")
+	list.SetSelectedEntry("third")
+	event.ExecuteDeferred()
+	if list.SelectedEntry() != "third" || len(seen) != 1 || seen[0] != "third" {
+		t.Fatal("stale deferred selection replayed", list.SelectedEntry(), seen)
+	}
+}
+
 func TestListComboButton_SetSelectedEntry(t *testing.T) {
 	is := is.New(t)
 
