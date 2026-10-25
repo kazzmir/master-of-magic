@@ -55,10 +55,12 @@ func (cs *CriticalSection) With2[T any](f func() (T, error)) (T, error) {
 // All lobby and membership state is protected by lock. Network writes never
 // hold lock: each connection has a bounded outbound queue and a single writer.
 type Manager struct {
-	lock       CriticalSection
-	Lobbies    map[string]*Lobby
-	Games      map[uint64]*Game
-	nextGameID uint64
+	lock         CriticalSection
+	Lobbies      map[string]*Lobby
+	Games        map[uint64]*Game
+	nextGameID   uint64
+	Invitations  map[uint64]*GameInvitation
+	nextInviteID uint64
 }
 
 func (manager *Manager) ListPublicLobbies() []string {
@@ -103,6 +105,7 @@ func broadcastUsers(lobby *Lobby) {
 
 // leave is called with manager.lock held.
 func (manager *Manager) leave(user *User, clientID uint64) {
+	manager.cancelInvitations(clientID, "Game request cancelled: a player left the room")
 	manager.leaveGame(user, clientID)
 	if lobby := manager.Lobbies[user.room]; lobby != nil {
 		if _, exists := lobby.Users[clientID]; exists {
@@ -210,6 +213,9 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 			}
 		}
 		manager.lock.With(func() error {
+			if manager.handleInvitationCommand(user, connectionID, command) {
+				return nil
+			}
 			if manager.handleGameCommand(user, connectionID, command) {
 				return nil
 			}

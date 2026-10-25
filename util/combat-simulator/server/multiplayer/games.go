@@ -61,6 +61,29 @@ func (game *Game) broadcastState() {
 	}
 }
 
+// newGame is called only after checking that both participants are available.
+func (manager *Manager) newGame(hostID uint64, host *User, guestID uint64, guest *User) *Game {
+	manager.cancelInvitations(hostID, "Game request cancelled: a player joined another game")
+	if guest != nil {
+		manager.cancelInvitations(guestID, "Game request cancelled: a player joined another game")
+	}
+	if manager.Games == nil {
+		manager.Games = make(map[uint64]*Game)
+	}
+	manager.nextGameID++
+	game := &Game{id: manager.nextGameID, room: host.room, hostID: hostID, players: map[uint64]*User{hostID: host}, ready: map[uint64]bool{hostID: false}}
+	manager.Games[game.id] = game
+	host.gameID = game.id
+	if guest != nil {
+		game.players[guestID] = guest
+		game.ready[guestID] = false
+		guest.gameID = game.id
+	}
+	game.broadcastState()
+	manager.broadcastGames(host.room)
+	return game
+}
+
 func (manager *Manager) leaveGame(user *User, clientID uint64) {
 	game := manager.Games[user.gameID]
 	if game == nil {
@@ -109,15 +132,7 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 			fail("Exit your current game first")
 			break
 		}
-		if manager.Games == nil {
-			manager.Games = make(map[uint64]*Game)
-		}
-		manager.nextGameID++
-		game := &Game{id: manager.nextGameID, room: user.room, hostID: clientID, players: map[uint64]*User{clientID: user}, ready: map[uint64]bool{clientID: false}}
-		manager.Games[game.id] = game
-		user.gameID = game.id
-		game.broadcastState()
-		manager.broadcastGames(user.room)
+		manager.newGame(clientID, user, 0, nil)
 	case "join-game":
 		game := manager.Games[command.GameID]
 		if user.gameID != 0 {
@@ -127,6 +142,7 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 		} else if len(game.players) >= 2 || game.started {
 			fail("Game is full")
 		} else {
+			manager.cancelInvitations(clientID, "Game request cancelled: a player joined another game")
 			game.players[clientID] = user
 			user.gameID = game.id
 			for id := range game.players {
