@@ -33,7 +33,7 @@ type gameSetupUI struct {
 
 func setupRow(weights []float64) *widget.Container {
 	return widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
-		widget.GridLayoutOpts.Columns(len(weights)), widget.GridLayoutOpts.Weights(weights, nil), widget.GridLayoutOpts.Spacing(6, 4),
+		widget.GridLayoutOpts.Columns(len(weights)), widget.GridLayoutOpts.Weights(weights, []float64{1}), widget.GridLayoutOpts.Spacing(6, 4),
 	)))
 }
 

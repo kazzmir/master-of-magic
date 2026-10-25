@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"image"
 	"math"
 	"strconv"
 	"strings"
@@ -24,6 +25,28 @@ func setupEditorGame(t *testing.T, clientID uint64) (*lobbyGame, *lobbySession, 
 	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "game-state", Game: &state}})
 	game.Update()
 	return game, session, state
+}
+
+func TestArmyListStaysAboveSpendingFooter(t *testing.T) {
+	game, _, state := setupEditorGame(t, 1)
+	unit := state.Players[0].Loadout.Army[0]
+	state.Players[0].Loadout.Army = make([]protocol.UnitID, protocol.MaxArmy)
+	for i := range state.Players[0].Loadout.Army {
+		state.Players[0].Loadout.Army[i] = unit
+	}
+	game.handleEvent(lobbyEvent{session: game.session, message: protocol.Message{Type: "game-state", Game: &state}})
+	game.Update()
+	for _, size := range []image.Point{{1000, 660}, {800, 580}, {1000, 500}} {
+		game.matches.window.SetLocation(image.Rect(0, 0, size.X, size.Y))
+		game.Draw(ebiten.NewImage(1100, 700))
+		editor := game.matches.editor
+		footerTop := editor.spent.GetWidget().Rect.Min.Y
+		for _, list := range []*widget.List{editor.army, editor.spells} {
+			if list.GetWidget().Rect.Max.Y > footerTop {
+				t.Fatal("selection list overlaps spending footer", size, list.GetWidget().Rect, editor.spent.GetWidget().Rect)
+			}
+		}
+	}
 }
 
 func TestHostBudgetAndRoleEditor(t *testing.T) {
