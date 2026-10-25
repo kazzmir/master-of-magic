@@ -202,7 +202,7 @@ func newLobbyGame() *lobbyGame {
 
 	body := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(3),
-		widget.GridLayoutOpts.Weights([]float64{0.25, 0.22, 0.53}, []float64{1}),
+		widget.GridLayoutOpts.Weights([]float64{0.2, 0.2, 0.6}, []float64{1}),
 	)))
 	rooms := lobbyColumn(0, 1, 0)
 	game.rooms = widget.NewList(
@@ -220,7 +220,7 @@ func newLobbyGame() *lobbyGame {
 		}),
 	)
 	game.refreshButton = button("Refresh rooms", func() { game.send(protocol.Message{Type: "list-rooms"}) })
-	rooms.AddChild(label("Rooms (double-click to join)"), game.rooms, game.refreshButton)
+	rooms.AddChild(label("Rooms"), game.rooms, game.refreshButton)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
 	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
