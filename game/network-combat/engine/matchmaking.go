@@ -7,20 +7,39 @@ import (
 
 	uiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 )
 
 type matchmakingUI struct {
-	game                *lobbyGame
-	container           *widget.Container
-	list                *widget.List
-	create, ready, exit *widget.Button
-	heading, status     *widget.Text
-	players             [2]*widget.Text
-	window              *widget.Window
-	waiting             map[uint64]protocol.GameState
-	active              protocol.GameState
-	pending             bool
+	game                    *lobbyGame
+	container               *widget.Container
+	list                    *widget.List
+	create, ready, exit     *widget.Button
+	heading, status         *widget.Text
+	players                 [2]*widget.Text
+	readiness               [2]*widget.Text
+	indicators              [2]*widget.Graphic
+	readyIcon, notReadyIcon *ebiten.Image
+	window                  *widget.Window
+	waiting                 map[uint64]protocol.GameState
+	active                  protocol.GameState
+	pending                 bool
+}
+
+func makeReadinessIcon(ready bool) *ebiten.Image {
+	icon := ebiten.NewImage(18, 18)
+	if ready {
+		green := color.NRGBA{R: 75, G: 220, B: 100, A: 255}
+		vector.StrokeLine(icon, 3, 9, 7, 14, 3, green, true)
+		vector.StrokeLine(icon, 7, 14, 15, 3, 3, green, true)
+	} else {
+		red := color.NRGBA{R: 235, G: 65, B: 65, A: 255}
+		vector.StrokeLine(icon, 4, 4, 14, 14, 3, red, true)
+		vector.StrokeLine(icon, 14, 4, 4, 14, 3, red, true)
+	}
+	return icon
 }
 
 func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
@@ -61,7 +80,16 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 	contents := lobbyColumn(0, 0, 0, 1, 0, 0)
 	contents.GetWidget().SetTheme(theme)
 	contents.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 24, G: 28, B: 36, A: 255}))
-	match.players[0], match.players[1] = label(""), label("")
+	match.readyIcon, match.notReadyIcon = makeReadinessIcon(true), makeReadinessIcon(false)
+	var playerRows [2]*widget.Container
+	for i := range match.players {
+		match.players[i], match.readiness[i] = label(""), label("")
+		match.indicators[i] = widget.NewGraphic(widget.GraphicOpts.Image(match.notReadyIcon))
+		playerRows[i] = widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Direction(widget.DirectionHorizontal), widget.RowLayoutOpts.Spacing(6),
+		)))
+		playerRows[i].AddChild(match.players[i], match.indicators[i], match.readiness[i])
+	}
 	match.status = label("")
 	match.ready = button("Ready", func() {
 		ready := false
@@ -83,7 +111,7 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 		widget.RowLayoutOpts.Direction(widget.DirectionHorizontal), widget.RowLayoutOpts.Spacing(8),
 	)))
 	buttons.AddChild(match.ready, match.exit)
-	contents.AddChild(match.players[0], match.players[1], label("Game setup"), label("Setup options will be added here."), match.status, buttons)
+	contents.AddChild(playerRows[0], playerRows[1], label("Game setup"), label("Setup options will be added here."), match.status, buttons)
 	title := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
 		widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(6)),
 	)), widget.ContainerOpts.BackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 255})))
@@ -162,13 +190,19 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 		match.ready.SetText("Ready")
 		for i := range match.players {
 			value := fmt.Sprintf("Player %d: waiting for a player…", i+1)
+			match.indicators[i].GetWidget().SetVisibility(widget.Visibility_Hide)
+			match.readiness[i].GetWidget().SetVisibility(widget.Visibility_Hide)
 			if i < len(state.Players) {
 				player := state.Players[i]
-				status := "not ready"
+				match.indicators[i].GetWidget().SetVisibility(widget.Visibility_Show)
+				match.readiness[i].GetWidget().SetVisibility(widget.Visibility_Show)
+				match.indicators[i].Image = match.notReadyIcon
+				match.readiness[i].Label = "not ready"
 				if player.Ready {
-					status = "ready"
+					match.indicators[i].Image = match.readyIcon
+					match.readiness[i].Label = "ready"
 				}
-				value = fmt.Sprintf("Player %d: %s — %s", i+1, player.Name, status)
+				value = fmt.Sprintf("Player %d: %s —", i+1, player.Name)
 				if player.ClientID == match.game.clientID && player.Ready {
 					match.ready.SetText("Not ready")
 				}

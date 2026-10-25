@@ -18,6 +18,9 @@ type Message struct {
 	ID       uint64      `json:"id,omitempty"`
 	Version  int         `json:"version,omitempty"`
 	GameID   uint64      `json:"game_id,omitempty"`
+	TargetID uint64      `json:"target_id,omitempty"`
+	InviteID uint64      `json:"invite_id,omitempty"`
+	Accept   bool        `json:"accept,omitempty"`
 	Games    []GameState `json:"games,omitempty"`
 	Game     *GameState  `json:"game,omitempty"`
 	Ready    bool        `json:"ready,omitempty"`

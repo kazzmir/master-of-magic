@@ -166,6 +166,7 @@ type lobbyGame struct {
 	joinPublicButton                       *widget.Button
 	roomsWindow                            *widget.Window
 	matches                                *matchmakingUI
+	invitations                            *gameInvitationsUI
 	rooms, users                           *widget.List
 	chat                                   *widget.TextArea
 	input                                  *widget.TextInput
@@ -364,7 +365,16 @@ func newLobbyGame() *lobbyGame {
 	))(frame)
 	users := lobbyColumn(0, 1, 0)
 	game.roomLabel = label("Not in a room")
-	game.users = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }))
+	game.users = widget.NewList(
+		widget.ListOpts.EntryLabelFunc(func(entry any) string { return game.userLabel(entry.(uint64)) }),
+		widget.ListOpts.EntryTextColorFunc(func(entry any) color.Color {
+			if entry.(uint64) == game.clientID {
+				return color.NRGBA{R: 75, G: 220, B: 100, A: 255}
+			}
+			return nil
+		}),
+		widget.ListOpts.EntryContextMenuFunc(func(entry any) *widget.Container { return game.invitations.contextMenu(entry.(uint64)) }),
+	)
 	game.leaveButton = button("Leave room", func() { game.send(protocol.Message{Type: "leave-room"}) })
 	users.AddChild(game.roomLabel, game.users, game.leaveButton)
 	chat := lobbyColumn(0, 1, 0, 0)
@@ -378,6 +388,7 @@ func newLobbyGame() *lobbyGame {
 	chat.AddChild(label("Chat"), game.chat, game.input, game.sendButton)
 	body.AddChild(users, chat)
 	game.matches = newMatchmakingUI(game, theme)
+	game.invitations = newGameInvitationsUI(game, theme)
 	root.AddChild(game.matches.container, body)
 	game.setEnabled()
 	return game
@@ -430,6 +441,7 @@ func (game *lobbyGame) connect() {
 
 func (game *lobbyGame) clearRoom() {
 	game.room = ""
+	game.invitations.reset()
 	game.matches.reset()
 	game.roomLabel.Label = "Not in a room"
 	game.userIDs = nil
@@ -557,8 +569,12 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 	if message.Error != "" {
 		delete(game.pendingRoomPasswords, message.Room)
 		game.status.Label = message.Error
+		game.invitations.handleError(message)
 		game.matches.pending = false
 		game.matches.setEnabled()
+		return
+	}
+	if game.invitations.handleMessage(message) {
 		return
 	}
 	if game.matches.handleMessage(message) {

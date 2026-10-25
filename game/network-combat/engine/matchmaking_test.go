@@ -38,6 +38,12 @@ func TestMatchmakingUI(t *testing.T) {
 	if !game.ui.IsWindowOpen(match.window) || match.active.ID != 7 || !match.create.GetWidget().Disabled {
 		t.Fatal("host game window missing")
 	}
+	if match.indicators[0].Image != match.notReadyIcon || match.readiness[0].Label != "not ready" {
+		t.Fatal("not-ready player missing red X")
+	}
+	if match.indicators[1].GetWidget().IsVisible() {
+		t.Fatal("empty player slot has readiness icon")
+	}
 	game.Update()
 	game.Draw(ebiten.NewImage(1100, 700))
 	location := image.Rect(10, 20, 610, 360)
@@ -59,6 +65,11 @@ func TestMatchmakingUI(t *testing.T) {
 	}
 	state.Players[0].Ready, state.Players[1].Ready, state.Started = true, true, true
 	deliver(protocol.Message{Type: "game-state", Game: &state})
+	for i := range match.indicators {
+		if match.indicators[i].Image != match.readyIcon || match.readiness[i].Label != "ready" || !match.indicators[i].GetWidget().IsVisible() {
+			t.Fatal("ready player missing green check mark")
+		}
+	}
 	if !match.ready.GetWidget().Disabled || match.status.Label != "Both players ready — game start is not implemented yet." {
 		t.Fatal("start placeholder not shown")
 	}
