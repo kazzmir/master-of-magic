@@ -70,7 +70,7 @@ func TestMatchmakingUI(t *testing.T) {
 			t.Fatal("ready player missing green check mark")
 		}
 	}
-	if !match.ready.GetWidget().Disabled || match.status.Label != "Both players ready — game start is not implemented yet." {
+	if !match.ready.GetWidget().Disabled || match.status.Label != "Both players ready — connecting to combat…" {
 		t.Fatal("start placeholder not shown")
 	}
 	match.exit.Click()

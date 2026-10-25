@@ -1,6 +1,8 @@
 package multiplayer
 
 import (
+	"crypto/rand"
+	"encoding/binary"
 	"slices"
 
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
@@ -15,6 +17,7 @@ type Game struct {
 	players  map[uint64]*User
 	ready    map[uint64]bool
 	started  bool
+	relay    *combatRelay
 }
 
 func (game *Game) snapshot() protocol.GameState {
@@ -62,6 +65,18 @@ func (game *Game) broadcastState() {
 	}
 }
 
+// newGameID runs under manager.lock, rejecting reserved values and collisions.
+func (manager *Manager) newGameID() uint64 {
+	for {
+		var data [8]byte
+		rand.Read(data[:]) // crypto/rand.Read cannot return an error on supported Go versions.
+		id := binary.LittleEndian.Uint64(data[:])
+		if id > 1_000_000_000 && manager.Games[id] == nil {
+			return id
+		}
+	}
+}
+
 // newGame is called only after checking that both participants are available.
 func (manager *Manager) newGame(hostID uint64, host *User, guestID uint64, guest *User) *Game {
 	manager.cancelInvitations(hostID, "Game request cancelled: a player joined another game")
@@ -71,8 +86,7 @@ func (manager *Manager) newGame(hostID uint64, host *User, guestID uint64, guest
 	if manager.Games == nil {
 		manager.Games = make(map[uint64]*Game)
 	}
-	manager.nextGameID++
-	game := &Game{id: manager.nextGameID, room: host.room, hostID: hostID, players: map[uint64]*User{hostID: host}, ready: map[uint64]bool{hostID: false}}
+	game := &Game{id: manager.newGameID(), room: host.room, hostID: hostID, players: map[uint64]*User{hostID: host}, ready: map[uint64]bool{hostID: false}}
 	manager.Games[game.id] = game
 	host.gameID = game.id
 	if guest != nil {
@@ -90,6 +104,11 @@ func (manager *Manager) leaveGame(user *User, clientID uint64) {
 	if game == nil {
 		user.gameID = 0
 		return
+	}
+	if game.relay != nil {
+		relay := game.relay
+		game.relay = nil
+		relay.stop()
 	}
 	if clientID == game.hostID {
 		// The host owns the game. Their departure releases both players.
@@ -166,8 +185,10 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 					game.started = game.started && game.ready[id]
 				}
 			}
-			// Future hook: launch combat when started becomes true.
 			game.broadcastState()
+			if game.started {
+				manager.startCombat(game)
+			}
 		}
 	case "leave-game":
 		if user.gameID == 0 || command.GameID != user.gameID {

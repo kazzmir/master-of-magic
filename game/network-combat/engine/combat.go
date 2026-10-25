@@ -6,7 +6,6 @@ import (
     "time"
     "fmt"
     "context"
-    "sync"
     "log"
 
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
@@ -30,6 +29,8 @@ import (
     "github.com/hajimehoshi/ebiten/v2"
     "github.com/hajimehoshi/ebiten/v2/inpututil"
 )
+
+const networkCombatScenario = 6
 
 type noGlobalEnchantments struct {
 }
@@ -99,7 +100,9 @@ func (engine *Engine) Update() error {
 
     inputmanager.Update()
 
-    engine.Coroutine.Run()
+    if err := engine.Coroutine.Run(); err != nil {
+        return ebiten.Termination
+    }
 
     return nil
 }
@@ -113,7 +116,7 @@ func (engine *Engine) Layout(outsideWidth, outsideHeight int) (int, int) {
     return scale.Scale2(data.ScreenWidth, data.ScreenHeight)
 }
 
-func sendArmy(remote *combat.Remote, team combat.Team, army *combat.Army) {
+func sendArmy(remote *combat.Remote, team combat.Team, army *combat.Army) error {
     var units []combat.RemoteUnit
 
     for _, unit := range army.GetUnits() {
@@ -128,37 +131,26 @@ func sendArmy(remote *combat.Remote, team combat.Team, army *combat.Army) {
         Units: units,
     }
 
-    remote.SendEvent(&event)
+    return remote.SendEvent(&event)
 }
 
 func receiveArmy(remote *combat.Remote, player *player.Player) (*combat.Army, error) {
-    select {
-        case <-time.After(5 * time.Second):
-            return nil, fmt.Errorf("timeout waiting for defending army from client")
-        case event := <-remote.Events:
-            switch event.GetType() {
-                case combat.RemoteArmyType:
-                    armyEvent := event.(*combat.RemoteArmyEvent)
-
-                    log.Printf("Received army from remote: %v", armyEvent)
-
-                    army := &combat.Army{
-                        Player: player,
-                    }
-
-                    experienceInfo := player.MakeExperienceInfo()
-                    enchantmentProvider := player.MakeUnitEnchantmentProvider()
-
-                    for _, unitId := range armyEvent.Units {
-                        made := units.MakeOverworldUnitFromUnit(units.GetUnitById(unitId.UnitId), 1, 1, data.PlaneArcanus, player.Wizard.Banner, experienceInfo, enchantmentProvider)
-                        army.AddUnit(made)
-                    }
-
-                    return army, nil
-            }
+    // Read exactly the army packet. A temporary background receive loop could
+    // consume and discard the peer's first combat event during startup.
+    remote.Peer.SetReadDeadline(time.Now().Add(10 * time.Second))
+    defer remote.Peer.SetReadDeadline(time.Time{})
+    event, err := remote.ReceiveEvent()
+    if err != nil { return nil, fmt.Errorf("receiving remote army: %w", err) }
+    armyEvent, ok := event.(*combat.RemoteArmyEvent)
+    if !ok { return nil, fmt.Errorf("expected remote army, got %T", event) }
+    army := &combat.Army{Player: player}
+    experienceInfo := player.MakeExperienceInfo()
+    enchantmentProvider := player.MakeUnitEnchantmentProvider()
+    for _, unitId := range armyEvent.Units {
+        made := units.MakeOverworldUnitFromUnit(units.GetUnitById(unitId.UnitId), 1, 1, data.PlaneArcanus, player.Wizard.Banner, experienceInfo, enchantmentProvider)
+        army.AddUnit(made)
     }
-
-    return nil, fmt.Errorf("did not receive an event from remote")
+    return army, nil
 }
 
 func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit units.Unit, defendingCount int, attackingUnit units.Unit, attackingCount int) (*combat.CombatModel, *combat.CombatScreen, error) {
@@ -168,12 +160,6 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
     if err != nil {
         return nil, nil, err
     }
-
-    quit, cancel := context.WithCancel(context.Background())
-    defer cancel()
-
-    var waiter sync.WaitGroup
-    waiter.Go(func(){ remote.RunReceiveLoop(quit) })
 
     // connecting player is always the defending player
     defendingPlayer := player.MakePlayer(setup.WizardCustom{
@@ -197,7 +183,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 
     if !isServer {
         defendingArmy = createArmyN(defendingPlayer, defendingUnit, defendingCount)
-        sendArmy(remote, combat.TeamDefender, defendingArmy)
+        if err := sendArmy(remote, combat.TeamDefender, defendingArmy); err != nil { return nil, nil, err }
     } else {
         defendingArmy, err = receiveArmy(remote, defendingPlayer)
         if err != nil {
@@ -247,16 +233,13 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 
     if isServer {
         attackingArmy = createArmyN(attackingPlayer, attackingUnit, attackingCount)
-        sendArmy(remote, combat.TeamAttacker, attackingArmy)
+        if err := sendArmy(remote, combat.TeamAttacker, attackingArmy); err != nil { return nil, nil, err }
     } else {
         attackingArmy, err = receiveArmy(remote, attackingPlayer)
         if err != nil {
             return nil, nil, err
         }
     }
-
-    cancel()
-    waiter.Wait()
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{City: defendingFortressCity}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
 
@@ -267,6 +250,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 
     combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](player), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
 
+    if combatScreen == nil { return nil, nil, fmt.Errorf("unable to create combat screen (check game assets)") }
     go remote.RunReceiveLoop(combatScreen.Quit)
 
     return model, combatScreen, nil
@@ -299,6 +283,7 @@ func MakeScenario(scenario int, isServer bool, remote *combat.Remote) (*combat.C
         case 3: return MakeScenario3(isServer, remote)
         case 4: return MakeScenario4(isServer, remote)
         case 5: return MakeScenario5(isServer, remote)
+        case networkCombatScenario: return makeGenericScenario(isServer, remote, units.LizardSpearmen, 2, units.OrcSpearmen, 2)
         default: return MakeScenario1(isServer, remote)
     }
 }
@@ -311,8 +296,8 @@ func NewEngine(isServer bool, peer netlib.PacketConn, scenario int) (*Engine, er
     }
 
     run := func(yield coroutine.YieldFunc) error {
-        for combatScreen.Update(yield) == combat.CombatStateRunning {
-            yield()
+        for combatScreen.Quit.Err() == nil && combatScreen.Update(yield) == combat.CombatStateRunning {
+            if err := yield(); err != nil { return err }
         }
 
         return ebiten.Termination

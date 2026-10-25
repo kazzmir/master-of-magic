@@ -166,6 +166,7 @@ type lobbyGame struct {
 	joinPublicButton                       *widget.Button
 	roomsWindow                            *widget.Window
 	matches                                *matchmakingUI
+	networkCombat                          *networkCombatRun
 	invitations                            *gameInvitationsUI
 	rooms, users                           *widget.List
 	chat                                   *widget.TextArea
@@ -440,6 +441,7 @@ func (game *lobbyGame) connect() {
 }
 
 func (game *lobbyGame) clearRoom() {
+	game.stopNetworkCombat("", false)
 	game.room = ""
 	game.invitations.reset()
 	game.matches.reset()
@@ -574,6 +576,16 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.matches.setEnabled()
 		return
 	}
+	if message.Type == "combat-start" {
+		game.startNetworkCombat(message)
+		return
+	}
+	if message.Type == "game-left" && game.networkCombat != nil && message.GameID == game.networkCombat.gameID {
+		game.stopNetworkCombat("Game ended", false)
+	}
+	if message.Type == "game-state" && message.Game != nil && game.networkCombat != nil && message.Game.ID == game.networkCombat.gameID && !message.Game.Started {
+		game.stopNetworkCombat("Opponent left the game", false)
+	}
 	if game.invitations.handleMessage(message) {
 		return
 	}
@@ -668,17 +680,30 @@ func (game *lobbyGame) Update() error {
 		case event := <-game.events:
 			game.handleEvent(event)
 		default:
-			game.ui.Update()
+			if !game.updateNetworkCombat() {
+				game.ui.Update()
+			}
 			return nil
 		}
 	}
-	game.ui.Update()
+	if !game.updateNetworkCombat() {
+		game.ui.Update()
+	}
 	return nil
 }
 
 func (game *lobbyGame) Draw(screen *ebiten.Image) {
+	if game.networkCombat != nil && game.networkCombat.engine != nil {
+		game.networkCombat.engine.Draw(screen)
+		return
+	}
 	screen.Fill(color.NRGBA{R: 24, G: 28, B: 36, A: 255})
 	game.ui.Draw(screen)
 }
 
-func (game *lobbyGame) Layout(width, height int) (int, int) { return width, height }
+func (game *lobbyGame) Layout(width, height int) (int, int) {
+	if game.networkCombat != nil && game.networkCombat.engine != nil {
+		return game.networkCombat.engine.Layout(width, height)
+	}
+	return width, height
+}

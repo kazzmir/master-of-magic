@@ -58,7 +58,6 @@ type Manager struct {
 	lock         CriticalSection
 	Lobbies      map[string]*Lobby
 	Games        map[uint64]*Game
-	nextGameID   uint64
 	Invitations  map[uint64]*GameInvitation
 	nextInviteID uint64
 }
@@ -294,6 +293,7 @@ func InitMux(mux *http.ServeMux) {
 	manager := &Manager{Lobbies: map[string]*Lobby{
 		"Public": {Public: true, Name: "Public", Users: make(map[uint64]*User), persistent: true},
 	}}
+	mux.HandleFunc("/multiplayer/combat", manager.acceptCombat)
 	var counter atomic.Uint64
 	mux.HandleFunc("/multiplayer", func(writer http.ResponseWriter, request *http.Request) {
 		connection, err := websocket.Accept(writer, request, &websocket.AcceptOptions{

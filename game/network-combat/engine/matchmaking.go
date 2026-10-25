@@ -258,7 +258,7 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 			match.status.Label = "Waiting for a second player."
 		}
 		if state.Started {
-			match.status.Label = "Both players ready — game start is not implemented yet."
+			match.status.Label = "Both players ready — connecting to combat…"
 		}
 		match.openWindow()
 		match.setEnabled()
