@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -190,6 +191,13 @@ func (manager *Manager) startCombat(game *Game) {
 		})
 	})
 	game.relay = relay
+	var defenderID uint64
+	for id := range game.players {
+		if id != game.attackerID {
+			defenderID = id
+		}
+	}
+	log.Printf("Game %d starting in room %q: attacker client=%d (%q), defender client=%d (%q), creator client=%d", game.id, game.room, game.attackerID, game.players[game.attackerID].name, defenderID, game.players[defenderID].name, game.hostID)
 	index := 1
 	for id, user := range game.players {
 		slot := index

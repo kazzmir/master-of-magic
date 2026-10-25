@@ -112,6 +112,7 @@ func (manager *Manager) leave(user *User, clientID uint64) {
 	manager.leaveGame(user, clientID)
 	if lobby := manager.Lobbies[user.room]; lobby != nil {
 		if _, exists := lobby.Users[clientID]; exists {
+			log.Printf("Client %d (%q) left room %q", clientID, user.name, lobby.Name)
 			delete(lobby.Users, clientID)
 			if len(lobby.Users) == 0 && !lobby.persistent {
 				delete(manager.Lobbies, lobby.Name)
@@ -153,8 +154,10 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		return
 	}
 	user := &User{messages: make(chan protocol.Message, 64), connection: connection, name: name}
+	log.Printf("Client %d (%q) connected", connectionID, user.name)
 	defer manager.lock.With(func() error {
 		manager.leave(user, connectionID)
+		log.Printf("Client %d (%q) disconnected", connectionID, user.name)
 		return nil
 	})
 
@@ -250,6 +253,11 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					user.send(protocol.Message{ID: command.ID, Room: room, Error: "Server room limit reached (1000 rooms)"})
 				} else {
 					manager.Lobbies[room] = &Lobby{Public: !command.Private, Name: room, Users: make(map[uint64]*User), passwordHash: passwordHash}
+					visibility := "public"
+					if command.Private {
+						visibility = "private"
+					}
+					log.Printf("Client %d (%q) created room %q (%s, password_protected=%t)", connectionID, user.name, room, visibility, len(passwordHash) != 0)
 					user.send(protocol.Message{Type: "create-room", ID: command.ID, Room: room})
 				}
 			case "join-room":
@@ -272,6 +280,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					// Notify existing members before inserting the joining player.
 					broadcast(lobby, protocol.Message{Type: "user-joined", Room: lobby.Name, ClientID: connectionID, Name: user.name})
 					lobby.Users[connectionID] = user
+					log.Printf("Client %d (%q) joined room %q", connectionID, user.name, lobby.Name)
 					user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID, Games: manager.waitingGames(lobby.Name)})
 					broadcastUsers(lobby)
 				}
