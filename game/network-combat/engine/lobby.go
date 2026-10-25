@@ -165,6 +165,7 @@ type lobbyGame struct {
 	roomsButton                            *widget.Button
 	joinPublicButton                       *widget.Button
 	roomsWindow                            *widget.Window
+	matches                                *matchmakingUI
 	rooms, users                           *widget.List
 	chat                                   *widget.TextArea
 	input                                  *widget.TextInput
@@ -201,7 +202,7 @@ func newLobbyGame() *lobbyGame {
 		return widget.NewButton(widget.ButtonOpts.Text(text, nil, nil),
 			widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) { action() }))
 	}
-	root := lobbyColumn(0, 0, 0, 0, 1)
+	root := lobbyColumn(0, 0, 0, 0, 0.25, 0.75)
 	theme := themes.GetBasicDarkTheme()
 	root.GetWidget().SetTheme(theme)
 	game.ui = ebitenui.UI{Container: root, PrimaryTheme: theme}
@@ -376,7 +377,8 @@ func newLobbyGame() *lobbyGame {
 	game.sendButton = button("Send", game.sendChat)
 	chat.AddChild(label("Chat"), game.chat, game.input, game.sendButton)
 	body.AddChild(users, chat)
-	root.AddChild(body)
+	game.matches = newMatchmakingUI(game, theme)
+	root.AddChild(game.matches.container, body)
 	game.setEnabled()
 	return game
 }
@@ -396,6 +398,7 @@ func (game *lobbyGame) openRooms() {
 }
 
 func (game *lobbyGame) setEnabled() {
+	game.matches.setEnabled()
 	game.server.GetWidget().Disabled = game.session != nil
 	game.joinPublicButton.GetWidget().Disabled = !game.connected || game.room == "Public"
 	game.rooms.GetWidget().Disabled = !game.connected
@@ -427,6 +430,7 @@ func (game *lobbyGame) connect() {
 
 func (game *lobbyGame) clearRoom() {
 	game.room = ""
+	game.matches.reset()
 	game.roomLabel.Label = "Not in a room"
 	game.userIDs = nil
 	game.userNames = nil
@@ -553,6 +557,11 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 	if message.Error != "" {
 		delete(game.pendingRoomPasswords, message.Room)
 		game.status.Label = message.Error
+		game.matches.pending = false
+		game.matches.setEnabled()
+		return
+	}
+	if game.matches.handleMessage(message) {
 		return
 	}
 	switch message.Type {
@@ -581,6 +590,7 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.joinPassword.SetText("")
 		game.roomLabel.Label = "Users in " + message.Room
 		game.status.Label = "Joined " + message.Room
+		game.matches.updateList(message.Games)
 		game.setEnabled()
 	case "leave-room":
 		game.clearRoom()

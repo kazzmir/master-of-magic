@@ -25,6 +25,7 @@ type User struct {
 	connection *websocket.Conn
 	room       string
 	name       string
+	gameID     uint64
 }
 
 type Lobby struct {
@@ -54,8 +55,10 @@ func (cs *CriticalSection) With2[T any](f func() (T, error)) (T, error) {
 // All lobby and membership state is protected by lock. Network writes never
 // hold lock: each connection has a bounded outbound queue and a single writer.
 type Manager struct {
-	lock    CriticalSection
-	Lobbies map[string]*Lobby
+	lock       CriticalSection
+	Lobbies    map[string]*Lobby
+	Games      map[uint64]*Game
+	nextGameID uint64
 }
 
 func (manager *Manager) ListPublicLobbies() []string {
@@ -100,6 +103,7 @@ func broadcastUsers(lobby *Lobby) {
 
 // leave is called with manager.lock held.
 func (manager *Manager) leave(user *User, clientID uint64) {
+	manager.leaveGame(user, clientID)
 	if lobby := manager.Lobbies[user.room]; lobby != nil {
 		if _, exists := lobby.Users[clientID]; exists {
 			delete(lobby.Users, clientID)
@@ -206,6 +210,9 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 			}
 		}
 		manager.lock.With(func() error {
+			if manager.handleGameCommand(user, connectionID, command) {
+				return nil
+			}
 			switch command.Type {
 			case "set-name":
 				name := strings.TrimSpace(command.Name)
@@ -218,6 +225,10 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 						broadcast(lobby, message)
 					} else {
 						user.send(message)
+					}
+					if game := manager.Games[user.gameID]; game != nil {
+						game.broadcastState()
+						manager.broadcastGames(user.room)
 					}
 				}
 			case "create-room":
@@ -238,8 +249,11 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					user.send(protocol.Message{ID: command.ID, Error: "Room is full"})
 				} else {
 					if user.room == lobby.Name {
-						user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID})
+						user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID, Games: manager.waitingGames(lobby.Name)})
 						broadcastUsers(lobby)
+						if game := manager.Games[user.gameID]; game != nil {
+							game.broadcastState()
+						}
 						return nil
 					}
 					manager.leave(user, connectionID)
@@ -247,7 +261,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 					// Notify existing members before inserting the joining player.
 					broadcast(lobby, protocol.Message{Type: "user-joined", Room: lobby.Name, ClientID: connectionID, Name: user.name})
 					lobby.Users[connectionID] = user
-					user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID})
+					user.send(protocol.Message{Type: "join-room", ID: command.ID, Room: lobby.Name, ClientID: connectionID, Games: manager.waitingGames(lobby.Name)})
 					broadcastUsers(lobby)
 				}
 			case "leave-room":

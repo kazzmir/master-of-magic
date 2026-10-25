@@ -14,16 +14,20 @@ const ServerVersion = 1
 // are informational for now. ClientID and Users identify clients, independently
 // of request/reply ID.
 type Message struct {
-	Type     string   `json:"type,omitempty"`
-	ID       uint64   `json:"id,omitempty"`
-	Version  int      `json:"version,omitempty"`
-	Room     string   `json:"room,omitempty"`
-	Private  bool     `json:"private,omitempty"`
-	Password string   `json:"password,omitempty"`
-	Rooms    []string `json:"rooms,omitempty"`
-	Users    []uint64 `json:"users,omitempty"`
-	ClientID uint64   `json:"client_id,omitempty"`
-	Name     string   `json:"name,omitempty"`
+	Type     string      `json:"type,omitempty"`
+	ID       uint64      `json:"id,omitempty"`
+	Version  int         `json:"version,omitempty"`
+	GameID   uint64      `json:"game_id,omitempty"`
+	Games    []GameState `json:"games,omitempty"`
+	Game     *GameState  `json:"game,omitempty"`
+	Ready    bool        `json:"ready,omitempty"`
+	Room     string      `json:"room,omitempty"`
+	Private  bool        `json:"private,omitempty"`
+	Password string      `json:"password,omitempty"`
+	Rooms    []string    `json:"rooms,omitempty"`
+	Users    []uint64    `json:"users,omitempty"`
+	ClientID uint64      `json:"client_id,omitempty"`
+	Name     string      `json:"name,omitempty"`
 	// Names accompanies room-users snapshots; keys are client IDs, not names.
 	Names map[uint64]string `json:"names,omitempty"`
 	Text  string            `json:"text,omitempty"`
