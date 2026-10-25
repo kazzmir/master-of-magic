@@ -22,6 +22,7 @@ import (
 )
 
 const MaxRooms = 1000
+const MaxUsers = 10000
 
 type User struct {
 	messages   chan protocol.Message
@@ -60,6 +61,7 @@ func (cs *CriticalSection) With2[T any](f func() (T, error)) (T, error) {
 type Manager struct {
 	lock         CriticalSection
 	authKey      string
+	userSlots    int // Lobby connections, including pending authentication.
 	Lobbies      map[string]*Lobby
 	Games        map[uint64]*Game
 	Invitations  map[uint64]*GameInvitation
@@ -129,6 +131,11 @@ func validName(name string) bool {
 }
 
 func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID uint64) {
+	if !manager.reserveUserSlot() {
+		connection.Close(websocket.StatusTryAgainLater, "Server user limit reached (10000 users)")
+		return
+	}
+	defer manager.releaseUserSlot()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	connection.SetReadLimit(16 * 1024)
