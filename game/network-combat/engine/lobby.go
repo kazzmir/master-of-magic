@@ -141,6 +141,7 @@ type lobbyGame struct {
 	userNames                              map[uint64]string
 	toggle                                 *widget.Button
 	status, roomLabel                      *widget.Text
+	roomsRefreshed                         *widget.Text
 	rooms, users                           *widget.List
 	chat                                   *widget.TextArea
 	input                                  *widget.TextInput
@@ -221,7 +222,7 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Weights([]float64{0.3, 0.35, 0.35}, []float64{1}),
 	)))
 	rooms := lobbyColumn(0, 1)
-	joinControls := lobbyColumn(0, 0, 0, 0, 0)
+	joinControls := lobbyColumn(0, 0, 0, 0, 0, 0)
 	createControls := lobbyColumn(0, 0, 0, 0, 0)
 	game.rooms = widget.NewList(
 		widget.ListOpts.EntryLabelFunc(func(entry any) string { return entry.(string) }),
@@ -275,7 +276,8 @@ func newLobbyGame() *lobbyGame {
 		widget.TextInputOpts.Validation(func(value string) (bool, *string) { return len(value) <= 72, nil }))
 	game.createButton = button("Create room", game.createRoom)
 	rooms.AddChild(label("Public rooms"), game.rooms)
-	joinControls.AddChild(label("Join a room"), game.joinRoomName, game.joinPassword, game.joinButton, game.refreshButton)
+	game.roomsRefreshed = label("Last refreshed: Never")
+	joinControls.AddChild(label("Join a room"), game.joinRoomName, game.joinPassword, game.joinButton, game.refreshButton, game.roomsRefreshed)
 	createControls.AddChild(label("Create a room"), game.newRoom, game.privateRoom, game.newRoomPassword, game.createButton)
 	roomSection.AddChild(rooms, joinControls, createControls)
 	root.AddChild(roomSection)
@@ -463,6 +465,7 @@ func (game *lobbyGame) handleEvent(event lobbyEvent) {
 		game.status.Label = "Connected as " + message.Name
 		game.setEnabled()
 	case "list-rooms":
+		game.roomsRefreshed.Label = "Last refreshed: " + time.Now().Local().Format("03:04:05 PM")
 		game.rooms.SetEntries(stringEntries(message.Rooms))
 		game.lastRoom = ""
 		game.status.Label = fmt.Sprintf("Connected — %d rooms", len(message.Rooms))

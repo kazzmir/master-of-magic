@@ -169,6 +169,25 @@ func TestLobbyMembershipAnnouncements(t *testing.T) {
 	}
 }
 
+func TestRoomsRefreshTime(t *testing.T) {
+	game := newLobbyGame()
+	if game.roomsRefreshed.Label != "Last refreshed: Never" {
+		t.Fatal(game.roomsRefreshed.Label)
+	}
+	session := &lobbySession{cancel: func() {}}
+	game.session = session
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "list-rooms"}})
+	stamp := strings.TrimPrefix(game.roomsRefreshed.Label, "Last refreshed: ")
+	if _, err := time.ParseInLocation("03:04:05 PM", stamp, time.Local); err != nil {
+		t.Fatal("invalid room refresh timestamp", game.roomsRefreshed.Label, err)
+	}
+	previous := game.roomsRefreshed.Label
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Error: "Refresh failed"}})
+	if game.roomsRefreshed.Label != previous {
+		t.Fatal("failed refresh changed last successful refresh time")
+	}
+}
+
 func TestJoinSelectedRoomButton(t *testing.T) {
 	game := newLobbyGame()
 	if !game.joinButton.GetWidget().Disabled {
