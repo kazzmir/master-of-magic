@@ -10,6 +10,8 @@ import (
     "encoding/json/v2"
     "net/http"
 
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
+
     "github.com/coder/websocket"
     "github.com/coder/websocket/wsjson"
 )
@@ -62,11 +64,30 @@ func (manager *Manager) ListPublicLobbies() []string {
 func handleWebsocket(connection *websocket.Conn, manager *Manager) {
     stop := false
     needAuth := true
+
+    rateLimiter := netlib.RateLimiter{
+        WindowSize: 1 * time.Second,
+        MaxEvents: 2,
+    }
+
+    mainQuit, mainCancel := context.WithCancel(context.Background())
+    defer mainCancel()
+
     for !stop {
         f := func() error {
+            rateLimiter.AddAndLimit(mainQuit)
+
             var message map[string]any
-            quit, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-            defer cancel()
+
+            var quit context.Context
+            var cancel context.CancelFunc
+
+            if needAuth {
+                quit, cancel = context.WithTimeout(context.Background(), 10*time.Second)
+                defer cancel()
+            } else {
+                quit, cancel = mainQuit, mainCancel
+            }
 
             err := wsjson.Read(quit, connection, &message)
             if err != nil {
@@ -116,6 +137,13 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager) {
                         "id": command.Id,
                         "rooms": publicLobbies,
                     })
+                case "join-room":
+                    // TODO
+                    // if room is password protected then require a password
+                case "create-room":
+                    // TODO
+                case "leave-room":
+                    // TODO
                 default:
                     wsjson.Write(quit, connection, WebsocketError{Error: fmt.Sprintf("Unknown type '%s'", command.Type)})
             }
