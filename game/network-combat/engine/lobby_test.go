@@ -305,6 +305,18 @@ func TestLobbySessionHandshake(t *testing.T) {
 			errors <- err
 			return
 		}
+		if err := wsjson.Write(ctx, conn, protocol.Message{Type: "version", Version: 1}); err != nil {
+			errors <- err
+			return
+		}
+		var version protocol.Message
+		if err := wsjson.Read(ctx, conn, &version); err != nil {
+			errors <- err
+			return
+		}
+		if version.Type != "version" || version.Version != 1 {
+			t.Errorf("client version: %+v", version)
+		}
 		var command protocol.Message
 		if err := wsjson.Read(ctx, conn, &command); err != nil {
 			errors <- err
@@ -323,6 +335,7 @@ func TestLobbySessionHandshake(t *testing.T) {
 	events := make(chan lobbyEvent, 8)
 	go runLobbySession(ctx, session, strings.TrimPrefix(server.URL, "http://"), "Player1234", events)
 	var clientID uint64
+	var serverVersion int
 	for {
 		select {
 		case event := <-events:
@@ -332,7 +345,13 @@ func TestLobbySessionHandshake(t *testing.T) {
 			if event.message.Type == "connected" {
 				clientID = event.message.ClientID
 			}
+			if event.message.Type == "version" {
+				serverVersion = event.message.Version
+			}
 			if event.message.Type == "list-rooms" {
+				if serverVersion != 1 {
+					t.Fatal("missing server version", serverVersion)
+				}
 				if clientID != 42 {
 					t.Fatal("missing server-assigned client ID", clientID)
 				}

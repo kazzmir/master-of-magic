@@ -166,6 +166,7 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 	}()
 
 	user.send(protocol.Message{Type: "connected", ClientID: connectionID, Name: user.name})
+	user.send(protocol.Message{Type: "version", Version: protocol.ServerVersion})
 
 	limiter := netlib.RateLimiter{WindowSize: time.Second, MaxEvents: 2}
 	for {
@@ -173,6 +174,10 @@ func handleWebsocket(connection *websocket.Conn, manager *Manager, connectionID 
 		var command protocol.Message
 		if err := wsjson.Read(ctx, connection, &command); err != nil {
 			return
+		}
+		if command.Type == "version" {
+			// Versions are informational until compatibility rules are defined.
+			continue
 		}
 		if command.Type == "list-rooms" {
 			user.send(protocol.Message{Type: "list-rooms", ID: command.ID, Rooms: manager.ListPublicLobbies()})
@@ -271,7 +276,9 @@ func InitMux(mux *http.ServeMux) {
 	}}
 	var counter atomic.Uint64
 	mux.HandleFunc("/multiplayer", func(writer http.ResponseWriter, request *http.Request) {
-		connection, err := websocket.Accept(writer, request, nil)
+		connection, err := websocket.Accept(writer, request, &websocket.AcceptOptions{
+			InsecureSkipVerify: true, // Allow browser clients hosted on any origin.
+		})
 		if err != nil {
 			log.Printf("Error accepting websocket connection: %v", err)
 			return

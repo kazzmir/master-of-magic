@@ -46,6 +46,10 @@ func TestCreateRoom(t *testing.T) {
 		if reply := read(conn); reply.Type != "connected" {
 			t.Fatal(reply)
 		}
+		if reply := read(conn); reply.Type != "version" || reply.Version != 1 {
+			t.Fatal(reply)
+		}
+		write(conn, protocol.Message{Type: "version", Version: protocol.ClientVersion})
 		return conn
 	}
 	creator := connect()

@@ -92,6 +92,24 @@ func runLobbySession(ctx context.Context, session *lobbySession, address, name s
 		emit(lobbyEvent{err: err})
 		return
 	}
+	// Wait for authentication success before advertising the client version.
+	authCtx, authCancel := context.WithTimeout(ctx, 10*time.Second)
+	var authenticated protocol.Message
+	err = wsjson.Read(authCtx, connection, &authenticated)
+	authCancel()
+	if err != nil {
+		emit(lobbyEvent{err: err})
+		return
+	}
+	if authenticated.Type != "connected" {
+		emit(lobbyEvent{err: fmt.Errorf("authentication failed: %s", authenticated.Error)})
+		return
+	}
+	emit(lobbyEvent{message: authenticated})
+	if err := write(protocol.Message{Type: "version", Version: protocol.ClientVersion}); err != nil {
+		emit(lobbyEvent{err: err})
+		return
+	}
 	if err := write(protocol.Message{Type: "list-rooms", ID: 1}); err != nil {
 		emit(lobbyEvent{err: err})
 		return

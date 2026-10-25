@@ -52,6 +52,10 @@ func TestMultiplayerLobby(t *testing.T) {
 	}
 	first := connect("Alice")
 	firstConnected := read(first, "connected")
+	if version := read(first, "version"); version.Version != 1 {
+		t.Fatal(version)
+	}
+	write(first, protocol.Message{Type: "version", Version: protocol.ClientVersion})
 	firstID := firstConnected.ClientID
 	if firstConnected.Name != "Alice" {
 		t.Fatal(firstConnected)
@@ -80,6 +84,11 @@ func TestMultiplayerLobby(t *testing.T) {
 
 	second := connect("Bob")
 	secondID := read(second, "connected").ClientID
+	if version := read(second, "version"); version.Version != 1 {
+		t.Fatal(version)
+	}
+	// A different version is accepted until compatibility checks are defined.
+	write(second, protocol.Message{Type: "version", Version: 999})
 	if secondID == 0 || secondID == firstID {
 		t.Fatal("client IDs must be unique", firstID, secondID)
 	}

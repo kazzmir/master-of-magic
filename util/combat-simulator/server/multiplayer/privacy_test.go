@@ -47,6 +47,10 @@ func TestPrivateAndPasswordRooms(t *testing.T) {
 		t.Cleanup(func() { conn.CloseNow() })
 		write(conn, map[string]string{"auth": "x", "name": "Player1234"})
 		read(conn, "connected")
+		if version := read(conn, "version"); version.Version != 1 {
+			t.Fatal(version)
+		}
+		write(conn, protocol.Message{Type: "version", Version: protocol.ClientVersion})
 		return conn
 	}
 	creator := connect()

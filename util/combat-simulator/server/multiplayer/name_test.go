@@ -56,6 +56,10 @@ func TestServerUserNameLimits(t *testing.T) {
 				if connected.Type != "connected" {
 					t.Fatal(connected)
 				}
+				if version := read(); version.Type != "version" || version.Version != 1 {
+					t.Fatal(version)
+				}
+				write(protocol.Message{Type: "version", Version: protocol.ClientVersion})
 				write(protocol.Message{Type: "set-name", ID: 1, Name: tooLong})
 				if reply := read(); reply.Error == "" || reply.ID != 1 {
 					t.Fatal("overlong rename accepted", reply)
