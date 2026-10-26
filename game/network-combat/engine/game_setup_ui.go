@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strconv"
 
+	uiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
@@ -18,6 +19,8 @@ type gameSetupUI struct {
 	container                                                     *widget.Container
 	budget, mana                                                  *widget.TextInput
 	books                                                         [5]*widget.TextInput
+	bookIcons                                                     [5]*widget.Graphic
+	bookIconsReady                                                bool
 	role, apply, save, addUnit, removeUnit, addSpell, removeSpell *widget.Button
 	unitChoice, spellChoice, portrait                             *widget.ListComboButton
 	army, spells                                                  *widget.List
@@ -166,11 +169,18 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	books := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(5), widget.GridLayoutOpts.Weights([]float64{1, 1, 1, 1, 1}, nil), widget.GridLayoutOpts.Spacing(2, 0),
 	)))
-	for i, name := range []string{"Lif", "Sor", "Nat", "Dth", "Cha"} {
+	for i, name := range protocol.MagicNames {
 		editor.books[i] = number(widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}))
 		editor.books[i].ChangedEvent.AddHandler(func(any) { editor.readNumbers() })
+		tipContent := lobbyColumn(0)
+		tipContent.GetWidget().SetTheme(theme)
+		tipContent.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 255}))
+		tipContent.AddChild(label(name))
+		editor.bookIcons[i] = widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(24, 24)),
+			widget.GraphicOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.RowLayoutData{Position: widget.RowLayoutPositionCenter}),
+				widget.WidgetOpts.ToolTip(widget.NewToolTip(widget.ToolTipOpts.Content(tipContent)))))
 		column := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical), widget.RowLayoutOpts.Spacing(2))))
-		column.AddChild(label(name), editor.books[i])
+		column.AddChild(editor.bookIcons[i], editor.books[i])
 		books.AddChild(column)
 	}
 	wizardPanel.AddChild(label("Wizard portrait (free)"), editor.portrait, portraitRow, label(fmt.Sprintf("Books (%d each; max 11)", protocol.BookCost)), books)
@@ -301,16 +311,13 @@ func (editor *gameSetupUI) showPortrait() {
 			editor.imageCache = &imageCache
 		}
 	}
+	if editor.imageCache != nil && !editor.bookIconsReady {
+		editor.loadBookIcons()
+	}
 	id := editor.draft.Portrait
 	if editor.images[id] == nil && editor.imageCache != nil {
 		if img, err := editor.imageCache.GetImage("wizards.lbx", id, 0); err == nil {
-			thumb := ebiten.NewImage(64, 80)
-			factor := min(64/float64(img.Bounds().Dx()), 80/float64(img.Bounds().Dy()))
-			options := ebiten.DrawImageOptions{}
-			options.GeoM.Scale(factor, factor)
-			options.GeoM.Translate((64-float64(img.Bounds().Dx())*factor)/2, (80-float64(img.Bounds().Dy())*factor)/2)
-			thumb.DrawImage(img, &options)
-			editor.images[id] = thumb
+			editor.images[id] = scaledSetupImage(img, 64, 80)
 		}
 	}
 	if img := editor.images[id]; img != nil {

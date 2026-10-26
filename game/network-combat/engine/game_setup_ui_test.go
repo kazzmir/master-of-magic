@@ -49,6 +49,23 @@ func TestArmyListStaysAboveSpendingFooter(t *testing.T) {
 	}
 }
 
+func TestMagicBookIcons(t *testing.T) {
+	game, _, _ := setupEditorGame(t, 1)
+	editor := game.matches.editor
+	for i, icon := range editor.bookIcons {
+		if icon == nil || icon.Image == nil || icon.Image.Bounds().Dx() != 24 || icon.Image.Bounds().Dy() != 24 {
+			t.Fatal("missing magic book icon", protocol.MagicNames[i])
+		}
+		if len(icon.GetWidget().ToolTips) != 1 {
+			t.Fatal("missing realm-name tooltip", protocol.MagicNames[i])
+		}
+	}
+	if editor.imageCache != nil && !editor.bookIconsReady {
+		t.Fatal("unable to load native magic symbols")
+	}
+	game.Draw(ebiten.NewImage(1100, 700))
+}
+
 func TestHostBudgetAndRoleEditor(t *testing.T) {
 	game, session, state := setupEditorGame(t, 1)
 	editor := game.matches.editor
