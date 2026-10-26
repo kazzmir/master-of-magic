@@ -51,13 +51,13 @@ func TestTwentyUnitArmyLimit(t *testing.T) {
 	}
 }
 
-func TestManaCostsTwenty(t *testing.T) {
+func TestManaCostsTen(t *testing.T) {
 	loadout := Loadout{Mana: 1}
-	if spent, err := ValidateLoadout(loadout, 20, false); err != nil || spent != 20 {
-		t.Fatal("one mana must cost exactly 20 budget", spent, err)
+	if spent, err := ValidateLoadout(loadout, 10, false); err != nil || spent != 10 {
+		t.Fatal("one mana must cost exactly 10 budget", spent, err)
 	}
-	if _, err := ValidateLoadout(loadout, 19, false); err == nil {
-		t.Fatal("one mana purchased with less than 20 budget")
+	if _, err := ValidateLoadout(loadout, 9, false); err == nil {
+		t.Fatal("one mana purchased with less than 10 budget")
 	}
 }
 

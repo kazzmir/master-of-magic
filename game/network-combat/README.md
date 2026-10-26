@@ -25,7 +25,7 @@ three-column portrait picker, then click a portrait to select it:
 
 - Units cost their production cost, or casting cost for summoned units.
 - Magic books cost 100 each, with at most 11 books total.
-- Mana costs 20 per point (at most 1,000,000 points).
+- Mana costs 10 per point (at most 1,000,000 points).
 - Known combat spells cost their research cost / 10, rounded down. Non-arcane spells
   require at least one book in the corresponding realm. Spell labels show casting
   mana after the current book discount: each realm book above seven reduces that
