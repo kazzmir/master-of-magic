@@ -71,6 +71,12 @@ func TestGameWebsocketFlow(t *testing.T) {
 			t.Fatal(state)
 		}
 	}
+	write(host, protocol.Message{Type: "game-chat", GameID: created.ID, Text: "hello guest"})
+	for _, conn := range []*websocket.Conn{host, guest} {
+		if message := readKind(conn, "game-chat"); message.GameID != created.ID || message.ClientID != created.HostID || message.Name != "Host" || message.Text != "hello guest" {
+			t.Fatal(message)
+		}
+	}
 	write(host, protocol.Message{Type: "game-ready", GameID: created.ID, Ready: true})
 	for _, conn := range []*websocket.Conn{host, guest} {
 		if state := readKind(conn, "game-state").Game; state == nil || state.Started || !state.Players[0].Ready {

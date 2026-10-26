@@ -44,7 +44,7 @@ func main() {
 		if !spell.Valid() || !spell.Eligibility.CanCastInCombat(false) {
 			continue
 		}
-		catalog.Spells = append(catalog.Spells, protocol.SpellChoice{Name: spell.Name, Cost: uint64(max(0, spell.ResearchCost)) / 10, Magic: strings.ToLower(spell.Magic.String())})
+		catalog.Spells = append(catalog.Spells, protocol.SpellChoice{Name: spell.Name, Cost: uint64(max(0, spell.ResearchCost)) / 10, Mana: uint64(max(0, spell.Cost(false))), Magic: strings.ToLower(spell.Magic.String())})
 	}
 	sort.Slice(catalog.Units, func(i, j int) bool { return catalog.Units[i].Name < catalog.Units[j].Name })
 	sort.Slice(catalog.Spells, func(i, j int) bool { return catalog.Spells[i].Name < catalog.Spells[j].Name })

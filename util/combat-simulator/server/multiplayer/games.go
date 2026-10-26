@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/binary"
 	"slices"
+	"strings"
 
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 )
@@ -143,7 +144,7 @@ func (manager *Manager) leaveGame(user *User, clientID uint64) {
 // Each player may participate in one game, which also limits hosts to one game.
 func (manager *Manager) handleGameCommand(user *User, clientID uint64, command protocol.Message) bool {
 	switch command.Type {
-	case "list-games", "create-game", "join-game", "game-ready", "leave-game", "game-settings", "game-loadout":
+	case "list-games", "create-game", "join-game", "game-ready", "leave-game", "game-settings", "game-loadout", "game-chat":
 	default:
 		return false
 	}
@@ -183,6 +184,19 @@ func (manager *Manager) handleGameCommand(user *User, clientID uint64, command p
 			}
 			game.broadcastState()
 			manager.broadcastGames(user.room)
+		}
+	case "game-chat":
+		game := manager.Games[user.gameID]
+		text := strings.TrimSpace(command.Text)
+		if game == nil || command.GameID != user.gameID || game.players[clientID] != user {
+			fail("You are not in that game")
+		} else if text == "" || len(text) > 2000 {
+			fail("Chat must contain 1–2000 bytes")
+		} else {
+			message := protocol.Message{Type: "game-chat", GameID: game.id, ClientID: clientID, Name: user.name, Text: text}
+			for _, participant := range game.players {
+				participant.send(message)
+			}
 		}
 	case "game-ready":
 		game := manager.Games[user.gameID]

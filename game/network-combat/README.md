@@ -20,15 +20,23 @@ attacker. The other participant is the defender; the creator can play either
 side. Apply shared settings before marking ready.
 
 Each participant selects and saves their own army, books, mana, known spells,
-and wizard portrait in the game window:
+and wizard portrait in the game window. Click the current portrait to open the
+three-column portrait picker, then click a portrait to select it:
 
 - Units cost their production cost, or casting cost for summoned units.
 - Magic books cost 100 each, with at most 11 books total.
-- Mana costs 20 per point (at most 1,000,000 points).
+- Mana costs 10 per point (at most 1,000,000 points).
 - Known combat spells cost their research cost / 10, rounded down. Non-arcane spells
-  require at least one book in the corresponding realm.
+  require at least one book in the corresponding realm. Spell labels show casting
+  mana after the current book discount: each realm book above seven reduces that
+  realm's casting cost by 10%, rounded down, matching combat. Purchase prices do
+  not change.
 - Wizard portraits are free.
 - Armies must contain 1–20 units to become ready. Drafts may temporarily be empty.
+
+The game window includes private chat for its participants (Enter or Send,
+up to 2,000 bytes per message), with local timestamps. Game chat is separate
+from room chat and does not reset readiness; its local history clears on exit.
 
 The UI shows spending and unsaved changes. Unready before editing a loadout.
 The server validates all selections and spending, restricts shared settings to

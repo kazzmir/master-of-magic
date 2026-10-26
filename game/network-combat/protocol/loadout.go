@@ -11,7 +11,7 @@ import (
 
 const DefaultBudget uint64 = 1000
 const BookCost uint64 = 100
-const ManaCost uint64 = 20
+const ManaCost uint64 = 10
 const MaxArmy = 20
 const MaxMana uint64 = 1_000_000
 
@@ -35,6 +35,7 @@ type UnitChoice struct {
 type SpellChoice struct {
 	Name  string `json:"name"`
 	Cost  uint64 `json:"cost"`
+	Mana  uint64 `json:"mana"`
 	Magic string `json:"magic"`
 }
 type Catalog struct {
@@ -107,7 +108,7 @@ func DefaultLoadout(host bool) Loadout {
 
 // ValidateLoadout computes the complete spending total with overflow checks.
 // Portraits are free; units cost production/casting cost, books cost 100 each,
-// mana costs 20 each, and known combat spells cost research cost / 10 (rounded down).
+// mana costs 10 each, and known combat spells cost research cost / 10 (rounded down).
 func ValidateLoadout(loadout Loadout, budget uint64, requireArmy bool) (uint64, error) {
 	var total uint64
 	spend := func(cost uint64) error {

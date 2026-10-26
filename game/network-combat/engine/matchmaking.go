@@ -28,6 +28,10 @@ type matchmakingUI struct {
 	pending                 bool
 	inviting                bool
 	editor                  *gameSetupUI
+	chat                    *widget.TextArea
+	chatInput               *widget.TextInput
+	chatSend                *widget.Button
+	chatHistory             []string
 }
 
 func makeReadinessIcon(ready bool) *ebiten.Image {
@@ -79,7 +83,7 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 	)
 	match.container.AddChild(header, match.list)
 
-	contents := lobbyColumn(0, 0, 1, 0, 0)
+	contents := lobbyColumn(0, 0, 0.75, 0.25, 0, 0)
 	contents.GetWidget().SetTheme(theme)
 	contents.SetBackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 24, G: 28, B: 36, A: 255}))
 	match.readyIcon, match.notReadyIcon = makeReadinessIcon(true), makeReadinessIcon(false)
@@ -118,13 +122,23 @@ func newMatchmakingUI(game *lobbyGame, theme *widget.Theme) *matchmakingUI {
 	)))
 	buttons.AddChild(match.ready, match.exit)
 	match.editor = newGameSetupUI(match, theme)
-	contents.AddChild(playerRows[0], playerRows[1], match.editor.container, match.status, buttons)
+	contents.AddChild(playerRows[0], playerRows[1], match.editor.container, match.newGameChat(), match.status, buttons)
 	title := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(
 		widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(6)),
 	)), widget.ContainerOpts.BackgroundImage(uiimage.NewNineSliceColor(color.NRGBA{R: 42, G: 50, B: 64, A: 255})))
 	title.AddChild(label("Game setup"))
 	match.window = widget.NewWindow(widget.WindowOpts.Contents(contents), widget.WindowOpts.TitleBar(title, 36),
 		widget.WindowOpts.Draggable(), widget.WindowOpts.Resizeable(), widget.WindowOpts.MinSize(500, 300))
+	frame := match.window.GetContainer().(*widget.Container)
+	frame.GetWidget().SetTheme(theme)
+	frame.SetBackgroundImage(uiimage.NewBorderedNineSliceColor(
+		color.NRGBA{R: 24, G: 28, B: 36, A: 255}, color.NRGBA{R: 230, G: 215, B: 140, A: 255}, 2,
+	))
+	widget.ContainerOpts.Layout(widget.NewGridLayout(
+		widget.GridLayoutOpts.Columns(1),
+		widget.GridLayoutOpts.Stretch([]bool{true}, []bool{false, true}),
+		widget.GridLayoutOpts.Padding(widget.NewInsetsSimple(2)),
+	))(frame)
 	return match
 }
 
@@ -140,6 +154,9 @@ func (match *matchmakingUI) send(message protocol.Message) {
 
 func (match *matchmakingUI) setEnabled() {
 	match.editor.setEnabled()
+	chatEnabled := match.game.connected && match.active.ID != 0 && !match.inviting
+	match.chatInput.GetWidget().Disabled = !chatEnabled
+	match.chatSend.GetWidget().Disabled = !chatEnabled
 	available := match.game.connected && match.game.room != "" && !match.pending
 	match.create.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
 	match.list.GetWidget().Disabled = !available || match.active.ID != 0 || match.inviting
@@ -167,6 +184,7 @@ func (match *matchmakingUI) openWindow() {
 
 func (match *matchmakingUI) showInvitation(targetID uint64) {
 	match.inviting = true
+	match.clearChat()
 	match.editor.container.GetWidget().SetVisibility(widget.Visibility_Hide)
 	match.players[0].Label = match.game.userLabel(match.game.clientID)
 	match.players[1].Label = match.game.userLabel(targetID) + ": waiting for player"
@@ -204,6 +222,7 @@ func (match *matchmakingUI) updateList(states []protocol.GameState) {
 
 func (match *matchmakingUI) reset() {
 	match.active = protocol.GameState{}
+	match.clearChat()
 	match.pending = false
 	match.inviting = false
 	match.window.Close()
@@ -213,6 +232,8 @@ func (match *matchmakingUI) reset() {
 
 func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 	switch message.Type {
+	case "game-chat":
+		match.receiveChat(message)
 	case "list-games":
 		if message.Room == match.game.room && match.game.room != "" {
 			match.updateList(message.Games)
@@ -220,6 +241,7 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 	case "game-left":
 		if message.GameID == match.active.ID {
 			match.active = protocol.GameState{}
+			match.clearChat()
 			match.pending = false
 			match.window.Close()
 			match.setEnabled()
@@ -235,6 +257,9 @@ func (match *matchmakingUI) handleMessage(message protocol.Message) bool {
 		}
 		if !member {
 			return true
+		}
+		if match.active.ID != state.ID {
+			match.clearChat()
 		}
 		match.active = *state
 		match.inviting = false

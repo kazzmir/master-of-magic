@@ -2,6 +2,7 @@ package engine
 
 import (
 	"image"
+	"image/color"
 	"math"
 	"strconv"
 	"strings"
@@ -27,6 +28,87 @@ func setupEditorGame(t *testing.T, clientID uint64) (*lobbyGame, *lobbySession, 
 	return game, session, state
 }
 
+func TestSpellSetupLabels(t *testing.T) {
+	const want = "Fire Bolt 5 mana (6)"
+	if got := spellSetupLabel("Fire Bolt", [5]uint64{}); got != want {
+		t.Fatal(got)
+	}
+	game, _, _ := setupEditorGame(t, 1)
+	game.matches.editor.spellChoice.SetSelectedEntry("Fire Bolt")
+	game.Update()
+	if got := game.matches.editor.spellChoice.Label(); got != want {
+		t.Fatal("spell selection missing mana/budget cost", got)
+	}
+}
+
+func TestKnownSpellManaWarning(t *testing.T) {
+	game, session, state := setupEditorGame(t, 1)
+	state.Players[0].Loadout.Mana = 4
+	state.Players[0].Loadout.Books[4] = 1
+	state.Players[0].Loadout.Spells = []string{"Fire Bolt"}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "game-state", Game: &state}})
+	game.Update()
+	editor := game.matches.editor
+	editor.spells.SetSelectedEntry("Fire Bolt")
+	if got := editor.knownSpellColor("Fire Bolt"); got != (color.NRGBA{R: 255, G: 220, B: 80, A: 255}) {
+		t.Fatal("unaffordable known spell not yellow", got)
+	}
+	editor.mana.SetText("5")
+	game.Update()
+	if editor.knownSpellColor("Fire Bolt") != nil {
+		t.Fatal("spell with exactly enough mana still highlighted")
+	}
+	editor.mana.SetText("4")
+	game.Update()
+	if editor.knownSpellColor("Fire Bolt") == nil {
+		t.Fatal("mana edit did not restore warning")
+	}
+	editor.books[4].SetText("8")
+	game.Update()
+	if editor.knownSpellColor("Fire Bolt") != nil {
+		t.Fatal("book discount did not clear mana warning")
+	}
+	editor.books[4].SetText("1")
+	game.Update()
+	if editor.knownSpellColor("Fire Bolt") == nil {
+		t.Fatal("removing discounted books did not restore warning")
+	}
+	if editor.spells.SelectedEntry() != "Fire Bolt" {
+		t.Fatal("warning refresh changed selected spell")
+	}
+}
+
+func TestSpellLabelsFollowBooks(t *testing.T) {
+	for books, want := range map[uint64]string{0: "Fire Bolt 5 mana (6)", 7: "Fire Bolt 5 mana (6)", 8: "Fire Bolt 4 mana (6)", 9: "Fire Bolt 4 mana (6)", 10: "Fire Bolt 3 mana (6)", 11: "Fire Bolt 3 mana (6)"} {
+		levels := [5]uint64{}
+		levels[4] = books
+		if got := spellSetupLabel("Fire Bolt", levels); got != want {
+			t.Fatal(books, got, want)
+		}
+	}
+	if got := spellSetupLabel("Fire Bolt", [5]uint64{0, 0, 11, 0, 0}); got != "Fire Bolt 5 mana (6)" {
+		t.Fatal("other realm books changed casting cost", got)
+	}
+	game, session, state := setupEditorGame(t, 1)
+	state.Players[0].Loadout.Books[4] = 1
+	state.Players[0].Loadout.Spells = []string{"Fire Bolt"}
+	game.handleEvent(lobbyEvent{session: session, message: protocol.Message{Type: "game-state", Game: &state}})
+	editor := game.matches.editor
+	editor.spellChoice.SetSelectedEntry("Fire Bolt")
+	editor.spells.SetSelectedEntry("Fire Bolt")
+	game.Update()
+	for _, test := range []struct{ books, want string }{{"8", "Fire Bolt 4 mana (6)"}, {"1", "Fire Bolt 5 mana (6)"}} {
+		editor.books[4].SetText(test.books)
+		game.Update()
+		if got := editor.spellChoice.Label(); got != test.want {
+			t.Fatal("casting cost did not refresh immediately", got, test.want)
+		}
+		if editor.spells.SelectedEntry() != "Fire Bolt" {
+			t.Fatal("refresh changed known-spell selection")
+		}
+	}
+}
+
 func TestArmyListStaysAboveSpendingFooter(t *testing.T) {
 	game, _, state := setupEditorGame(t, 1)
 	unit := state.Players[0].Loadout.Army[0]
@@ -47,6 +129,23 @@ func TestArmyListStaysAboveSpendingFooter(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestMagicBookIcons(t *testing.T) {
+	game, _, _ := setupEditorGame(t, 1)
+	editor := game.matches.editor
+	for i, icon := range editor.bookIcons {
+		if icon == nil || icon.Image == nil || icon.Image.Bounds().Dx() != 24 || icon.Image.Bounds().Dy() != 24 {
+			t.Fatal("missing magic book icon", protocol.MagicNames[i])
+		}
+		if len(icon.GetWidget().ToolTips) != 1 {
+			t.Fatal("missing realm-name tooltip", protocol.MagicNames[i])
+		}
+	}
+	if editor.imageCache != nil && !editor.bookIconsReady {
+		t.Fatal("unable to load native magic symbols")
+	}
+	game.Draw(ebiten.NewImage(1100, 700))
 }
 
 func TestHostBudgetAndRoleEditor(t *testing.T) {
@@ -96,7 +195,7 @@ func TestPlayerLoadoutEditor(t *testing.T) {
 	}
 	editor.mana.SetText("12")
 	editor.books[0].SetText("1")
-	editor.portrait.SetSelectedEntry(5)
+	editor.selectPortrait(5)
 	game.Update()
 	editor.unitChoice.SetSelectedEntry(protocol.UnitID{LbxFile: "units2.lbx", Index: 17})
 	game.Update()
