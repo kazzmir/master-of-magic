@@ -24,6 +24,10 @@ arena-itch.io:
 	env GOOS=js GOARCH=wasm go build -o ./game/arena/itch.io/arena.wasm ./game/arena
 	butler push ./game/arena/itch.io kazzmir/battle-arena:html
 
+network-combat-itch.io:
+	env GOOS=js GOARCH=wasm go build -o ./game/network-combat/itch.io/network-combat.wasm ./game/network-combat
+	butler push ./game/network-combat/itch.io kazzmir/magic-combat-multiplayer:html
+
 update:
 	go get -u ./game/magic
 	go mod tidy
