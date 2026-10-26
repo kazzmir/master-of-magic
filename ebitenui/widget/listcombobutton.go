@@ -462,6 +462,21 @@ func (l *ListComboButton) SetSelectedEntry(e interface{}) {
 	}
 }
 
+// RefreshEntryLabels updates the selected label and dropdown rows without
+// changing the selection or emitting selection events.
+func (l *ListComboButton) RefreshEntryLabels() {
+	l.init.Do()
+	if l.button == nil || l.list == nil {
+		return
+	}
+	if entry := l.button.SelectedEntry(); entry != nil {
+		l.button.SetLabel(l.buttonLabelFunc(entry))
+	}
+	for _, entry := range l.list.Entries() {
+		l.list.UpdateEntry(entry)
+	}
+}
+
 func (l *ListComboButton) SelectedEntry() interface{} {
 	l.init.Do()
 	if l.button == nil {

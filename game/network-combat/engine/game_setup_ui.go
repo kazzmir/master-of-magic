@@ -9,6 +9,9 @@ import (
 	uiimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/kazzmir/master-of-magic/game/magic/data"
+	"github.com/kazzmir/master-of-magic/game/magic/setup"
+	"github.com/kazzmir/master-of-magic/game/magic/spellbook"
 	"github.com/kazzmir/master-of-magic/game/magic/util"
 	"github.com/kazzmir/master-of-magic/game/network-combat/protocol"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
@@ -35,6 +38,34 @@ type gameSetupUI struct {
 	draft                                                         protocol.Loadout
 	gameID, attackerID                                            uint64
 	dirty, settingsDirty, invalidText                             bool
+}
+
+func spellSetupMana(spell protocol.SpellChoice, books [5]uint64) int {
+	wizard := &setup.WizardCustom{}
+	for i, count := range books {
+		wizard.Books = append(wizard.Books, data.WizardBook{Magic: data.MagicType(i + 1), Count: int(min(count, 11))})
+	}
+	magic := data.ArcaneMagic
+	if index := protocol.MagicBookIndex(spell.Magic); index >= 0 {
+		magic = data.MagicType(index + 1)
+	}
+	return spellbook.ComputeSpellCost(wizard, spellbook.Spell{CastCost: int(spell.Mana), Magic: magic}, false, false)
+}
+
+func spellSetupLabel(name string, books [5]uint64) string {
+	spell, ok := protocol.FindSpell(name)
+	if !ok {
+		return name
+	}
+	return fmt.Sprintf("%s %d mana (%d)", spell.Name, spellSetupMana(spell, books), spell.Cost)
+}
+
+func (editor *gameSetupUI) knownSpellColor(name string) color.Color {
+	spell, ok := protocol.FindSpell(name)
+	if ok && uint64(spellSetupMana(spell, editor.draft.Books)) > editor.draft.Mana {
+		return color.NRGBA{R: 255, G: 220, B: 80, A: 255}
+	}
+	return nil
 }
 
 func setupRow(weights []float64) *widget.Container {
@@ -126,11 +157,11 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	for _, spell := range protocol.SpellsCatalog() {
 		spellEntries = append(spellEntries, spell.Name)
 	}
-	editor.spellChoice = combo(spellEntries, func(entry any) string {
-		spell, _ := protocol.FindSpell(entry.(string))
-		return fmt.Sprintf("%s (%d)", spell.Name, spell.Cost)
-	}, func(any) {})
-	editor.spells = widget.NewList(widget.ListOpts.EntryLabelFunc(func(entry any) string { return entry.(string) }))
+	editor.spellChoice = combo(spellEntries, func(entry any) string { return spellSetupLabel(entry.(string), editor.draft.Books) }, func(any) {})
+	editor.spells = widget.NewList(
+		widget.ListOpts.EntryLabelFunc(func(entry any) string { return spellSetupLabel(entry.(string), editor.draft.Books) }),
+		widget.ListOpts.EntryTextColorFunc(func(entry any) color.Color { return editor.knownSpellColor(entry.(string)) }),
+	)
 	editor.addSpell = button("Learn spell", func() {
 		if name, ok := editor.spellChoice.SelectedEntry().(string); ok && !slices.Contains(editor.draft.Spells, name) {
 			editor.draft.Spells = append(editor.draft.Spells, name)
@@ -231,11 +262,27 @@ func (editor *gameSetupUI) readNumbers() {
 		loadout.Books[i] = count
 	}
 	editor.invalidText = false
+	booksChanged := loadout.Books != editor.draft.Books
+	manaChanged := loadout.Mana != editor.draft.Mana
 	if !loadout.Equal(editor.draft) {
 		editor.draft = loadout
 		editor.dirty = true
 	}
+	if booksChanged {
+		editor.refreshSpellLabels()
+	} else if manaChanged {
+		editor.refreshKnownSpellRows()
+	}
 	editor.refresh()
+}
+func (editor *gameSetupUI) refreshSpellLabels() {
+	editor.spellChoice.RefreshEntryLabels()
+	editor.refreshKnownSpellRows()
+}
+func (editor *gameSetupUI) refreshKnownSpellRows() {
+	for _, entry := range editor.spells.Entries() {
+		editor.spells.UpdateEntry(entry)
+	}
 }
 func (editor *gameSetupUI) refreshLists() {
 	entries := make([]any, len(editor.draft.Army))
@@ -244,6 +291,7 @@ func (editor *gameSetupUI) refreshLists() {
 	}
 	editor.army.SetEntries(entries)
 	editor.spells.SetEntries(stringEntries(editor.draft.Spells))
+	editor.spellChoice.RefreshEntryLabels()
 }
 func (editor *gameSetupUI) refresh() {
 	spent, err := protocol.ValidateLoadout(editor.draft, editor.match.active.Budget, false)

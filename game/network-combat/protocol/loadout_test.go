@@ -22,7 +22,7 @@ func TestDefaultPortraitRange(t *testing.T) {
 
 func TestSpellCostsResearchDividedByTen(t *testing.T) {
 	spell, ok := FindSpell("Fire Bolt") // Research cost: 60.
-	if !ok || spell.Cost != 6 || spell.Magic != "chaos" {
+	if !ok || spell.Cost != 6 || spell.Mana != 5 || spell.Magic != "chaos" {
 		t.Fatal("incorrect spell price", spell)
 	}
 	loadout := Loadout{Spells: []string{"Fire Bolt"}}

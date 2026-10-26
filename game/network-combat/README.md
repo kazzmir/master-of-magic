@@ -27,7 +27,10 @@ three-column portrait picker, then click a portrait to select it:
 - Magic books cost 100 each, with at most 11 books total.
 - Mana costs 20 per point (at most 1,000,000 points).
 - Known combat spells cost their research cost / 10, rounded down. Non-arcane spells
-  require at least one book in the corresponding realm.
+  require at least one book in the corresponding realm. Spell labels show casting
+  mana after the current book discount: each realm book above seven reduces that
+  realm's casting cost by 10%, rounded down, matching combat. Purchase prices do
+  not change.
 - Wizard portraits are free.
 - Armies must contain 1–20 units to become ready. Drafts may temporarily be empty.
 

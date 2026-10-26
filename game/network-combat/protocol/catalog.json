@@ -1181,451 +1181,541 @@
     {
       "name": "Air Elemental",
       "cost": 130,
+      "mana": 50,
       "magic": "sorcery"
     },
     {
       "name": "Animate Dead",
       "cost": 300,
+      "mana": 50,
       "magic": "death"
     },
     {
       "name": "Banish",
       "cost": 112,
+      "mana": 20,
       "magic": "sorcery"
     },
     {
       "name": "Berserk",
       "cost": 74,
+      "mana": 30,
       "magic": "death"
     },
     {
       "name": "Black Prayer",
       "cost": 45,
+      "mana": 35,
       "magic": "death"
     },
     {
       "name": "Black Sleep",
       "cost": 10,
+      "mana": 15,
       "magic": "death"
     },
     {
       "name": "Bless",
       "cost": 2,
+      "mana": 5,
       "magic": "life"
     },
     {
       "name": "Blur",
       "cost": 30,
+      "mana": 25,
       "magic": "sorcery"
     },
     {
       "name": "Call Chaos",
       "cost": 300,
+      "mana": 75,
       "magic": "chaos"
     },
     {
       "name": "Call Lightning",
       "cost": 300,
+      "mana": 60,
       "magic": "nature"
     },
     {
       "name": "Cloak of Fear",
       "cost": 8,
+      "mana": 12,
       "magic": "death"
     },
     {
       "name": "Confusion",
       "cost": 13,
+      "mana": 15,
       "magic": "sorcery"
     },
     {
       "name": "Counter Magic",
       "cost": 19,
+      "mana": 10,
       "magic": "sorcery"
     },
     {
       "name": "Cracks Call",
       "cost": 30,
+      "mana": 20,
       "magic": "nature"
     },
     {
       "name": "Creature Binding",
       "cost": 225,
+      "mana": 70,
       "magic": "sorcery"
     },
     {
       "name": "Darkness",
       "cost": 25,
+      "mana": 25,
       "magic": "death"
     },
     {
       "name": "Death Spell",
       "cost": 250,
+      "mana": 50,
       "magic": "death"
     },
     {
       "name": "Disenchant Area",
       "cost": 30,
+      "mana": 50,
       "magic": "arcane"
     },
     {
       "name": "Disenchant True",
       "cost": 35,
+      "mana": 50,
       "magic": "sorcery"
     },
     {
       "name": "Disintegrate",
       "cost": 200,
+      "mana": 50,
       "magic": "chaos"
     },
     {
       "name": "Dispel Evil",
       "cost": 45,
+      "mana": 25,
       "magic": "life"
     },
     {
       "name": "Dispel Magic",
       "cost": 10,
+      "mana": 10,
       "magic": "arcane"
     },
     {
       "name": "Dispel Magic True",
       "cost": 4,
+      "mana": 10,
       "magic": "sorcery"
     },
     {
       "name": "Disrupt",
       "cost": 4,
+      "mana": 15,
       "magic": "chaos"
     },
     {
       "name": "Doom Bolt",
       "cost": 112,
+      "mana": 40,
       "magic": "chaos"
     },
     {
       "name": "Earth Elemental",
       "cost": 170,
+      "mana": 60,
       "magic": "nature"
     },
     {
       "name": "Earth to Mud",
       "cost": 2,
+      "mana": 15,
       "magic": "nature"
     },
     {
       "name": "Eldritch Weapon",
       "cost": 13,
+      "mana": 15,
       "magic": "chaos"
     },
     {
       "name": "Elemental Armor",
       "cost": 88,
+      "mana": 35,
       "magic": "nature"
     },
     {
       "name": "Entangle",
       "cost": 225,
+      "mana": 50,
       "magic": "nature"
     },
     {
       "name": "Fire Bolt",
       "cost": 6,
+      "mana": 5,
       "magic": "chaos"
     },
     {
       "name": "Fire Elemental",
       "cost": 25,
+      "mana": 20,
       "magic": "chaos"
     },
     {
       "name": "Fireball",
       "cost": 56,
+      "mana": 15,
       "magic": "chaos"
     },
     {
       "name": "Flame Blade",
       "cost": 45,
+      "mana": 25,
       "magic": "chaos"
     },
     {
       "name": "Flame Strike",
       "cost": 160,
+      "mana": 60,
       "magic": "chaos"
     },
     {
       "name": "Flight",
       "cost": 56,
+      "mana": 25,
       "magic": "sorcery"
     },
     {
       "name": "Giant Strength",
       "cost": 8,
+      "mana": 8,
       "magic": "nature"
     },
     {
       "name": "Guardian Wind",
       "cost": 8,
+      "mana": 10,
       "magic": "sorcery"
     },
     {
       "name": "Haste",
       "cost": 170,
+      "mana": 50,
       "magic": "sorcery"
     },
     {
       "name": "Healing",
       "cost": 10,
+      "mana": 15,
       "magic": "life"
     },
     {
       "name": "Heroism",
       "cost": 25,
+      "mana": 20,
       "magic": "life"
     },
     {
       "name": "High Prayer",
       "cost": 185,
+      "mana": 60,
       "magic": "life"
     },
     {
       "name": "Holy Armor",
       "cost": 13,
+      "mana": 18,
       "magic": "life"
     },
     {
       "name": "Holy Weapon",
       "cost": 8,
+      "mana": 10,
       "magic": "life"
     },
     {
       "name": "Holy Word",
       "cost": 170,
+      "mana": 60,
       "magic": "life"
     },
     {
       "name": "Ice Bolt",
       "cost": 40,
+      "mana": 10,
       "magic": "nature"
     },
     {
       "name": "Immolation",
       "cost": 74,
+      "mana": 30,
       "magic": "chaos"
     },
     {
       "name": "Invisiblity",
       "cost": 96,
+      "mana": 35,
       "magic": "sorcery"
     },
     {
       "name": "Invulnerability",
       "cost": 104,
+      "mana": 40,
       "magic": "life"
     },
     {
       "name": "Iron Skin",
       "cost": 112,
+      "mana": 40,
       "magic": "nature"
     },
     {
       "name": "Life Drain",
       "cost": 16,
+      "mana": 10,
       "magic": "death"
     },
     {
       "name": "Lightning Bolt",
       "cost": 30,
+      "mana": 10,
       "magic": "chaos"
     },
     {
       "name": "Lionheart",
       "cost": 88,
+      "mana": 40,
       "magic": "life"
     },
     {
       "name": "Magic Immunity",
       "cost": 160,
+      "mana": 50,
       "magic": "sorcery"
     },
     {
       "name": "Magic Vortex",
       "cost": 120,
+      "mana": 50,
       "magic": "chaos"
     },
     {
       "name": "Mana Leak",
       "cost": 22,
+      "mana": 20,
       "magic": "death"
     },
     {
       "name": "Mass Healing",
       "cost": 160,
+      "mana": 50,
       "magic": "life"
     },
     {
       "name": "Mass Invisibility",
       "cost": 250,
+      "mana": 80,
       "magic": "sorcery"
     },
     {
       "name": "Metal Fires",
       "cost": 96,
+      "mana": 40,
       "magic": "chaos"
     },
     {
       "name": "Mind Storm",
       "cost": 140,
+      "mana": 35,
       "magic": "sorcery"
     },
     {
       "name": "Petrify",
       "cost": 96,
+      "mana": 35,
       "magic": "nature"
     },
     {
       "name": "Phantom Beast",
       "cost": 80,
+      "mana": 35,
       "magic": "sorcery"
     },
     {
       "name": "Phantom Warriors",
       "cost": 10,
+      "mana": 10,
       "magic": "sorcery"
     },
     {
       "name": "Possession",
       "cost": 35,
+      "mana": 30,
       "magic": "death"
     },
     {
       "name": "Prayer",
       "cost": 80,
+      "mana": 30,
       "magic": "life"
     },
     {
       "name": "Psionic Blast",
       "cost": 25,
+      "mana": 10,
       "magic": "sorcery"
     },
     {
       "name": "Raise Dead",
       "cost": 62,
+      "mana": 35,
       "magic": "life"
     },
     {
       "name": "Recall Hero",
       "cost": 35,
+      "mana": 20,
       "magic": "arcane"
     },
     {
       "name": "Regeneration",
       "cost": 185,
+      "mana": 60,
       "magic": "nature"
     },
     {
       "name": "Resist Elements",
       "cost": 4,
+      "mana": 5,
       "magic": "nature"
     },
     {
       "name": "Resist Magic",
       "cost": 2,
+      "mana": 5,
       "magic": "sorcery"
     },
     {
       "name": "Righteousness",
       "cost": 112,
+      "mana": 40,
       "magic": "life"
     },
     {
       "name": "Shatter",
       "cost": 19,
+      "mana": 12,
       "magic": "chaos"
     },
     {
       "name": "Spell Lock",
       "cost": 45,
+      "mana": 20,
       "magic": "sorcery"
     },
     {
       "name": "Star Fires",
       "cost": 4,
+      "mana": 5,
       "magic": "life"
     },
     {
       "name": "Stone Skin",
       "cost": 16,
+      "mana": 10,
       "magic": "nature"
     },
     {
       "name": "Terror",
       "cost": 19,
+      "mana": 20,
       "magic": "death"
     },
     {
       "name": "True Light",
       "cost": 19,
+      "mana": 20,
       "magic": "life"
     },
     {
       "name": "True Sight",
       "cost": 30,
+      "mana": 20,
       "magic": "life"
     },
     {
       "name": "Vertigo",
       "cost": 40,
+      "mana": 25,
       "magic": "sorcery"
     },
     {
       "name": "Warp Creature",
       "cost": 22,
+      "mana": 18,
       "magic": "chaos"
     },
     {
       "name": "Warp Lightning",
       "cost": 88,
+      "mana": 35,
       "magic": "chaos"
     },
     {
       "name": "Warp Reality",
       "cost": 150,
+      "mana": 50,
       "magic": "chaos"
     },
     {
       "name": "Warp Wood",
       "cost": 2,
+      "mana": 10,
       "magic": "chaos"
     },
     {
       "name": "Weakness",
       "cost": 4,
+      "mana": 5,
       "magic": "death"
     },
     {
       "name": "Web",
       "cost": 10,
+      "mana": 10,
       "magic": "nature"
     },
     {
       "name": "Word of Death",
       "cost": 200,
+      "mana": 40,
       "magic": "death"
     },
     {
       "name": "Word of Recall",
       "cost": 16,
+      "mana": 20,
       "magic": "sorcery"
     },
     {
       "name": "Wrack",
       "cost": 96,
+      "mana": 40,
       "magic": "death"
     },
     {
       "name": "Wraith Form",
       "cost": 88,
+      "mana": 30,
       "magic": "death"
     }
   ]

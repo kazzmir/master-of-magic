@@ -46,6 +46,31 @@ func TestListComboButton_DeferredSelectionReplacement(t *testing.T) {
 	}
 }
 
+func TestListComboButton_RefreshEntryLabels(t *testing.T) {
+	prefix := "old "
+	count := 0
+	label := func(entry any) string { return prefix + entry.(string) }
+	list := newListComboButton(t,
+		ListComboButtonOpts.Entries([]any{"first", "second"}),
+		ListComboButtonOpts.EntryLabelFunc(label, label),
+		ListComboButtonOpts.EntrySelectedHandler(func(*ListComboButtonEntrySelectedEventArgs) { count++ }),
+	)
+	list.SetSelectedEntry("second")
+	event.ExecuteDeferred()
+	before := count
+	prefix = "updated "
+	list.RefreshEntryLabels()
+	event.ExecuteDeferred()
+	if list.Label() != "updated second" || list.SelectedEntry() != "second" || count != before {
+		t.Fatal("label refresh changed selection or emitted events", list.Label(), list.SelectedEntry(), count, before)
+	}
+	for i, button := range listEntryButtons(list.list) {
+		if button.Text().Label != label(list.list.Entries()[i]) {
+			t.Fatal("dropdown row label not refreshed")
+		}
+	}
+}
+
 func TestListComboButton_SetSelectedEntry(t *testing.T) {
 	is := is.New(t)
 

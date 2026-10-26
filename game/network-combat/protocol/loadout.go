@@ -35,6 +35,7 @@ type UnitChoice struct {
 type SpellChoice struct {
 	Name  string `json:"name"`
 	Cost  uint64 `json:"cost"`
+	Mana  uint64 `json:"mana"`
 	Magic string `json:"magic"`
 }
 type Catalog struct {
