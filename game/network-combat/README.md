@@ -30,6 +30,10 @@ and wizard portrait in the game window:
 - Wizard portraits are free.
 - Armies must contain 1–20 units to become ready. Drafts may temporarily be empty.
 
+The game window includes private chat for its participants (Enter or Send,
+up to 2,000 bytes per message), with local timestamps. Game chat is separate
+from room chat and does not reset readiness; its local history clears on exit.
+
 The UI shows spending and unsaved changes. Unready before editing a loadout.
 The server validates all selections and spending, restricts shared settings to
 the creator, and resets both readiness flags after any saved setup change.

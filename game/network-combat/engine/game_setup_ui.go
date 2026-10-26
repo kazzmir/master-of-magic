@@ -43,8 +43,8 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	button := func(value string, action func()) *widget.Button {
 		return widget.NewButton(widget.ButtonOpts.Text(value, nil, nil), widget.ButtonOpts.ClickedHandler(func(*widget.ButtonClickedEventArgs) { action() }))
 	}
-	number := func() *widget.TextInput {
-		return widget.NewTextInput(widget.TextInputOpts.Validation(func(value string) (bool, *string) {
+	number := func(opts ...widget.WidgetOpt) *widget.TextInput {
+		return widget.NewTextInput(widget.TextInputOpts.WidgetOpts(opts...), widget.TextInputOpts.Validation(func(value string) (bool, *string) {
 			if value == "" {
 				return true, nil
 			}
@@ -56,7 +56,7 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 		return widget.NewListComboButton(widget.ListComboButtonOpts.Entries(entries), widget.ListComboButtonOpts.MaxContentHeight(180),
 			widget.ListComboButtonOpts.EntryLabelFunc(text, text), widget.ListComboButtonOpts.EntrySelectedHandler(func(args *widget.ListComboButtonEntrySelectedEventArgs) { changed(args.Entry) }))
 	}
-	editor.container = lobbyColumn(0, 0, 1, 0)
+	editor.container = lobbyColumn(0, 1, 0)
 	editor.container.GetWidget().SetTheme(theme)
 	editor.budget = number()
 	editor.budget.ChangedEvent.AddHandler(func(any) { editor.updateSettingsDirty() })
@@ -80,9 +80,7 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	})
 	settings := setupRow([]float64{0, 1, 1, 0})
 	settings.AddChild(label("Budget per player"), editor.budget, editor.role, editor.apply)
-	caption := label(fmt.Sprintf("Costs: units = production/casting; books = %d; mana = %d; spells = research / 10. Portraits are free.", protocol.BookCost, protocol.ManaCost))
-	widget.TextOpts.MaxWidth(920)(caption)
-	editor.container.AddChild(settings, caption)
+	editor.container.AddChild(settings)
 	columns := setupRow([]float64{0.34, 0.36, 0.3})
 	// Each column's list gets the space left after its controls.
 	armyPanel, spellPanel, wizardPanel := lobbyColumn(0, 0, 0, 1), lobbyColumn(0, 0, 0, 1), lobbyColumn(0, 0, 0, 0, 0)
@@ -162,20 +160,20 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	editor.mana = number()
 	editor.mana.ChangedEvent.AddHandler(func(any) { editor.readNumbers() })
 	manaColumn := lobbyColumn(0, 0)
-	manaColumn.AddChild(label("Mana"), editor.mana)
+	manaColumn.AddChild(label(fmt.Sprintf("Mana (%d each)", protocol.ManaCost)), editor.mana)
 	portraitRow := setupRow([]float64{0, 1})
 	portraitRow.AddChild(editor.portraitImage, manaColumn)
 	books := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(5), widget.GridLayoutOpts.Weights([]float64{1, 1, 1, 1, 1}, nil), widget.GridLayoutOpts.Spacing(2, 0),
 	)))
-	for i, name := range []string{"Life", "Sorc.", "Nat.", "Death", "Chaos"} {
-		editor.books[i] = number()
+	for i, name := range []string{"Lif", "Sor", "Nat", "Dth", "Cha"} {
+		editor.books[i] = number(widget.WidgetOpts.LayoutData(widget.RowLayoutData{Stretch: true}))
 		editor.books[i].ChangedEvent.AddHandler(func(any) { editor.readNumbers() })
 		column := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewRowLayout(widget.RowLayoutOpts.Direction(widget.DirectionVertical), widget.RowLayoutOpts.Spacing(2))))
 		column.AddChild(label(name), editor.books[i])
 		books.AddChild(column)
 	}
-	wizardPanel.AddChild(label("Wizard portrait"), editor.portrait, portraitRow, label("Magic books (11 total max)"), books)
+	wizardPanel.AddChild(label("Wizard portrait (free)"), editor.portrait, portraitRow, label(fmt.Sprintf("Books (%d each; max 11)", protocol.BookCost)), books)
 	columns.AddChild(armyPanel, spellPanel, wizardPanel)
 	editor.container.AddChild(columns)
 	editor.spent = label("")
