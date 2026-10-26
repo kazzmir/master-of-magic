@@ -49,9 +49,11 @@ type List struct {
 	hideHorizontalSlider bool
 	hideVerticalSlider   bool
 
-	entries        []any
-	entryLabelFunc ListEntryLabelFunc
-	entrySortFunc  ListEntrySortFunc
+	entries              []any
+	entryLabelFunc       ListEntryLabelFunc
+	entryContextMenuFunc func(any) *Container
+	entryTextColorFunc   func(any) color.Color
+	entrySortFunc        ListEntrySortFunc
 
 	init            *MultiOnce
 	container       *Container
@@ -347,6 +349,18 @@ func (o ListOptions) EntryLabelFunc(f ListEntryLabelFunc) ListOpt {
 	return func(l *List) {
 		l.entryLabelFunc = f
 	}
+}
+
+// EntryTextColorFunc overrides an entry's text color in all button states.
+// Returning nil uses the list's default colors.
+func (o ListOptions) EntryTextColorFunc(f func(any) color.Color) ListOpt {
+	return func(l *List) { l.entryTextColorFunc = f }
+}
+
+// EntryContextMenuFunc supplies a context menu for each entry. Returning nil
+// disables the context menu for that entry. Menus are rebuilt with the entries.
+func (o ListOptions) EntryContextMenuFunc(f func(any) *Container) ListOpt {
+	return func(l *List) { l.entryContextMenuFunc = f }
 }
 
 func (o ListOptions) EntrySortFunc(f ListEntrySortFunc) ListOpt {
@@ -754,7 +768,7 @@ func (l *List) UpdateEntry(entry any) {
 			oldButton := l.buttons[i]
 			newButton := l.createEntry(entry)
 			newButton.focused = oldButton.focused
-			l.setEntryButtonStyle(newButton, entry == l.selectedEntry)
+			l.setEntryButtonStyle(newButton, entry, entry == l.selectedEntry)
 			l.buttons[i] = newButton
 			l.listContent.ReplaceChild(oldButton, newButton)
 			return
@@ -839,7 +853,7 @@ func (l *List) setSelectedEntry(e any, user bool) {
 		l.selectedEntry = e
 		l.resetFocusIndex()
 		for i := range l.buttons {
-			l.setEntryButtonStyle(l.buttons[i], l.entries[i] == e)
+			l.setEntryButtonStyle(l.buttons[i], l.entries[i], l.entries[i] == e)
 		}
 
 		l.EntrySelectedEvent.Fire(&ListEntrySelectedEventArgs{
@@ -850,12 +864,23 @@ func (l *List) setSelectedEntry(e any, user bool) {
 	}
 }
 
-func (l *List) setEntryButtonStyle(button *Button, selected bool) {
+func (l *List) textColorForEntry(entry any, selected bool) *ButtonTextColor {
+	if l.entryTextColorFunc != nil {
+		if c := l.entryTextColorFunc(entry); c != nil {
+			return &ButtonTextColor{Idle: c, Hover: c, Pressed: c, Disabled: c}
+		}
+	}
+	if selected {
+		return l.computedParams.entryTextColor
+	}
+	return l.computedParams.entryUnselectedTextColor
+}
+
+func (l *List) setEntryButtonStyle(button *Button, entry any, selected bool) {
 	image := l.computedParams.entryUnselectedColor
-	textColor := l.computedParams.entryUnselectedTextColor
+	textColor := l.textColorForEntry(entry, selected)
 	if selected {
 		image = l.computedParams.entrySelectedColor
-		textColor = l.computedParams.entryTextColor
 	}
 	button.definedParams.Image = image
 	button.definedParams.TextColor = textColor
@@ -896,10 +921,13 @@ func (l *List) createEntry(entry any) *Button {
 			Stretch: true,
 		})),
 		ButtonOpts.Image(l.computedParams.entryUnselectedColor),
-		ButtonOpts.Text(l.entryLabelFunc(entry), l.computedParams.EntryFace, l.computedParams.entryUnselectedTextColor),
+		ButtonOpts.Text(l.entryLabelFunc(entry), l.computedParams.EntryFace, l.textColorForEntry(entry, false)),
 		ButtonOpts.TextPadding(l.computedParams.EntryTextPadding),
 		ButtonOpts.TextPosition(*l.computedParams.EntryTextHorizontalPosition, *l.computedParams.EntryTextVerticalPosition),
 	)
+	if l.entryContextMenuFunc != nil {
+		but.GetWidget().ContextMenu = l.entryContextMenuFunc(entry)
+	}
 	events := but.ClickedEvent
 	if *l.computedParams.SelectPressed {
 		events = but.PressedEvent

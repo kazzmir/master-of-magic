@@ -68,24 +68,28 @@ func (rootFS *FS) MkdirAll(path string, perm os.FileMode) error {
 	next := rootFS.dir
 	for _, part := range parts {
 		cur := next
-		cur.mu.Lock()
-		child := cur.children[part]
-		if child == nil {
-			newDir := &dir{
-				name:     part,
-				perm:     perm,
-				children: make(map[string]childI),
-			}
-			cur.children[part] = newDir
-			next = newDir
-		} else {
-			childDir, ok := child.(*dir)
-			if !ok {
-				return fmt.Errorf("not a directory: %s: %w", part, fs.ErrInvalid)
-			}
-			next = childDir
-		}
-		cur.mu.Unlock()
+        err := cur.mu.With(func () error {
+            child := cur.children[part]
+            if child == nil {
+                newDir := &dir{
+                    name:     part,
+                    perm:     perm,
+                    children: make(map[string]childI),
+                }
+                cur.children[part] = newDir
+                next = newDir
+            } else {
+                childDir, ok := child.(*dir)
+                if !ok {
+                    return fmt.Errorf("not a directory: %s: %w", part, fs.ErrInvalid)
+                }
+                next = childDir
+            }
+            return nil
+        })
+        if err != nil {
+            return err
+        }
 	}
 
 	return nil
@@ -99,9 +103,7 @@ func (rootFS *FS) getDir(path string) (*dir, error) {
 
 	cur := rootFS.dir
 	for _, part := range parts {
-		err := func() error {
-			cur.mu.Lock()
-			defer cur.mu.Unlock()
+		err := cur.mu.With(func() error {
 			child := cur.children[part]
 			if child == nil {
 				return fmt.Errorf("not a directory: %s: %w", part, fs.ErrNotExist)
@@ -113,7 +115,7 @@ func (rootFS *FS) getDir(path string) (*dir, error) {
 				cur = childDir
 			}
 			return nil
-		}()
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -136,9 +138,7 @@ func (rootFS *FS) get(path string) (childI, error) {
 		err  error
 	)
 	for i, part := range parts {
-		chld, err = func() (childI, error) {
-			cur.mu.Lock()
-			defer cur.mu.Unlock()
+		chld, err = cur.mu.With2(func() (childI, error) {
 			child := cur.children[part]
 			if child == nil {
 				return nil, fmt.Errorf("not a directory: %s: %w", part, fs.ErrNotExist)
@@ -159,7 +159,7 @@ func (rootFS *FS) get(path string) (childI, error) {
 				cur = childDir
 			}
 			return child, nil
-		}()
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -185,23 +185,23 @@ func (rootFS *FS) create(path string) (*File, error) {
 		return nil, err
 	}
 
-	dir.mu.Lock()
-	defer dir.mu.Unlock()
-	existing := dir.children[filePart]
-	if existing != nil {
-		_, ok := existing.(*File)
-		if !ok {
-			return nil, fmt.Errorf("path is a directory: %s: %w", path, fs.ErrExist)
-		}
-	}
+	return dir.mu.With2(func () (*File, error) {
+        existing := dir.children[filePart]
+        if existing != nil {
+            _, ok := existing.(*File)
+            if !ok {
+                return nil, fmt.Errorf("path is a directory: %s: %w", path, fs.ErrExist)
+            }
+        }
 
-	newFile := &File{
-		name: filePart,
-		perm: 0666,
-	}
-	dir.children[filePart] = newFile
+        newFile := &File{
+            name: filePart,
+            perm: 0666,
+        }
+        dir.children[filePart] = newFile
 
-	return newFile, nil
+        return newFile, nil
+    })
 }
 
 // WriteFile writes data to a file named by filename.
@@ -309,8 +309,24 @@ func (rootFS *FS) Sub(path string) (fs.FS, error) {
 	return &FS{dir: dir}, nil
 }
 
+type CriticalSection struct {
+    mu sync.Mutex
+}
+
+func (cs *CriticalSection) With(f func() error) error {
+    cs.mu.Lock()
+    defer cs.mu.Unlock()
+    return f()
+}
+
+func (cs *CriticalSection) With2[T any](f func() (T, error)) (T, error) {
+    cs.mu.Lock()
+    defer cs.mu.Unlock()
+    return f()
+}
+
 type dir struct {
-	mu       sync.Mutex
+	mu       CriticalSection
 	name     string
 	perm     os.FileMode
 	modTime  time.Time
@@ -341,67 +357,66 @@ func (d *fhDir) Close() error {
 }
 
 func (d *fhDir) ReadDir(n int) ([]fs.DirEntry, error) {
-	d.dir.mu.Lock()
-	defer d.dir.mu.Unlock()
+    return d.dir.mu.With2(func() ([]fs.DirEntry, error) {
+        names := make([]string, 0, len(d.dir.children))
+        for name := range d.dir.children {
+            names = append(names, name)
+        }
+        sort.Strings(names)
 
-	names := make([]string, 0, len(d.dir.children))
-	for name := range d.dir.children {
-		names = append(names, name)
-	}
-	sort.Strings(names)
+        // directory already exhausted
+        if d.idx >= len(names) {
+            if n > 0 {
+                return nil, io.EOF
+            }
+            return nil, nil
+        }
 
-	// directory already exhausted
-	if d.idx >= len(names) {
-		if n > 0 {
-			return nil, io.EOF
-		}
-		return nil, nil
-	}
+        // determine how many entries to read
+        end := len(names)
+        if n > 0 {
+            end = d.idx + n
+            if end > len(names) {
+                end = len(names)
+            }
+        }
 
-	// determine how many entries to read
-	end := len(names)
-	if n > 0 {
-		end = d.idx + n
-		if end > len(names) {
-			end = len(names)
-		}
-	}
+        out := make([]fs.DirEntry, 0, end-d.idx)
 
-	out := make([]fs.DirEntry, 0, end-d.idx)
+        for i := d.idx; i < end; i++ {
+            name := names[i]
+            child := d.dir.children[name]
 
-	for i := d.idx; i < end; i++ {
-		name := names[i]
-		child := d.dir.children[name]
+            f, isFile := child.(*File)
+            if isFile {
+                stat, _ := f.Stat()
+                out = append(out, &dirEntry{
+                    info: stat,
+                })
+            } else {
+                dd := child.(*dir)
+                fi := fileInfo{
+                    name:    dd.name,
+                    size:    4096,
+                    modTime: dd.modTime,
+                    mode:    dd.perm | fs.ModeDir,
+                }
+                out = append(out, &dirEntry{
+                    info: &fi,
+                })
+            }
+        }
 
-		f, isFile := child.(*File)
-		if isFile {
-			stat, _ := f.Stat()
-			out = append(out, &dirEntry{
-				info: stat,
-			})
-		} else {
-			dd := child.(*dir)
-			fi := fileInfo{
-				name:    dd.name,
-				size:    4096,
-				modTime: dd.modTime,
-				mode:    dd.perm | fs.ModeDir,
-			}
-			out = append(out, &dirEntry{
-				info: &fi,
-			})
-		}
-	}
+        d.idx = end
 
-	d.idx = end
+        // return EOF if we've reached the end and caller requested specific count
+        var err error
+        if n > 0 && d.idx >= len(names) {
+            err = io.EOF
+        }
 
-	// return EOF if we've reached the end and caller requested specific count
-	var err error
-	if n > 0 && d.idx >= len(names) {
-		err = io.EOF
-	}
-
-	return out, err
+        return out, err
+    })
 }
 
 type File struct {

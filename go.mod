@@ -3,6 +3,7 @@ module github.com/kazzmir/master-of-magic
 go 1.27.0
 
 require (
+	github.com/coder/websocket v1.8.15
 	github.com/ebitenui/ebitenui v0.7.3
 	github.com/hajimehoshi/ebiten/v2 v2.9.9
 	github.com/stretchr/testify v1.10.0

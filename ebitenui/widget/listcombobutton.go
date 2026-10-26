@@ -425,7 +425,7 @@ func (l *ListComboButton) initWidget() {
 	l.button.Validate()
 
 	l.button.EntrySelectedEvent.AddHandler(func(args interface{}) {
-		if a, ok := args.(*SelectComboButtonEntrySelectedEventArgs); ok {
+		if a, ok := args.(*SelectComboButtonEntrySelectedEventArgs); ok && a.Entry == l.button.SelectedEntry() {
 			l.EntrySelectedEvent.Fire(&ListComboButtonEntrySelectedEventArgs{
 				Button:        l,
 				Entry:         a.Entry,
@@ -435,7 +435,9 @@ func (l *ListComboButton) initWidget() {
 	})
 
 	l.list.EntrySelectedEvent.AddHandler(func(args interface{}) {
-		if a, ok := args.(*ListEntrySelectedEventArgs); ok {
+		// Selection events are deferred. Ignore an older event if another
+		// selection has already replaced it, rather than replaying it forever.
+		if a, ok := args.(*ListEntrySelectedEventArgs); ok && a.Entry == l.list.SelectedEntry() {
 			l.SetContentVisible(false)
 			l.SetSelectedEntry(a.Entry)
 		}

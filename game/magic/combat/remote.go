@@ -3,18 +3,16 @@ package combat
 import (
     "log"
     "time"
-    "net"
-    "io"
     "errors"
     "bytes"
     "context"
-    "encoding/binary"
     "encoding/json/v2"
 
     "github.com/kazzmir/master-of-magic/game/magic/pathfinding"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/lib/fraction"
+    netlib "github.com/kazzmir/master-of-magic/lib/net"
 )
 
 type RemoteType string
@@ -80,12 +78,12 @@ type Remote struct {
     IsServer bool
     // true if remote side is attacker. false if defender
     Attacker bool
-    Peer     net.Conn
+    Peer     netlib.PacketConn
 
     Events chan RemoteEvent
 }
 
-func MakeRemote(isServer bool, isAttacker bool, peer net.Conn) *Remote {
+func MakeRemote(isServer bool, isAttacker bool, peer netlib.PacketConn) *Remote {
     return &Remote{
         IsServer: isServer,
         Attacker: isAttacker,
@@ -113,41 +111,13 @@ func (remote *Remote) SendEvent(event RemoteEvent) error {
         return err
     }
 
-    // write 4-byte uint32 of json data
-    size := uint32(out.Len())
-    err = binary.Write(remote.Peer, binary.BigEndian, size)
+    err = remote.Peer.Send(out.Bytes())
     if err != nil {
         return err
     }
 
-    // write json data
-    _, err = remote.Peer.Write(out.Bytes())
-
     log.Printf("Sent json data: %s", out.String())
-    return err
-}
-
-type RateLimiter struct {
-    WindowSize time.Duration
-    MaxEvents int
-    count int
-    windowStart time.Time
-}
-
-func (limiter *RateLimiter) AddAndLimit(quit context.Context) {
-    limiter.count += 1
-    if time.Now().Sub(limiter.windowStart) > limiter.WindowSize {
-        limiter.windowStart = time.Now()
-        limiter.count = 1
-    }
-
-    if limiter.count > limiter.MaxEvents {
-        select {
-            case <-quit.Done():
-            // sleep for the duration of the window
-            case <-time.After(limiter.WindowSize - time.Now().Sub(limiter.windowStart)):
-        }
-    }
+    return nil
 }
 
 // caller should run this in a goroutine
@@ -155,7 +125,7 @@ func (remote *Remote) RunReceiveLoop(quit context.Context) {
 
     defer remote.Peer.SetReadDeadline(time.Time{}) // clear read deadline on exit
 
-    limiter := RateLimiter{
+    limiter := netlib.RateLimiter{
         WindowSize: 1 * time.Second,
         MaxEvents: 300,
     }
@@ -197,15 +167,7 @@ func (remote *Remote) RunReceiveLoop(quit context.Context) {
 func (remote *Remote) ReceiveEvent() (RemoteEvent, error) {
     // read 4-byte uint32
 
-    var size uint32
-    err := binary.Read(remote.Peer, binary.BigEndian, &size)
-    if err != nil {
-        return nil, err
-    }
-
-    // read json data
-    data := make([]byte, size)
-    _, err = io.ReadFull(remote.Peer, data)
+    data, err := remote.Peer.Read()
     if err != nil {
         return nil, err
     }

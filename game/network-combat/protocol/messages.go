@@ -1,0 +1,44 @@
+// Package protocol defines the JSON messages exchanged over /multiplayer.
+package protocol
+
+const MaxRoomNameLength = 30
+const MaxUserNameLength = 30
+
+const ClientVersion = 1
+const ServerVersion = 1
+
+// Message is used for both commands and events. Replies echo the command ID.
+// Authentication is the initial, separate {"auth":"<shared key>","name":"Player1234"} message. The server
+// replies with "connected" and ClientID, which identifies this connection.
+// Both sides send a "version" message after authentication succeeds; versions
+// are informational for now. ClientID and Users identify clients, independently
+// of request/reply ID.
+type Message struct {
+	Type       string      `json:"type,omitempty"`
+	ID         uint64      `json:"id,omitempty"`
+	Version    int         `json:"version,omitempty"`
+	GameID     uint64      `json:"game_id,omitempty"`
+	TargetID   uint64      `json:"target_id,omitempty"`
+	InviteID   uint64      `json:"invite_id,omitempty"`
+	Accept     bool        `json:"accept,omitempty"`
+	Games      []GameState `json:"games,omitempty"`
+	Game       *GameState  `json:"game,omitempty"`
+	Ready      bool        `json:"ready,omitempty"`
+	Budget     uint64      `json:"budget,omitempty"`
+	AttackerID uint64      `json:"attacker_id,omitempty"`
+	Revision   uint64      `json:"revision,omitempty"`
+	Loadout    *Loadout    `json:"loadout,omitempty"`
+	RelayToken string      `json:"relay_token,omitempty"`
+	Attacker   bool        `json:"attacker,omitempty"`
+	Room       string      `json:"room,omitempty"`
+	Private    bool        `json:"private,omitempty"`
+	Password   string      `json:"password,omitempty"`
+	Rooms      []string    `json:"rooms,omitempty"`
+	Users      []uint64    `json:"users,omitempty"`
+	ClientID   uint64      `json:"client_id,omitempty"`
+	Name       string      `json:"name,omitempty"`
+	// Names accompanies room-users snapshots; keys are client IDs, not names.
+	Names map[uint64]string `json:"names,omitempty"`
+	Text  string            `json:"text,omitempty"`
+	Error string            `json:"error,omitempty"`
+}
