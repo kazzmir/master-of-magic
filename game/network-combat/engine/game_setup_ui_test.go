@@ -113,7 +113,7 @@ func TestPlayerLoadoutEditor(t *testing.T) {
 	}
 	editor.mana.SetText("12")
 	editor.books[0].SetText("1")
-	editor.portrait.SetSelectedEntry(5)
+	editor.selectPortrait(5)
 	game.Update()
 	editor.unitChoice.SetSelectedEntry(protocol.UnitID{LbxFile: "units2.lbx", Index: 17})
 	game.Update()

@@ -22,10 +22,13 @@ type gameSetupUI struct {
 	bookIcons                                                     [5]*widget.Graphic
 	bookIconsReady                                                bool
 	role, apply, save, addUnit, removeUnit, addSpell, removeSpell *widget.Button
-	unitChoice, spellChoice, portrait                             *widget.ListComboButton
+	unitChoice, spellChoice                                       *widget.ListComboButton
+	portraitButton                                                *portraitPreview
+	portraitWindow                                                *widget.Window
+	portraitGrid                                                  *widget.Container
+	portraitChoices                                               []*portraitPreview
 	army, spells                                                  *widget.List
 	spent                                                         *widget.Text
-	portraitImage                                                 *widget.Graphic
 	images                                                        map[int]*ebiten.Image
 	imageCache                                                    *util.ImageCache
 	lookedForAssets                                               bool
@@ -86,7 +89,7 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	editor.container.AddChild(settings)
 	columns := setupRow([]float64{0.34, 0.36, 0.3})
 	// Each column's list gets the space left after its controls.
-	armyPanel, spellPanel, wizardPanel := lobbyColumn(0, 0, 0, 1), lobbyColumn(0, 0, 0, 1), lobbyColumn(0, 0, 0, 0, 0)
+	armyPanel, spellPanel, wizardPanel := lobbyColumn(0, 0, 0, 1), lobbyColumn(0, 0, 0, 1), lobbyColumn(1, 0, 0)
 	unitEntries := []any{}
 	for _, unit := range protocol.UnitsCatalog() {
 		unitEntries = append(unitEntries, unit.ID)
@@ -147,25 +150,13 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 	spellButtons := setupRow([]float64{1, 1})
 	spellButtons.AddChild(editor.addSpell, editor.removeSpell)
 	spellPanel.AddChild(label("Known combat spells"), editor.spellChoice, spellButtons, editor.spells)
-	portraits := []any{}
-	for i := range protocol.PortraitNames {
-		portraits = append(portraits, i)
-	}
-	editor.portrait = combo(portraits, func(entry any) string { return protocol.PortraitNames[entry.(int)] }, func(entry any) {
-		if entry != nil && editor.draft.Portrait != entry.(int) {
-			editor.draft.Portrait = entry.(int)
-			editor.dirty = true
-			editor.showPortrait()
-			editor.refresh()
-		}
-	})
-	editor.portraitImage = widget.NewGraphic(widget.GraphicOpts.Image(ebiten.NewImage(64, 80)))
+	editor.portraitButton = newPortraitPreview(ebiten.NewImage(64, 80), editor.openPortraitPicker)
 	editor.mana = number()
 	editor.mana.ChangedEvent.AddHandler(func(any) { editor.readNumbers() })
 	manaColumn := lobbyColumn(0, 0)
 	manaColumn.AddChild(label(fmt.Sprintf("Mana (%d each)", protocol.ManaCost)), editor.mana)
-	portraitRow := setupRow([]float64{0, 1})
-	portraitRow.AddChild(editor.portraitImage, manaColumn)
+	portraitRow := setupRow([]float64{1, 1})
+	portraitRow.AddChild(editor.portraitButton, manaColumn)
 	books := widget.NewContainer(widget.ContainerOpts.Layout(widget.NewGridLayout(
 		widget.GridLayoutOpts.Columns(5), widget.GridLayoutOpts.Weights([]float64{1, 1, 1, 1, 1}, nil), widget.GridLayoutOpts.Spacing(2, 0),
 	)))
@@ -183,7 +174,7 @@ func newGameSetupUI(match *matchmakingUI, theme *widget.Theme) *gameSetupUI {
 		column.AddChild(editor.bookIcons[i], editor.books[i])
 		books.AddChild(column)
 	}
-	wizardPanel.AddChild(label("Wizard portrait (free)"), editor.portrait, portraitRow, label(fmt.Sprintf("Books (%d each; max 11)", protocol.BookCost)), books)
+	wizardPanel.AddChild(portraitRow, label(fmt.Sprintf("Books (%d each; max 11)", protocol.BookCost)), books)
 	columns.AddChild(armyPanel, spellPanel, wizardPanel)
 	editor.container.AddChild(columns)
 	editor.spent = label("")
@@ -291,7 +282,6 @@ func (editor *gameSetupUI) sync() {
 		for i, input := range editor.books {
 			input.SetText(strconv.FormatUint(editor.draft.Books[i], 10))
 		}
-		editor.portrait.SetSelectedEntry(editor.draft.Portrait)
 		editor.refreshLists()
 		editor.showPortrait()
 	}
@@ -314,15 +304,8 @@ func (editor *gameSetupUI) showPortrait() {
 	if editor.imageCache != nil && !editor.bookIconsReady {
 		editor.loadBookIcons()
 	}
-	id := editor.draft.Portrait
-	if editor.images[id] == nil && editor.imageCache != nil {
-		if img, err := editor.imageCache.GetImage("wizards.lbx", id, 0); err == nil {
-			editor.images[id] = scaledSetupImage(img, 64, 80)
-		}
-	}
-	if img := editor.images[id]; img != nil {
-		editor.portraitImage.Image = img
-	}
+	img := editor.portraitImageFor(editor.draft.Portrait)
+	editor.portraitButton.portrait = img
 }
 func (editor *gameSetupUI) canReady() bool {
 	if own, ok := editor.localPlayer(); ok && own.Ready {
@@ -335,11 +318,14 @@ func (editor *gameSetupUI) setEnabled() {
 	match := editor.match
 	own, _ := editor.localPlayer()
 	editable := match.game.connected && match.active.ID != 0 && !match.active.Started && !match.pending && !match.inviting && !own.Ready
+	if !editable && editor.portraitWindow != nil {
+		editor.portraitWindow.Close()
+	}
 	host := editable && match.game.clientID == match.active.HostID
 	editor.budget.GetWidget().Disabled = !host
 	editor.role.GetWidget().Disabled = !host || len(match.active.Players) < 2
 	editor.apply.GetWidget().Disabled = !host || !editor.settingsDirty
-	for _, w := range []widget.HasWidget{editor.mana, editor.portrait, editor.unitChoice, editor.spellChoice, editor.army, editor.spells, editor.addUnit, editor.removeUnit, editor.addSpell, editor.removeSpell} {
+	for _, w := range []widget.HasWidget{editor.mana, editor.portraitButton, editor.unitChoice, editor.spellChoice, editor.army, editor.spells, editor.addUnit, editor.removeUnit, editor.addSpell, editor.removeSpell} {
 		w.GetWidget().Disabled = !editable
 	}
 	for _, input := range editor.books {

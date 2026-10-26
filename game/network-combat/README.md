@@ -20,7 +20,8 @@ attacker. The other participant is the defender; the creator can play either
 side. Apply shared settings before marking ready.
 
 Each participant selects and saves their own army, books, mana, known spells,
-and wizard portrait in the game window:
+and wizard portrait in the game window. Click the current portrait to open the
+three-column portrait picker, then click a portrait to select it:
 
 - Units cost their production cost, or casting cost for summoned units.
 - Magic books cost 100 each, with at most 11 books total.
