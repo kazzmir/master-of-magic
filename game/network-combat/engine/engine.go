@@ -149,11 +149,15 @@ func CliLaunch() {
 }
 
 func Launch() {
+    local := flag.Bool("local", false, "Connect to localhost:5000 instead of the public server")
+    flag.Parse()
+
     ebiten.SetWindowSize(1100, 700)
     ebiten.SetWindowTitle("Master of Magic — Multiplayer")
     ebiten.SetWindowResizingMode(ebiten.WindowResizingModeEnabled)
     ebiten.SetWindowSizeLimits(800, 500, -1, -1)
     game := newLobbyGame()
+    game.server.SetText(defaultServerURL(*local))
     defer func() { game.disconnect("Disconnected") }()
     game.connect()
     if err := ebiten.RunGame(game); err != nil {

@@ -39,6 +39,25 @@ func chatText(t *testing.T, game *lobbyGame) string {
 	return strings.Join(lines, "\n")
 }
 
+func TestDefaultServerURL(t *testing.T) {
+	for _, test := range []struct {
+		local             bool
+		address, endpoint string
+	}{
+		{false, "wss://magic.jonrafkind.com", "wss://magic.jonrafkind.com/multiplayer"},
+		{true, "localhost:5000", "ws://localhost:5000/multiplayer"},
+	} {
+		address := defaultServerURL(test.local)
+		endpoint, err := multiplayerURL(address)
+		if address != test.address || endpoint != test.endpoint || err != nil {
+			t.Fatal(address, endpoint, err)
+		}
+	}
+	if game := newLobbyGame(); game.server.GetText() != defaultServerURL(false) {
+		t.Fatal("UI did not default to public server")
+	}
+}
+
 func TestMultiplayerURL(t *testing.T) {
 	for input, want := range map[string]string{
 		"localhost:5000":                "ws://localhost:5000/multiplayer",
@@ -371,6 +390,10 @@ func TestJoinPrivateRoomByName(t *testing.T) {
 }
 
 func TestLobbySessionHandshake(t *testing.T) {
+	expectedAuth, err := clientAuthKey()
+	if err != nil {
+		t.Skip("handshake integration requires a configured client auth key")
+	}
 	errors := make(chan error, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/multiplayer" {
@@ -389,7 +412,7 @@ func TestLobbySessionHandshake(t *testing.T) {
 			errors <- err
 			return
 		}
-		if auth["auth"] != clientAuthKey() || auth["auth"] == "" || auth["name"] != "Player1234" {
+		if auth["auth"] != expectedAuth || auth["auth"] == "" || auth["name"] != "Player1234" {
 			t.Error("missing client auth or initial name")
 		}
 		if err := wsjson.Write(ctx, conn, protocol.Message{Type: "connected", ClientID: 42}); err != nil {

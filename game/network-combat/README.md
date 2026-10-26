@@ -1,12 +1,18 @@
 # Network combat setup
 
+The client defaults to `wss://magic.jonrafkind.com`. Use
+`go run ./game/network-combat -local` to connect to `localhost:5000` instead.
+The server address can still be edited in the UI after disconnecting.
+
 ## Authentication
 
 The server uses the trimmed contents of `util/combat-simulator/server/key/key.txt`
 for multiplayer authentication. The client embeds
 `game/network-combat/engine/key/key.txt` and sends its trimmed contents in the
 initial auth message. Keep these files identical and rebuild both binaries after
-changing the key. Empty keys are rejected. Use `wss://` outside local development;
+changing the key. Both binaries embed `key/*` and then read `key/key.txt` from
+that filesystem: a missing key does not prevent compilation, but causes a clear
+runtime error. Empty keys are rejected. Use `wss://` outside local development;
 an embedded shared key is not a substitute for per-user authentication.
 
 The creator sets a **uint64 budget per player** (default: 1,000) and chooses the

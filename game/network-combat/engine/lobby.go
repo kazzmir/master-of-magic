@@ -70,9 +70,9 @@ func runLobbySession(ctx context.Context, session *lobbySession, address, name s
 		case <-ctx.Done():
 		}
 	}
-	authKey := clientAuthKey()
-	if authKey == "" {
-		emit(lobbyEvent{err: fmt.Errorf("client auth key is empty")})
+	authKey, err := clientAuthKey()
+	if err != nil {
+		emit(lobbyEvent{err: err})
 		return
 	}
 	endpoint, err := multiplayerURL(address)
@@ -200,6 +200,13 @@ func lobbyColumn(weights ...float64) *widget.Container {
 	)))
 }
 
+func defaultServerURL(local bool) string {
+	if local {
+		return "localhost:5000"
+	}
+	return "wss://magic.jonrafkind.com"
+}
+
 func newLobbyGame() *lobbyGame {
 	game := &lobbyGame{events: make(chan lobbyEvent, 128)}
 	label := func(text string) *widget.Text {
@@ -217,8 +224,8 @@ func newLobbyGame() *lobbyGame {
 		widget.GridLayoutOpts.Columns(3), widget.GridLayoutOpts.Weights([]float64{0, 1, 0}, nil),
 		widget.GridLayoutOpts.Spacing(8, 0),
 	)))
-	game.server = widget.NewTextInput(widget.TextInputOpts.Placeholder("localhost:5000"))
-	game.server.SetText("localhost:5000")
+	game.server = widget.NewTextInput(widget.TextInputOpts.Placeholder(defaultServerURL(false)))
+	game.server.SetText(defaultServerURL(false))
 	connectionImage := func(r, g, b uint8) *widget.ButtonImage {
 		return &widget.ButtonImage{
 			Idle:         uiimage.NewNineSliceColor(color.NRGBA{R: r, G: g, B: b, A: 255}),
