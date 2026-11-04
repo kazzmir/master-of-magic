@@ -522,7 +522,7 @@ func (loader *DummyGameLoader) LoadNew(path string) error {
     return errors.New("cannot load")
 }
 
-func createArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
+func CreateArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
         log.Printf("Error reading artifacts")
@@ -561,7 +561,7 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
     }
 
     return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
+        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo)
     })
 }
 
@@ -597,7 +597,7 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameS
     }
 
     return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
+        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo, terrainData)
     })
 }
 
