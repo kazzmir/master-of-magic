@@ -45,6 +45,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/load"
     "github.com/kazzmir/master-of-magic/game/magic/serialize"
+    "github.com/kazzmir/master-of-magic/game/magic/auto"
     playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     mouselib "github.com/kazzmir/master-of-magic/lib/mouse"
     "github.com/kazzmir/master-of-magic/game/magic/mainview"
@@ -72,6 +73,7 @@ type GameConfig struct {
     AIMode string `yaml:"aimode"`
     Opponents int `yaml:"opponents"`
     Raiders bool `yaml:"raiders"`
+    AutoMode bool `yaml:"automode"`
 }
 
 func DefaultGameConfig() GameConfig {
@@ -1037,6 +1039,10 @@ func (game *MagicGame) Draw(screen *ebiten.Image) {
     mouse.Mouse.Draw(screen)
 }
 
+func runAutoMode(config GameConfig) error {
+    return auto.RunAutoGame()
+}
+
 func loadGameConfigFromFile(path string) GameConfig {
     // try to load as yaml file, if not then try to load as ini file (x=y format)
 
@@ -1073,6 +1079,7 @@ func loadGameConfig() GameConfig {
     var watchMode bool
     var trainMode bool
     var aiMode string
+    var autoMode bool
     var config string
 
     flag.StringVar(&dataPath, "data", "", "path to master of magic lbx data files. Give either a directory or a zip file. Data is searched for in the current directory if not given.")
@@ -1084,6 +1091,7 @@ func loadGameConfig() GameConfig {
     flag.BoolVar(&trainMode, "train", false, "train the AI in watch mode. model weights are saved as ai.json")
     flag.StringVar(&aiMode, "ai", "", "select ai mode. 'default', 'enemy2', 'net'")
     flag.StringVar(&config, "config", "", "path to config file (yaml or ini)")
+    flag.BoolVar(&autoMode, "auto", false, "run headless ai game")
     flag.Parse()
 
     out := DefaultGameConfig()
@@ -1102,6 +1110,7 @@ func loadGameConfig() GameConfig {
             case f.Name == "watch": out.WatchMode = watchMode
             case f.Name == "ai" && aiMode != "": out.AIMode = aiMode
             case f.Name == "train": out.TrainMode = trainMode
+            case f.Name == "auto": out.AutoMode = autoMode
         }
     })
 
@@ -1118,6 +1127,11 @@ func main() {
             log.Printf("Starting pprof server on localhost:8000")
             log.Println(http.ListenAndServe("localhost:8000", nil))
         }()
+    }
+
+    if config.AutoMode {
+        runAutoMode(config)
+        return
     }
 
     ebiten.SetWindowSize(data.ScreenWidth * 4, data.ScreenHeight * 4)
