@@ -299,7 +299,7 @@ func initializePlayer(game *gamelib.Game, wizard setup.WizardCustom, isHuman boo
 
     player := game.AddPlayer(wizard, isHuman)
 
-    cityName := game.SuggestCityName(player.Wizard.Race)
+    cityName := game.Model.SuggestCityName(player.Wizard.Race)
 
     cityX, cityY := findCityLocation(game, startingPlane, area)
     area[image.Pt(cityX, cityY)] = false
@@ -384,7 +384,7 @@ func initializeNeutralPlayer(game *gamelib.Game, arcanusCityArea gamelib.CityVal
 
             // should every neutral town be a random race, or should they all be related?
             race := randomRace()
-            cityName := game.SuggestCityName(race)
+            cityName := game.Model.SuggestCityName(race)
             city := citylib.MakeCity(cityName, cityX, cityY, race, game.Model.BuildingInfo, game.GetMap(plane), game.Model, player)
             city.Population = rand.N(5) * 1000 + 2000
             city.ProducingBuilding = buildinglib.BuildingHousing

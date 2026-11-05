@@ -463,7 +463,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
 
                 stack := player.FindStack(tileX, tileY, game.Model.Plane)
                 if stack != nil {
-                    err := game.PlaneShift(stack, player)
+                    err := game.Model.PlaneShift(stack, player)
                     if err != nil {
                         game.Events <- &GameEventNotice{Message: fmt.Sprintf("%v", err)}
                     } else {
@@ -860,7 +860,7 @@ func (game *Game) doCastSpell(player *playerlib.Player, spell spellbook.Spell) {
                     return false
                 }
 
-                if unit.GetPlane() != summonCity.Plane && game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+                if unit.GetPlane() != summonCity.Plane && game.Model.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
                     game.Events <- &GameEventNotice{Message: "Your unit cannot planar travel to this location"}
                     return false
                 }
@@ -1003,7 +1003,7 @@ func (game *Game) MakeResurrectionUI(caster *playerlib.Player, heroes []*herolib
                 cancel()
                 hero.SetStatus(herolib.StatusEmployed)
                 caster.AddHeroToSummoningCircle(hero)
-                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+                game.Model.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
 
                 summoningCity := caster.FindSummoningCity()
                 if summoningCity != nil {
@@ -1811,7 +1811,7 @@ func (game *Game) doSummonUnit(player *playerlib.Player, unit units.Unit) {
         overworldUnit := units.MakeOverworldUnitFromUnit(unit, summonCity.X, summonCity.Y, summonCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
         player.DidSummonUnit(overworldUnit)
         newUnit := player.AddUnit(overworldUnit)
-        game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
+        game.Model.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
 
         if player.SelectedStack == nil {
             player.SelectedStack = player.FindStack(newUnit.GetX(), newUnit.GetY(), newUnit.GetPlane())

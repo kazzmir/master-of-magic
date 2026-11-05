@@ -56,9 +56,15 @@ func RunAutoGame() error {
 
     events := make(chan game.GameEvent, 100)
 
-    gameModel := game.MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo)
+    gameModel := game.MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
 
     for range 100 {
+
+        for _, player := range gameModel.Players {
+            out := player.AIBehavior.Update(player, gameModel)
+            gameModel.ApplyAIDecisions(player, out)
+        }
+
         gameModel.TurnNumber += 1
     }
 

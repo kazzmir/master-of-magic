@@ -119,6 +119,9 @@ type GameEventNextTurn struct {
 type GameEventDefaultItemEditor struct {
 }
 
+type GameEventDiscoverWizards struct {
+}
+
 type GameEventSpellOfMasteryComplete struct {
     Player *playerlib.Player
 }
@@ -561,7 +564,7 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
     }
 
     return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo)
+        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
     })
 }
 
@@ -832,50 +835,6 @@ func chooseCityName(allNames []string, choices []string) string {
 
         suffix += 1
     }
-}
-
-func (game *Game) SuggestCityName(race data.Race) (string) {
-    allCities := game.Model.AllCities()
-    fallback := fmt.Sprintf("City %d", len(allCities)+1)
-
-    predefinedNames, err := citylib.ReadCityNames(game.Cache)
-    if err != nil {
-        log.Printf("Unable to read predefined city names: %v", err)
-        return fallback
-    }
-
-    if len(predefinedNames) % 14 != 0 {
-        log.Printf("Predefined city names not dividable by number of races")
-        return fallback
-    }
-
-    raceIndex := 0
-    switch race {
-        case data.RaceBarbarian: raceIndex = 0
-        case data.RaceBeastmen: raceIndex = 1
-        case data.RaceDarkElf: raceIndex = 2
-        case data.RaceDraconian: raceIndex = 3
-        case data.RaceDwarf: raceIndex = 4
-        case data.RaceGnoll: raceIndex = 5
-        case data.RaceHalfling: raceIndex = 6
-        case data.RaceHighElf: raceIndex = 7
-        case data.RaceHighMen: raceIndex = 8
-        case data.RaceKlackon: raceIndex = 9
-        case data.RaceLizard: raceIndex = 10
-        case data.RaceNomad: raceIndex = 11
-        case data.RaceOrc: raceIndex = 12
-        case data.RaceTroll: raceIndex = 13
-    }
-
-    var existingNames []string
-    for _, city := range allCities {
-        existingNames = append(existingNames, city.Name)
-    }
-
-    entriesPerRace := len(predefinedNames) / 14
-    choices := predefinedNames[raceIndex * entriesPerRace: (raceIndex + 1) * entriesPerRace]
-
-    return chooseCityName(existingNames, choices)
 }
 
 // FIXME: probably make this an iterator
@@ -1876,7 +1835,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
                 name := game.doInput(yield, "Hero Name", hero.GetName(), 70, 50)
                 hero.SetName(name)
 
-                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+                game.Model.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
 
                 if player.SelectedStack == nil {
                     player.SelectedStack = player.FindStack(hero.GetX(), hero.GetY(), hero.GetPlane())
@@ -2048,7 +2007,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         if hired {
             for _, unit := range units {
                 player.AddUnit(unit)
-                game.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
+                game.Model.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
             }
             player.Gold -= cost
             game.RefreshUI()
@@ -2599,6 +2558,8 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                                     game.WatchUI = game.MakeWatchUI()
                                 }
                         }
+                    case *GameEventDiscoverWizards:
+                        game.discoverWizards(yield)
                     case *GameEventHireHero:
                         hire := event.(*GameEventHireHero)
                         player := hire.Player
@@ -2662,7 +2623,7 @@ func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
                                 }
                             }
 
-                            if !game.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
+                            if !game.Model.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
                                 select {
                                     case game.Events <- &GameEventMoveUnit{Player: player}:
                                     default:
@@ -3497,79 +3458,6 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.Model.CurrentMap().WrapX(x), y)
 }
 
-func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
-    stack, player := game.Model.FindStack(x, y, plane)
-    if stack == nil {
-        return
-    }
-
-    count := len(stack.Units())
-    if count <= data.MaxUnitsInStack {
-        return
-    }
-
-    // try to move random units to a nearby tile
-    stackUnits := stack.Units()
-    for _, i := range rand.Perm(len(stackUnits)) {
-        unit := stackUnits[i]
-
-        positions := game.Model.FindEscapePosition(player, unit)
-
-        if len(positions) != 0 {
-            // set to a random position
-            position := positions[rand.IntN(len(positions))]
-            unit.SetX(position.X)
-            unit.SetY(position.Y)
-
-            // merge stacks
-            stack.RemoveUnit(unit)
-            player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
-            allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
-            for i := 1; i < len(allStacks); i++ {
-                player.MergeStacks(allStacks[0], allStacks[i])
-            }
-
-            count -= 1
-            if count <= data.MaxUnitsInStack {
-                break
-            }
-        }
-    }
-
-    // kill units until enough room
-    if count > data.MaxUnitsInStack {
-        stackUnits = stack.Units()
-        slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
-            // non-heros before heroes
-            if unitA.IsHero() != unitB.IsHero() {
-                if unitA.IsHero() {
-                    return 1
-                }
-                return -1
-            }
-
-            // low-leveled heroes first
-            if unitA.IsHero() && unitB.IsHero() {
-                return unitA.GetExperience() - unitB.GetExperience()
-            }
-
-            // low production or casting cost first
-            minCostA := min(unitA.GetRawUnit().ProductionCost, unitA.GetRawUnit().CastingCost)
-            minCostB := min(unitB.GetRawUnit().ProductionCost, unitB.GetRawUnit().CastingCost)
-            return minCostA - minCostB
-        })
-
-        for _, unit := range stackUnits {
-            log.Printf("Unit %v killed by ResolveStack", unit)
-            player.RemoveUnit(unit)
-            count -= 1
-            if count <= data.MaxUnitsInStack {
-                break
-            }
-        }
-    }
-}
-
 // returns true if the city was razed, and the amount of gold plundered from the city
 func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
     raze := false
@@ -4246,88 +4134,7 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         // log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
-        for _, decision := range decisions {
-            switch decision.(type) {
-                case *playerlib.AIMoveStackDecision:
-                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                    useStack := moveDecision.Stack
-
-                    if len(moveDecision.Units) > 0 && len(moveDecision.Units) != len(moveDecision.Stack.Units()) {
-                        useStack = player.SplitStack(moveDecision.Stack, moveDecision.Units)
-                    }
-
-                    useStack.CurrentPath = moveDecision.Path
-
-                // mainly for the raider ai
-                case *playerlib.AICreateUnitDecision:
-                    create := decision.(*playerlib.AICreateUnitDecision)
-                    log.Printf("ai %v creating %+v", player.Wizard.Name, create)
-
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
-                    if create.Patrol {
-                        overworldUnit.SetBusy(units.BusyStatusPatrol)
-                    }
-                    player.CreateUnit(overworldUnit)
-                    game.ResolveStackAt(create.X, create.Y, create.Plane)
-                case *playerlib.AIUpdateCityDecision:
-                    update := decision.(*playerlib.AIUpdateCityDecision)
-
-                    update.City.Farmers = update.Farmers
-                    update.City.Workers = update.Workers
-                    update.City.ResetCitizens()
-
-                case *playerlib.AIBuildOutpostDecision:
-                    build := decision.(*playerlib.AIBuildOutpostDecision)
-
-                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
-                    if stack != nil {
-                        game.CreateOutpost(stack, player)
-                    }
-                case *playerlib.AIBuildRoadDecision:
-                    build := decision.(*playerlib.AIBuildRoadDecision)
-                    roadStack := build.Stack
-                    path := game.FindRoadPath(roadStack.X(), roadStack.Y(), build.X, build.Y, player, roadStack, player.GetFog(roadStack.Plane()))
-                    if len(path) > 0 {
-                        for _, unit := range roadStack.Units() {
-                            if unit.HasAbility(data.AbilityConstruction) {
-                                unit.SetBuildRoadPath(path)
-                            }
-                        }
-                        game.MaybeBuildRoads(roadStack, player)
-                    }
-                case *playerlib.AIMeldNodeDecision:
-                    meld := decision.(*playerlib.AIMeldNodeDecision)
-                    game.tryMeldNode(meld.Stack, player)
-                case *playerlib.AIPlaneShiftDecision:
-                    shift := decision.(*playerlib.AIPlaneShiftDecision)
-                    if err := game.PlaneShift(shift.Stack, player); err == nil {
-                        shift.Stack.CurrentPath = nil
-                    }
-                case *playerlib.AIProduceDecision:
-                    produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("Year=%v AI %v(%v) city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
-                    produce.City.ProducingBuilding = produce.Building
-                    produce.City.ProducingUnit = produce.Unit
-                case *playerlib.AIResearchSpellDecision:
-                    research := decision.(*playerlib.AIResearchSpellDecision)
-                    if player.ResearchingSpell.Invalid() {
-                        player.ResearchingSpell = research.Spell
-                    }
-
-                case *playerlib.AICastSpellDecision:
-                    cast := decision.(*playerlib.AICastSpellDecision)
-
-                    if player.CastingSpell.Invalid() {
-                        player.CastingSpell = cast.Spell
-                    }
-                case *playerlib.AICastUnitSpellDecision:
-                    cast := decision.(*playerlib.AICastUnitSpellDecision)
-                    if player.CastingSpell.Invalid() {
-                        player.CastingSpell = cast.Spell
-                        player.CastingSpellTarget = cast.Target
-                    }
-            }
-        }
+        game.Model.ApplyAIDecisions(player, decisions)
 
         moveHandlers := MakeMoveHandlers(game, yield)
 
@@ -4343,13 +4150,13 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, stack := range slices.Clone(player.Stacks) {
             for _, unit := range stack.Units() {
                 if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
-                    game.MaybeBuildRoads(stack, player)
+                    game.Model.MaybeBuildRoads(stack, player)
                     break
                 }
             }
         }
         for _, stack := range slices.Clone(player.Stacks) {
-            game.tryMeldNode(stack, player)
+            game.Model.tryMeldNode(stack, player)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
@@ -5848,65 +5655,6 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     return production
 }
 
-func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    cityName := game.SuggestCityName(settlers.GetRace())
-
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.Model.BuildingInfo, game.GetMap(settlers.GetPlane()), game.Model, player)
-    newCity.Plane = settlers.GetPlane()
-    newCity.Population = 300
-    newCity.Outpost = true
-    newCity.ProducingBuilding = buildinglib.BuildingHousing
-    newCity.ProducingUnit = units.UnitNone
-
-    game.GetMap(settlers.GetPlane()).SetRoad(settlers.GetX(), settlers.GetY(), settlers.GetPlane() == data.PlaneMyrror)
-
-    player.RemoveUnit(settlers)
-    player.SelectedStack = nil
-    game.RefreshUI()
-    player.AddCity(newCity)
-
-    stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
-
-    select {
-        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack, Player: player}:
-        default:
-    }
-
-    return newCity
-}
-
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode) bool {
-    melded := node.Meld(player, unit.GetRawUnit())
-    // whether melding succeeded or not the melding unit is removed
-    player.RemoveUnit(unit)
-    return melded
-}
-
-// tryMeldNode melds the magic node the given stack is standing on, if the stack
-// contains a unit able to meld (a magic spirit) and the node is unowned by this
-// player and not warped. Returns true if a meld happened.
-func (game *Game) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
-    useMap := game.GetMap(stack.Plane())
-    if useMap == nil {
-        return false
-    }
-    if useMap.GetEncounter(stack.X(), stack.Y()) != nil {
-        return false
-    }
-    node := useMap.GetMagicNode(stack.X(), stack.Y())
-    if node == nil || node.Warped || node.MeldingWizard == player {
-        return false
-    }
-    for _, unit := range stack.Units() {
-        if unit.HasAbility(data.AbilityMeld) {
-            if game.DoMeld(unit, player, node) {
-                return true
-            }
-        }
-    }
-    return false
-}
-
 func (game *Game) DoBuildAction(player *playerlib.Player){
     if player.SelectedStack != nil {
         var powers UnitBuildPowers
@@ -5921,7 +5669,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 if game.Model.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
-                    game.CreateOutpost(settlers, player)
+                    game.Model.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     return
                 }
@@ -5933,7 +5681,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             if node != nil {
                 for _, melder := range player.SelectedStack.ActiveUnits() {
                     if melder.HasAbility(data.AbilityMeld) && !node.Warped {
-                        game.DoMeld(melder, player, node)
+                        game.Model.DoMeld(melder, player, node)
                         game.RefreshUI()
                         return
                     }
@@ -5974,72 +5722,9 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
     }
 }
 
-func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
-    return slices.ContainsFunc(game.Model.Players, func (player *playerlib.Player) bool {
-        return player.GlobalEnchantments.Contains(enchantment)
-    })
-}
-
-func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
-    if game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        return errors.New("Cannot plane shift while the Planar Seal is in effect")
-    }
-
-    canMove := false
-
-    cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
-
-    mapPlane := game.GetMap(stack.Plane().Opposite())
-
-    tile := mapPlane.GetTile(stack.X(), stack.Y())
-    canMove = cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
-
-    if cityOppositePlane != nil {
-        for _, unit := range stack.ActiveUnits() {
-            if !cityOppositePlane.CanEnter(unit) {
-                canMove = false
-                break
-            }
-        }
-    }
-
-    // cannot planar travel if there is an encounter node
-    if canMove && mapPlane.GetEncounter(stack.X(), stack.Y()) != nil {
-        canMove = false
-    }
-
-    if canMove && tile.Tile.IsWater() && stack.AllLandWalkers() {
-        canMove = false
-    }
-
-    cityStackInfo := game.Model.ComputeCityStackInfo()
-
-    if cityStackInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane().Opposite(), player) {
-        canMove = false
-    }
-
-    // no matter what the reason, just emit a message that planar travel is not possible
-    if !canMove {
-        return errors.New("The selected units cannot planar travel at this location.")
-    }
-
-    if canMove {
-        // if there is a friendly stack at the new location then merge the stacks
-        mergeStack := cityStackInfo.FindFriendlyStack(stack.X(), stack.Y(), stack.Plane().Opposite(), player)
-        stack.SetPlane(stack.Plane().Opposite())
-        if mergeStack != nil {
-            player.MergeStacks(stack, mergeStack)
-        }
-        player.UpdateFogVisibility()
-        game.discoverWizards(nil)
-    }
-
-    return nil
-}
-
 func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
-    if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+    if !game.Model.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
         player := game.Model.GetHumanPlayer()
 
         stack := player.SelectedStack
@@ -6070,7 +5755,7 @@ func (game *Game) doPlanarTraval() {
 
             moved := false
             if travelEnabled {
-                err := game.PlaneShift(activeStack, player)
+                err := game.Model.PlaneShift(activeStack, player)
                 if err != nil {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
@@ -7067,7 +6752,7 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
         }
 
         if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) == 0 {
-            if game.MaybeBuildRoads(player.SelectedStack, player) {
+            if game.Model.MaybeBuildRoads(player.SelectedStack, player) {
                 choose = true
             }
         }
@@ -7085,72 +6770,6 @@ func (game *Game) DoNextUnit(player *playerlib.Player){
 
         game.RefreshUI()
     }
-}
-
-// return true if the stack is going to build a road this turn
-func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.Player) bool {
-    var buildRoadUnits []units.StackUnit
-    for _, unit := range stack.Units() {
-        if len(unit.GetBuildRoadPath()) > 0 {
-            buildRoadUnits = append(buildRoadUnits, unit)
-        }
-    }
-
-    if len(buildRoadUnits) > 0 {
-        if len(buildRoadUnits) < len(stack.Units()) {
-            stack = player.SplitStack(stack, buildRoadUnits)
-        }
-
-        stack.EnableMovers()
-        roadPath := buildRoadUnits[0].GetBuildRoadPath()
-        stack.CurrentPath = nil
-
-        useMap := game.GetMap(stack.Plane())
-
-        hasRoad := useMap.ContainsRoad(stack.X(), stack.Y())
-
-        // build a road here
-        if !hasRoad {
-            for _, unit := range buildRoadUnits {
-                unit.SetBusy(units.BusyStatusBuildRoad)
-                stack.SetActive(unit, false)
-                unit.SetBuildRoadPath(roadPath[1:])
-            }
-
-            return true
-        } else {
-
-            // i=1
-            // [R, X, X]
-            // path = [R, X]
-            // roadPath = [X, X]
-
-            // move along the road path until we find a point that doesn't have a road
-            i := 0
-            for i < len(roadPath) {
-                point := roadPath[i]
-                hasRoad := useMap.ContainsRoad(point.X, point.Y)
-                if !hasRoad {
-                    break
-                }
-
-                i += 1
-
-                // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
-            }
-
-            if i >= len(roadPath) {
-                i = len(roadPath) - 1
-            }
-
-            stack.CurrentPath = roadPath[:i+1]
-            for _, unit := range buildRoadUnits {
-                unit.SetBuildRoadPath(roadPath[i:])
-            }
-        }
-    }
-
-    return false
 }
 
 /* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
@@ -7559,7 +7178,7 @@ func (game *Game) StartPlayerTurn(player *playerlib.Player) {
 
                     overworldUnit.AddExperience(newUnit.Experience)
                     player.CreateUnit(overworldUnit)
-                    game.ResolveStackAt(city.X, city.Y, city.Plane)
+                    game.Model.ResolveStackAt(city.X, city.Y, city.Plane)
 
                     if player.AIBehavior != nil {
                         player.AIBehavior.ProducedUnit(city, player)
@@ -8629,7 +8248,7 @@ func (game *Game) RelocateUnit(player *playerlib.Player, unit units.StackUnit) {
         player.MergeStacks(allStacks[0], allStacks[i])
     }
 
-    game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
+    game.Model.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
 
     unit.SetBusy(units.BusyStatusNone)
 }
