@@ -9,6 +9,7 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/lib/lbx"
@@ -56,7 +57,9 @@ func RunAutoGame() error {
 
     events := make(chan game.GameEvent, 100)
 
-    gameModel := game.MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
+    gameSettings := settingslib.MakeSettings(lbxCache)
+
+    gameModel := game.MakeGameModel(terrainData, settings, gameSettings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
 
     for range 100 {
 

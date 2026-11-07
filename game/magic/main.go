@@ -544,7 +544,7 @@ func runGameInstance(game *gamelib.Game, yield coroutine.YieldFunc, magic *Magic
                 centerOnCity(game)
                 humanPlayer := game.Model.GetHumanPlayer()
                 if humanPlayer != nil {
-                    game.DoNextUnit(humanPlayer)
+                    game.Model.DoNextUnit(humanPlayer)
                 }
 
                 game.RefreshUI()
@@ -598,7 +598,7 @@ func initializeGame(magic *MagicGame, settings setup.NewGameSettings, humanWizar
     // hack
     // human.Admin = true
     game.Model.CurrentPlayer = 0
-    game.StartPlayerTurn(human)
+    game.Model.StartPlayerTurn(human)
 
     // game.DoNextTurn()
     return game
@@ -932,7 +932,7 @@ func runGame(yield coroutine.YieldFunc, game *MagicGame, config GameConfig) erro
 
                     humanPlayer := newGame.Model.GetHumanPlayer()
                     if humanPlayer != nil {
-                        newGame.DoNextUnit(humanPlayer)
+                        newGame.Model.DoNextUnit(humanPlayer)
                     }
 
                     err := runGameInstance(newGame, yield, game, gameLoader, 0)

@@ -83,11 +83,23 @@ func (game *Game) playFirstMeeting(yield coroutine.YieldFunc, event *GameEventDi
     }
 }
 
-func (game *Game) meetWizards(yield coroutine.YieldFunc, a *playerlib.Player, b *playerlib.Player) {
-    if game.Model == nil {
+func (model *GameModel) meetWizards(a *playerlib.Player, b *playerlib.Player) {
+    if model == nil {
         return
     }
-    game.playFirstMeeting(yield, game.Model.MakeWizardContact(a, b))
+
+    event := GameEventDiplomacy{Player: a, Enemy: b}
+
+    select {
+        case model.Events <- &event:
+        default:
+    }
+
+    contactEvent := model.MakeWizardContact(a, b)
+    select {
+        case model.Events <- contactEvent:
+        default:
+    }
 }
 
 func (game *Game) discoverWizards(yield coroutine.YieldFunc) bool {
