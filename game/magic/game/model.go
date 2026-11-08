@@ -2270,7 +2270,7 @@ func (model *GameModel) ApplyAIDecisions(player *playerlib.Player, decisions []p
                 }
             case *playerlib.AIMeldNodeDecision:
                 meld := decision.(*playerlib.AIMeldNodeDecision)
-                model.tryMeldNode(meld.Stack, player)
+                model.TryMeldNode(meld.Stack, player)
             case *playerlib.AIPlaneShiftDecision:
                 shift := decision.(*playerlib.AIPlaneShiftDecision)
                 if err := model.PlaneShift(shift.Stack, player); err == nil {
@@ -2376,7 +2376,7 @@ func (model *GameModel) discoverWizards() {
 // tryMeldNode melds the magic node the given stack is standing on, if the stack
 // contains a unit able to meld (a magic spirit) and the node is unowned by this
 // player and not warped. Returns true if a meld happened.
-func (model *GameModel) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
+func (model *GameModel) TryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
     useMap := model.GetMap(stack.Plane())
     if useMap == nil {
         return false
@@ -3089,7 +3089,7 @@ type MovementHandler interface {
 
 // FIXME: can this just use doMoveSelectedUnit?
 // returns the rest of the path the stack should walk (nil if the path ends)
-func (model *GameModel) doAiMoveUnit(handlers MovementHandler, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
+func (model *GameModel) DoAiMoveUnit(handlers MovementHandler, player *playerlib.Player, stack *playerlib.UnitStack) pathfinding.Path {
     if len(stack.Units()) > 0 {
         // stack = player.SplitStack(stack, stack.ActiveUnits())
         for _, unit := range stack.Units() {
@@ -3329,9 +3329,14 @@ func (model *GameModel) GetNeutralPlayer() *playerlib.Player {
     return nil
 }
 
-// FIXME: make this able to return nil
 func (model *GameModel) GetHumanPlayer() *playerlib.Player {
-    return model.Players[0]
+    for _, player := range model.Players {
+        if player.IsHuman() {
+            return player
+        }
+    }
+
+    return nil
 }
 
 func (model *GameModel) GetBuildingInfos() buildinglib.BuildingInfos {

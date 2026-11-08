@@ -3,8 +3,10 @@ package auto
 import (
     "fmt"
     "log"
+    "slices"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
@@ -63,12 +65,37 @@ func RunAutoGame() error {
 
     for range 100 {
 
+        log.Printf("Turn %d", gameModel.TurnNumber)
+
         for _, player := range gameModel.Players {
             out := player.AIBehavior.Update(player, gameModel)
             gameModel.ApplyAIDecisions(player, out)
-        }
 
-        gameModel.TurnNumber += 1
+            gameModel.DoNextTurn()
+
+            for _, stack := range slices.Clone(player.Stacks) {
+                // stop moving once any unit in the stack has no moves left
+                for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
+                    stack.CurrentPath = gameModel.DoAiMoveUnit(moveHandlers, player, stack)
+                }
+            }
+
+            // continue any in-progress road building and attempt to meld any node
+            // a stack is now standing on (engineers/melders may have just arrived).
+            for _, stack := range slices.Clone(player.Stacks) {
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
+                        gameModel.MaybeBuildRoads(stack, player)
+                        break
+                    }
+                }
+            }
+            for _, stack := range slices.Clone(player.Stacks) {
+                gameModel.TryMeldNode(stack, player)
+            }
+
+            player.AIBehavior.PostUpdate(player, gameModel)
+        }
     }
 
     return nil
