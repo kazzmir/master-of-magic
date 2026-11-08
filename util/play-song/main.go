@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -19,23 +20,39 @@ import (
 )
 
 type playerGame struct {
-	ctx   context.Context
-	entry int
+	ctx      context.Context
+	entry    int
+	updates  <-chan music.PlaybackProgress
+	progress music.PlaybackProgress
 }
 
 func (game *playerGame) Update() error {
-	if game.ctx.Err() != nil || ebiten.IsKeyPressed(ebiten.KeyEscape) {
+	if game.ctx.Err() != nil || ebiten.IsKeyPressed(ebiten.KeyEscape) || ebiten.IsKeyPressed(ebiten.KeyCapsLock) {
 		return ebiten.Termination
 	}
-	return nil
+	for {
+		select {
+		case progress := <-game.updates:
+			game.progress = progress
+		default:
+			return nil
+		}
+	}
+}
+
+func formatTime(duration time.Duration) string {
+	return fmt.Sprintf("%02d:%02d:%02d.%d", int64(duration/time.Hour), int64(duration/time.Minute)%60, int64(duration/time.Second)%60, int64(duration/(100*time.Millisecond))%10)
 }
 
 func (game *playerGame) Draw(screen *ebiten.Image) {
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("Playing MUSIC.LBX entry %d (looping)\nEscape or close the window to stop.", game.entry))
+	progress := game.progress
+	ebitenutil.DebugPrint(screen, fmt.Sprintf(
+		"Playing MUSIC.LBX entry %d (looping)\nSong: %s / %s\nCompleted loops: %d\nTotal played: %s\nEscape or close the window to stop.",
+		game.entry, formatTime(progress.Position), formatTime(progress.Duration), progress.Loops, formatTime(progress.Total)))
 }
 
 func (game *playerGame) Layout(_, _ int) (int, int) {
-	return 480, 80
+	return 480, 120
 }
 
 func loadCache(path string) (*lbx.LbxCache, error) {
@@ -98,10 +115,11 @@ func run(args []string) error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	audio.Initialize()
-	player.PlaySong(music.Song(entry))
+	updates := make(chan music.PlaybackProgress, 1)
+	player.PlaySong(music.Song(entry), music.PlayOptions{Progress: updates})
 	ebiten.SetWindowTitle(fmt.Sprintf("MUSIC.LBX entry %d", entry))
-	ebiten.SetWindowSize(480, 80)
-	return ebiten.RunGame(&playerGame{ctx: ctx, entry: entry})
+	ebiten.SetWindowSize(480, 120)
+	return ebiten.RunGame(&playerGame{ctx: ctx, entry: entry, updates: updates})
 }
 
 func main() {

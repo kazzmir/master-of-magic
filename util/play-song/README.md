@@ -13,4 +13,5 @@ for game data. Put options before the entry number.
 This uses the engine's XMI-to-MIDI conversion, soundfont discovery, and audio
 player unchanged. A working graphical/audio environment and a soundfont are
 required, just as for the game. Playback loops; press Escape, close the window,
-or press Ctrl+C in the terminal to stop.
+or press Ctrl+C in the terminal to stop. The window shows the current position
+and song length, completed loops, and total audio playback time across loops.

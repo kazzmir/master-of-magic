@@ -171,6 +171,20 @@ func (song Songs) Choose() Song {
     return randomChoose(song.Songs...)
 }
 
+// PlaybackProgress describes audio played, excluding startup and buffering time.
+type PlaybackProgress struct {
+    Position time.Duration // Position within the current loop.
+    Duration time.Duration // MIDI song length.
+    Total time.Duration // Total time played, including completed loops.
+    Loops int64 // Number of completed loops.
+}
+
+type PlayOptions struct {
+    // Progress receives snapshots about every 50 ms. Updates are dropped when
+    // the receiver is not ready; callers must not close the channel during play.
+    Progress chan<- PlaybackProgress
+}
+
 type Music struct {
     Cache *lbx.LbxCache
     done context.Context
@@ -380,7 +394,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
     return nil, fmt.Errorf("could not open any soundfont")
 }
 
-func (music *Music) PlaySong(index Song){
+func (music *Music) PlaySong(index Song, options... PlayOptions){
     if !music.Enabled {
         return
     }
@@ -418,7 +432,7 @@ func (music *Music) PlaySong(index Song){
             }
         }
 
-        err := playMidi(song, music.done, soundFont, music.volume, musicEvents)
+        err := playMidi(song, music.done, soundFont, music.volume, musicEvents, options)
         if err != nil {
             log.Printf("Error: could not play midi %v: %v", index, err)
         }
@@ -448,8 +462,8 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
         player.Right = make([]float32, samples)
     }
 
-    left := player.Left
-    right := player.Right
+    left := player.Left[:samples]
+    right := player.Right[:samples]
 
     // actually generate the audio
     player.Sequencer.Render(left, right)
@@ -476,8 +490,35 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     return n, nil
 }
 
+// The sequencer processes events at block boundaries and starts the next loop
+// on the boundary at or after the final event. Match its rounded clock, then
+// convert the number of blocks to actual audio time.
+func loopDuration(duration time.Duration, blockSize, sampleRate int32) time.Duration {
+    blockTime := time.Duration(float64(time.Second) * float64(blockSize) / float64(sampleRate))
+    blocks := duration / blockTime
+    if duration % blockTime != 0 {
+        blocks++
+    }
+    if blocks < 1 {
+        blocks = 1
+    }
+    return time.Duration(float64(blocks) * float64(blockSize) * float64(time.Second) / float64(sampleRate))
+}
+
+func playbackProgress(total, duration, period time.Duration) PlaybackProgress {
+    progress := PlaybackProgress{Total: total, Duration: duration}
+    if period > 0 {
+        progress.Position = total % period
+        progress.Loops = int64(total / period)
+        if progress.Position > duration {
+            progress.Position = duration
+        }
+    }
+    return progress
+}
+
 // FIXME: replace smf.SMF with meltysynth.MidiFile
-func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent) error {
+func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent, options []PlayOptions) error {
     var buffer bytes.Buffer
     // write out a normal midi file
     song.WriteTo(&buffer)
@@ -509,11 +550,37 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     player.SetBufferSize(time.Second / 10)
     player.Play()
 
+    // Position is the audio player's monotonic playback clock, even when the
+    // sequencer loops. Do not read the sequencer from this goroutine: Render
+    // runs on the audio thread.
+    var progressTicks <-chan time.Time
+    if len(options) > 0 {
+        ticker := time.NewTicker(50 * time.Millisecond)
+        defer ticker.Stop()
+        progressTicks = ticker.C
+    }
+    duration := midi.GetLength()
+    period := loopDuration(duration, synthesizer.BlockSize, synthesizer.SampleRate)
+    reportProgress := func() {
+        progress := playbackProgress(player.Position(), duration, period)
+        for _, option := range options {
+            if option.Progress != nil {
+                select {
+                    case option.Progress <- progress:
+                    default:
+                }
+            }
+        }
+    }
+    reportProgress()
+
     quit := false
     for !quit {
         select {
             case <-done.Done():
                 quit = true
+            case <-progressTicks:
+                reportProgress()
             case event := <-events:
                 switch e := event.(type) {
                     case MusicEventSetVolume:

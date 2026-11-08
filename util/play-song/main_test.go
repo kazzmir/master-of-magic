@@ -6,7 +6,17 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
+
+func TestFormatTime(t *testing.T) {
+	if got := formatTime(time.Hour + 2*time.Minute + 3*time.Second + 400*time.Millisecond); got != "01:02:03.4" {
+		t.Fatalf("formatted time = %q", got)
+	}
+	if got := formatTime(0); got != "00:00:00.0" {
+		t.Fatalf("formatted zero = %q", got)
+	}
+}
 
 func TestHelp(t *testing.T) {
 	if err := run([]string{"-h"}); !errors.Is(err, flag.ErrHelp) {
