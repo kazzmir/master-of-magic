@@ -11,11 +11,38 @@ import (
     "github.com/kazzmir/master-of-magic/game/magic/game"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
     settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
     herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
     buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
     "github.com/kazzmir/master-of-magic/lib/lbx"
 )
+
+type HeadlessHandlers struct {
+}
+
+var _ game.MovementHandler = &HeadlessHandlers{}
+
+func (handler *HeadlessHandlers) ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool) {
+}
+
+func (handler *HeadlessHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
+    return combat.CombatStateDefenderWin
+}
+
+func (handler *HeadlessHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
+    return combat.CombatStateDefenderWin
+}
+
+func (handler *HeadlessHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
+    return true, 0
+}
+
+func (handler *HeadlessHandlers) DiscoverWizards() {
+}
 
 func RunAutoGame() error {
     settings := setup.NewGameSettings{
@@ -76,7 +103,7 @@ func RunAutoGame() error {
             for _, stack := range slices.Clone(player.Stacks) {
                 // stop moving once any unit in the stack has no moves left
                 for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
-                    stack.CurrentPath = gameModel.DoAiMoveUnit(moveHandlers, player, stack)
+                    stack.CurrentPath = gameModel.DoAiMoveUnit(&HeadlessHandlers{}, player, stack)
                 }
             }
 

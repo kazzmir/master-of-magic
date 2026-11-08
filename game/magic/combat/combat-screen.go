@@ -331,10 +331,10 @@ func MakeCombatFonts(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Ar
 }
 
 // player is always the human player
-func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *Army, player optional.Optional[ArmyPlayer], landscape CombatLandscape, plane data.Plane, zone ZoneType, model *CombatModel) *CombatScreen {
+func MakeCombatScreen(cache *lbx.LbxCache, player optional.Optional[ArmyPlayer], model *CombatModel) *CombatScreen {
     imageCache := util.MakeImageCache(cache)
 
-    fonts := MakeCombatFonts(cache, defendingArmy, attackingArmy)
+    fonts := MakeCombatFonts(cache, model.DefendingArmy, model.AttackingArmy)
 
     whitePixel := ebiten.NewImage(1, 1)
     whitePixel.Fill(color.RGBA{R: 255, G: 255, B: 255, A: 255})
@@ -369,8 +369,8 @@ func MakeCombatScreen(cache *lbx.LbxCache, defendingArmy *Army, attackingArmy *A
         ImageCache: imageCache,
         Mouse: mouseData,
         CameraScale: 1,
-        DrawRoad: zone.City != nil,
-        DrawClouds: zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress),
+        DrawRoad: model.Zone.City != nil,
+        DrawClouds: model.Zone.City != nil && model.Zone.City.HasEnchantment(data.CityEnchantmentFlyingFortress),
         Fonts: fonts,
         Coordinates: coordinates,
         // ScreenToTile: screenToTile,

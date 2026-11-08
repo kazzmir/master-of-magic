@@ -155,7 +155,7 @@ func newConfiguredCombat(peer netlib.PacketConn, localID uint64, state protocol.
 	if !localAttacker {
 		human = defendingPlayer
 	}
-	screen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](human), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+	screen := combat.MakeCombatScreen(cache, optional.Of[combat.ArmyPlayer](human), model)
 	if screen == nil {
 		return nil, fmt.Errorf("unable to create combat screen")
 	}

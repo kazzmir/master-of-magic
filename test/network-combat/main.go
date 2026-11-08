@@ -139,7 +139,7 @@ func MakeScenario1(isServer bool, remote *combat.Remote) (*combat.CombatModel, *
     attackingArmy := createArmyN(attackingPlayer, units.DraconianMagician , 3)
 
     model := combat.MakeCombatModel(allSpells, defendingArmy, attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 10, 25, make(chan combat.CombatEvent, 10), remote)
-    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](attackingPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(cache, optional.Of[combat.ArmyPlayer](attackingPlayer), model)
 
     go remote.RunReceiveLoop(combatScreen.Quit)
 
@@ -298,7 +298,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
         player = defendingPlayer
     }
 
-    combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](player), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(cache, optional.Of[combat.ArmyPlayer](player), model)
 
     go remote.RunReceiveLoop(combatScreen.Quit)
 

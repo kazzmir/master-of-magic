@@ -490,7 +490,7 @@ func (engine *Engine) EnterCombat(combatDescription CombatDescription) {
     }
 
     model := combat.MakeCombatModel(allSpells, &defendingArmy, &attackingArmy, combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 100), nil)
-    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, optional.Of[combat.ArmyPlayer](humanPlayer), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(engine.Cache, optional.Of[combat.ArmyPlayer](humanPlayer), model)
     engine.Combat = combatScreen
 
     run := func(yield coroutine.YieldFunc) error {
