@@ -661,7 +661,19 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
             }
         } else {
             delay := int64(value)
-            for value == 0x7f {
+            // XMI delays are additive bytes with the high bit clear, not
+            // MIDI VLQs. Leave the next event's status byte unread.
+            for {
+                next, err := reader.Peek(1)
+                if err == io.EOF {
+                    break
+                }
+                if err != nil {
+                    return MidiEvent{}, err
+                }
+                if next[0] & 0x80 != 0 {
+                    break
+                }
                 value, err = reader.ReadByte()
                 if err != nil {
                     return MidiEvent{}, err
