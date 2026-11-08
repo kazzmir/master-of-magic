@@ -3295,6 +3295,96 @@ func (model *GameModel) defeatCity(combatHandler CombatHandler, attacker *player
     return raze, gold
 }
 
+func (model *GameModel) createTreasure(encounterType maplib.EncounterType, budget int, point data.PlanePoint, player *playerlib.Player){
+        var heroes []*herolib.Hero
+        for _, hero := range player.HeroPool {
+            // only include available heroes that are not champions
+            if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
+                heroes = append(heroes, hero)
+            }
+        }
+
+        makeArtifacts := func () []*artifact.Artifact {
+            return model.ArtifactPool.AvailableArtifacts()
+        }
+
+        allSpells := model.allSpells.Copy()
+
+        // cannot find the last spell in treasure
+        allSpells.RemoveSpell(allSpells.FindByName("Spell of Mastery"))
+
+        treasure := makeTreasure(model.LbxCache, encounterType, budget, point, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
+        // FIXME: show treasure ui for human, otherwise just apply treasure for AI
+        select {
+            case model.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
+            default:
+        }
+}
+
+func (model *GameModel) doEncounter(combatHandler CombatHandler, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
+    // there was nothing in the encounter, just give treasure
+    if len(encounter.Units) == 0 {
+        mapUse.RemoveEncounter(x, y)
+        model.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
+        return combat.CombatStateNoCombat
+    }
+
+    wizard := setup.WizardCustom{
+        Name: encounter.Type.ShortName(),
+    }
+
+    defender := playerlib.MakePlayer(wizard, false, 1, 1, make(map[herolib.HeroType]string), model)
+    defender.StrategicCombat = true
+
+    var enemies []units.StackUnit
+
+    for _, unit := range encounter.Units {
+        enemies = append(enemies, units.MakeOverworldUnit(unit, x, y, mapUse.Plane))
+    }
+
+    zone := combat.ZoneType{
+    }
+
+    switch encounter.Type {
+        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Encounter = combat.ZoneLair
+        case maplib.EncounterTypePlaneTower: zone.Encounter = combat.ZoneTower
+        case maplib.EncounterTypeAncientTemple: zone.Encounter = combat.ZoneAncientTemple
+        case maplib.EncounterTypeFallenTemple: zone.Encounter = combat.ZoneFallenTemple
+        case maplib.EncounterTypeRuins: zone.Encounter = combat.ZoneRuins
+        case maplib.EncounterTypeAbandonedKeep: zone.Encounter = combat.ZoneAbandonedKeep
+        case maplib.EncounterTypeDungeon: zone.Encounter = combat.ZoneDungeon
+        case maplib.EncounterTypeNatureNode: zone.Encounter = combat.ZoneNatureNode
+        case maplib.EncounterTypeSorceryNode: zone.Encounter = combat.ZoneSorceryNode
+        case maplib.EncounterTypeChaosNode: zone.Encounter = combat.ZoneChaosNode
+    }
+
+    result := model.doCombat(combatHandler, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
+    if result == combat.CombatStateAttackerWin {
+        mapUse.RemoveEncounter(x, y)
+
+        model.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
+
+        // defeating a plane tower also removes the tower from the other plane
+        if encounter.Type == maplib.EncounterTypePlaneTower {
+            mapUse.SetPlaneTower(x, y)
+            otherMap := model.GetMap(mapUse.Plane.Opposite())
+            otherMap.RemoveEncounter(x, y)
+            otherMap.SetPlaneTower(x, y)
+        }
+
+    } else {
+        var remaining []units.Unit
+        for index := range enemies {
+            if enemies[index].GetHealth() > 0 {
+                remaining = append(remaining, encounter.Units[index])
+            }
+        }
+        encounter.Units = remaining
+    }
+
+    return result
+}
+
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */

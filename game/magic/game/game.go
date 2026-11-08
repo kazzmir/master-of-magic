@@ -3445,7 +3445,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.discoverWizards(yield)
 
                     stack.ExhaustMoves()
-                    state := game.doEncounter(&UICombatHandler{Yield: yield, Game: game}, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    state := game.Model.doEncounter(&UICombatHandler{Yield: yield, Game: game}, player, stack, encounter, mapUse, stack.X(), stack.Y())
                     // asborb clicks
                     yield()
                     if state == combat.CombatStateAttackerFlee {
@@ -3890,7 +3890,7 @@ func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.Un
 }
 
 func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
-    return handlers.Game.doEncounter(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, encounter, map_, x, y)
+    return handlers.Game.Model.doEncounter(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, encounter, map_, x, y)
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
@@ -4283,99 +4283,6 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
     }
 
     return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounter.Type.Name(), guardianName, encounter.Type.Name()), animation)
-}
-
-func (game *Game) doEncounter(combatHandler CombatHandler, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
-    // there was nothing in the encounter, just give treasure
-    if len(encounter.Units) == 0 {
-        mapUse.RemoveEncounter(x, y)
-        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
-        return combat.CombatStateNoCombat
-    }
-
-    wizard := setup.WizardCustom{
-        Name: encounter.Type.ShortName(),
-    }
-
-    defender := playerlib.MakePlayer(wizard, false, 1, 1, make(map[herolib.HeroType]string), game.Model)
-    defender.StrategicCombat = true
-
-    var enemies []units.StackUnit
-
-    for _, unit := range encounter.Units {
-        enemies = append(enemies, units.MakeOverworldUnit(unit, x, y, mapUse.Plane))
-    }
-
-    zone := combat.ZoneType{
-    }
-
-    switch encounter.Type {
-        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Encounter = combat.ZoneLair
-        case maplib.EncounterTypePlaneTower: zone.Encounter = combat.ZoneTower
-        case maplib.EncounterTypeAncientTemple: zone.Encounter = combat.ZoneAncientTemple
-        case maplib.EncounterTypeFallenTemple: zone.Encounter = combat.ZoneFallenTemple
-        case maplib.EncounterTypeRuins: zone.Encounter = combat.ZoneRuins
-        case maplib.EncounterTypeAbandonedKeep: zone.Encounter = combat.ZoneAbandonedKeep
-        case maplib.EncounterTypeDungeon: zone.Encounter = combat.ZoneDungeon
-        case maplib.EncounterTypeNatureNode: zone.Encounter = combat.ZoneNatureNode
-        case maplib.EncounterTypeSorceryNode: zone.Encounter = combat.ZoneSorceryNode
-        case maplib.EncounterTypeChaosNode: zone.Encounter = combat.ZoneChaosNode
-    }
-
-    result := game.Model.doCombat(combatHandler, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
-    if result == combat.CombatStateAttackerWin {
-        mapUse.RemoveEncounter(x, y)
-
-        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
-
-        // defeating a plane tower also removes the tower from the other plane
-        if encounter.Type == maplib.EncounterTypePlaneTower {
-            mapUse.SetPlaneTower(x, y)
-            otherMap := game.GetMap(mapUse.Plane.Opposite())
-            otherMap.RemoveEncounter(x, y)
-            otherMap.SetPlaneTower(x, y)
-        }
-
-    } else {
-        var remaining []units.Unit
-        for index := range enemies {
-            if enemies[index].GetHealth() > 0 {
-                remaining = append(remaining, encounter.Units[index])
-            }
-        }
-        encounter.Units = remaining
-    }
-
-    return result
-}
-
-func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, point data.PlanePoint, player *playerlib.Player){
-    allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
-    if err != nil {
-        log.Printf("Error: unable to read spells: %v", err)
-    } else {
-        var heroes []*herolib.Hero
-        for _, hero := range player.HeroPool {
-            // only include available heroes that are not champions
-            if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
-                heroes = append(heroes, hero)
-            }
-        }
-
-        makeArtifacts := func () []*artifact.Artifact {
-            return game.Model.ArtifactPool.AvailableArtifacts()
-        }
-
-        // cannot find the last spell in treasure
-        allSpells.RemoveSpell(allSpells.FindByName("Spell of Mastery"))
-
-        treasure := makeTreasure(game.Cache, encounterType, budget, point, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
-        // FIXME: show treasure ui for human, otherwise just apply treasure for AI
-        select {
-            case game.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
-            default:
-        }
-    }
 }
 
 type TreasureFonts struct {
