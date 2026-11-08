@@ -3482,7 +3482,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     defenderPlayer := game.GetStackOwner(otherStack)
 
                     // note: doCombat will already call defeatCity if the attacker wins the battle
-                    state := game.Model.doCombat(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherStack, zone)
+                    state := game.Model.DoCombat(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherStack, zone)
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
@@ -3501,7 +3501,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 otherCity := entityInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
                 if otherCity != nil {
                     defenderPlayer := game.GetCityOwner(otherCity)
-                    raze, gold := game.Model.defeatCity(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherCity)
+                    raze, gold := game.Model.DefeatCity(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherCity)
 
                     // FIXME: show a notice about any fame won
                     player.Fame = max(0, player.Fame + otherCity.FameForCaptureOrRaze(!raze))
@@ -3894,11 +3894,11 @@ func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *p
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    return handlers.Game.Model.doCombat(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, enemyStack, zone)
+    return handlers.Game.Model.DoCombat(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, enemyStack, zone)
 }
 
 func (handlers *GameMoveHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
-    return handlers.Game.Model.defeatCity(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, city)
+    return handlers.Game.Model.DefeatCity(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, city)
 }
 
 func (handlers *GameMoveHandlers) DiscoverWizards() {

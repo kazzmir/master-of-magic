@@ -3249,7 +3249,7 @@ func (model *GameModel) GetInfluenceMagic(x int, y int, plane data.Plane) data.M
 }
 
 // returns true if the city was razed, and the amount of gold plundered from the city
-func (model *GameModel) defeatCity(combatHandler CombatHandler, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
+func (model *GameModel) DefeatCity(combatHandler CombatHandler, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
     raze := false
     gold := defender.ComputePlunderedGold(city)
 
@@ -3358,7 +3358,7 @@ func (model *GameModel) doEncounter(combatHandler CombatHandler, player *playerl
         case maplib.EncounterTypeChaosNode: zone.Encounter = combat.ZoneChaosNode
     }
 
-    result := model.doCombat(combatHandler, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
+    result := model.DoCombat(combatHandler, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
     if result == combat.CombatStateAttackerWin {
         mapUse.RemoveEncounter(x, y)
 
@@ -3388,7 +3388,7 @@ func (model *GameModel) doEncounter(combatHandler CombatHandler, player *playerl
 /* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
  * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
  */
-func (model *GameModel) doCombat(combatHandler CombatHandler, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
+func (model *GameModel) DoCombat(combatHandler CombatHandler, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
     defer combatHandler.Finish()
 
     landscape := model.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
@@ -3519,7 +3519,7 @@ func (model *GameModel) doCombat(combatHandler CombatHandler, attacker *playerli
 
     if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
         if zone.City != nil {
-            razeCity, gold := model.defeatCity(combatHandler, attacker, attackerStack, defender, zone.City)
+            razeCity, gold := model.DefeatCity(combatHandler, attacker, attackerStack, defender, zone.City)
             // if razeCity is true then we pass in false to get the fame for capturing the city
             attackerFame += zone.City.FameForCaptureOrRaze(!razeCity)
             defenderFame += zone.City.FameForCaptureOrRaze(false)

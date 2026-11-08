@@ -22,6 +22,7 @@ import (
 )
 
 type HeadlessHandlers struct {
+    Model *game.GameModel
 }
 
 var _ game.MovementHandler = &HeadlessHandlers{}
@@ -33,12 +34,34 @@ func (handler *HeadlessHandlers) DoEncounter(player *playerlib.Player, stack *pl
     return combat.CombatStateDefenderWin
 }
 
+type CombatHandler struct {
+}
+
+
+func (combatHandler *CombatHandler) RunCombat(combatModel *combat.CombatModel) combat.CombatState {
+    return combat.Run(combatModel)
+}
+
+func (combatHandler *CombatHandler) ConfirmRazeTown(city *citylib.City) bool {
+    return true
+}
+
+func (combatHandler *CombatHandler) ShowCombatEndScreen(attacker combat.ArmyPlayer, defenderFame int, attackerFame int, state combat.CombatState, combatModel *combat.CombatModel, cityPopulationLoss int, cityBuildingLoss int) {
+}
+
+func (combatHandler *CombatHandler) ShowUndeadAnimation(undeadUnits int) {
+}
+
+func (combatHandler *CombatHandler) Finish() {
+}
+
+
 func (handler *HeadlessHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    return combat.CombatStateDefenderWin
+    return handler.Model.DoCombat(&CombatHandler{}, player, stack, enemy, enemyStack, zone)
 }
 
 func (handler *HeadlessHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
-    return true, 0
+    return handler.Model.DefeatCity(&CombatHandler{}, player, stack, enemy, city)
 }
 
 func (handler *HeadlessHandlers) DiscoverWizards() {
@@ -103,7 +126,7 @@ func RunAutoGame() error {
             for _, stack := range slices.Clone(player.Stacks) {
                 // stop moving once any unit in the stack has no moves left
                 for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
-                    stack.CurrentPath = gameModel.DoAiMoveUnit(&HeadlessHandlers{}, player, stack)
+                    stack.CurrentPath = gameModel.DoAiMoveUnit(&HeadlessHandlers{Model: gameModel}, player, stack)
                 }
             }
 
