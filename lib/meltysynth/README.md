@@ -101,6 +101,7 @@ sequencer.Render(left, right)
     - [x] Note on/off
     - [x] Bank selection
     - [x] Modulation
+    - [x] Channel pressure (default SoundFont pressure-to-vibrato response)
     - [x] Volume control
     - [x] Pan
     - [x] Expression
