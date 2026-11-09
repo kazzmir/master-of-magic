@@ -377,9 +377,10 @@ func (s *Synthesizer) Render(left []float32, right []float32) {
 
 func (s *Synthesizer) renderBlock() {
 	blockSize := int(s.BlockSize)
-	activeVoiceCount := int(s.voices.activeVoiceCount)
 
 	s.voices.process()
+	// Processing removes finished voices and compacts the active prefix.
+	activeVoiceCount := int(s.voices.activeVoiceCount)
 
 	for i := 0; i < blockSize; i++ {
 		s.blockLeft[i] = 0
