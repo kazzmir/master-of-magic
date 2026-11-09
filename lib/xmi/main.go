@@ -357,8 +357,11 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
 
     for {
         value, err := reader.ReadByte()
+        if err == io.EOF {
+            return MidiEvent{}, fmt.Errorf("missing end-of-track event: %w", io.ErrUnexpectedEOF)
+        }
         if err != nil {
-            break
+            return MidiEvent{}, err
         }
 
         // fmt.Printf("Event 0x%x\n", value)
@@ -381,12 +384,8 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                     }
 
                     data := make([]byte, length)
-                    n, err := reader.Read(data)
-                    if n != len(data) {
-                        return MidiEvent{}, fmt.Errorf("Expected %v bytes, got %v", len(data), n)
-                    }
-                    if err != nil {
-                        return MidiEvent{}, err
+                    if _, err := io.ReadFull(reader, data); err != nil {
+                        return MidiEvent{}, fmt.Errorf("read meta event 0x%x payload: %w", kind, err)
                     }
 
                     // fmt.Printf("  Meta event: 0x%x length=%v data=%v\n", kind, length, data)
@@ -479,8 +478,11 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
                             Port: data[0],
                         })
                     case MidiEventEndOfTrack:
-                        messages = append(messages, &MidiMessageEndOfTrack{
-                        })
+                        if len(data) != 0 {
+                            return MidiEvent{}, fmt.Errorf("end-of-track event has invalid length: %v", len(data))
+                        }
+                        messages = append(messages, &MidiMessageEndOfTrack{})
+                        return MidiEvent{Messages: messages}, nil
                     default:
                         return MidiEvent{}, fmt.Errorf("Unknown midi meta event type: 0x%x", kind)
                     }
@@ -628,7 +630,6 @@ func (chunk *IFFChunk) ReadEvent() (MidiEvent, error) {
         }
     }
 
-    return MidiEvent{Messages: messages}, nil
 }
 
 func (chunk *IFFChunk) SubChunkReader() *IFFReader {
@@ -660,37 +661,41 @@ type IFFReader struct {
 }
 
 func (reader *IFFReader) HasMore() bool {
-    _, err := reader.reader.Peek(4)
+    _, err := reader.reader.Peek(1)
     return err == nil
 }
 
 func (reader *IFFReader) ReadChunk() (IFFChunk, error) {
     id := make([]byte, 4)
-    _, err := reader.reader.Read(id)
+    _, err := io.ReadFull(reader.reader, id)
     if err != nil {
         return IFFChunk{}, err
     }
 
     size, err := readUint32BE(reader.reader)
     if err != nil {
-        return IFFChunk{}, err
+        if err == io.EOF {
+            err = io.ErrUnexpectedEOF
+        }
+        return IFFChunk{}, fmt.Errorf("read chunk %q size: %w", id, err)
     }
 
     data := make([]byte, size)
-    n, err := io.ReadFull(reader.reader, data)
-    if err != nil {
-        return IFFChunk{}, err
-    }
-
-    if n != int(size) {
-        return IFFChunk{}, fmt.Errorf("Expected %v bytes, got %v", size, n)
+    if _, err := io.ReadFull(reader.reader, data); err != nil {
+        if err == io.EOF {
+            err = io.ErrUnexpectedEOF
+        }
+        return IFFChunk{}, fmt.Errorf("read chunk %q data: %w", id, err)
     }
 
     if size % 2 != 0 {
         // padding byte
         _, err := reader.reader.ReadByte()
         if err != nil {
-            return IFFChunk{}, err
+            if err == io.EOF {
+                err = io.ErrUnexpectedEOF
+            }
+            return IFFChunk{}, fmt.Errorf("read chunk %q padding: %w", id, err)
         }
     }
 
@@ -710,8 +715,11 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
 
     iffReader := NewIFFReader(reader)
 
-    for iffReader.HasMore() {
+    for {
         chunk, err := iffReader.ReadChunk()
+        if err == io.EOF {
+            break
+        }
         if err != nil {
             return nil, err
         }
@@ -738,11 +746,13 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
 
             subChunkReader := sub2.SubChunkReader()
 
-            for subChunkReader.HasMore() {
+            for {
                 next, err := subChunkReader.ReadChunk()
-                if err != nil {
-                    fmt.Printf("Error reading subchunk: %v\n", err)
+                if err == io.EOF {
                     break
+                }
+                if err != nil {
+                    return nil, fmt.Errorf("read XMID subchunk: %w", err)
                 }
 
                 /*
@@ -759,7 +769,7 @@ func ConvertToMidi(data io.Reader) (*smf.SMF, error) {
                 if next.IsTimbre() {
                     timbre, err := next.ReadTimbre()
                     if err != nil {
-                        fmt.Printf("Error reading timbre: %v\n", err)
+                        return nil, fmt.Errorf("read TIMB subchunk: %w", err)
                     } else {
                         if debug {
                             fmt.Printf("  timbre entries: %v\n", len(timbre.Entries))

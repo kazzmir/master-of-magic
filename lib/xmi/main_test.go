@@ -2,8 +2,13 @@ package xmi
 
 import (
 	"bytes"
+	"encoding/binary"
+	"errors"
+	"io"
 	"reflect"
+	"strings"
 	"testing"
+	"testing/iotest"
 	"time"
 
 	"github.com/kazzmir/master-of-magic/lib/meltysynth"
@@ -253,5 +258,140 @@ func TestConvertToSMFSmallDelaysDoNotDrift(t *testing.T) {
 	}
 	if tick != 120 {
 		t.Fatalf("track ended at tick %d, want 120", tick)
+	}
+}
+
+func testIFFChunk(id string, data []byte) []byte {
+	chunk := append([]byte(id), 0, 0, 0, 0)
+	binary.BigEndian.PutUint32(chunk[4:], uint32(len(data)))
+	chunk = append(chunk, data...)
+	if len(data)%2 != 0 {
+		chunk = append(chunk, 0)
+	}
+	return chunk
+}
+
+func testXMID(children []byte) []byte {
+	form := testIFFChunk("FORM", append([]byte("XMID"), children...))
+	return testIFFChunk("CAT ", append([]byte("XMID"), form...))
+}
+
+func TestIFFReaderShortReads(t *testing.T) {
+	data := append(testIFFChunk("EVNT", []byte{1, 2, 3}), testIFFChunk("INFO", []byte{1, 0})...)
+	for _, test := range []struct {
+		name   string
+		reader io.Reader
+	}{
+		{"one byte", iotest.OneByteReader(bytes.NewReader(data))},
+		{"half reads", iotest.HalfReader(bytes.NewReader(data))},
+		{"data with EOF", iotest.DataErrReader(bytes.NewReader(data))},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			reader := NewIFFReader(test.reader)
+			for _, want := range []IFFChunk{
+				{ID: []byte("EVNT"), Data: []byte{1, 2, 3}},
+				{ID: []byte("INFO"), Data: []byte{1, 0}},
+			} {
+				got, err := reader.ReadChunk()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if !reflect.DeepEqual(got, want) {
+					t.Fatalf("chunk = %v, want %v", got, want)
+				}
+			}
+			if _, err := reader.ReadChunk(); err != io.EOF {
+				t.Fatalf("end of stream = %v, want EOF", err)
+			}
+		})
+	}
+}
+
+func TestIFFReaderTruncatedChunks(t *testing.T) {
+	complete := testIFFChunk("DATA", []byte{1, 2})
+	for _, size := range []int{1, 3, 4, 6, 8, 9} {
+		reader := NewIFFReader(bytes.NewReader(complete[:size]))
+		if !reader.HasMore() {
+			t.Fatalf("HasMore hid %d trailing bytes", size)
+		}
+		if _, err := reader.ReadChunk(); !errors.Is(err, io.ErrUnexpectedEOF) {
+			t.Fatalf("%d-byte prefix: error = %v, want unexpected EOF", size, err)
+		}
+	}
+	odd := testIFFChunk("DATA", []byte{1})
+	reader := NewIFFReader(bytes.NewReader(odd[:len(odd)-1]))
+	if _, err := reader.ReadChunk(); !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("missing padding: error = %v, want unexpected EOF", err)
+	}
+}
+
+func TestReadEventMetaPayloadAcrossBufferBoundary(t *testing.T) {
+	// The meta header ends at byte 4095, leaving only one of its four payload
+	// bytes in bufio's buffer. A single Read would incorrectly return short.
+	data := bytes.Repeat([]byte{0xc0, 5}, 2046)
+	data = append(data, 0xff, 0x58, 4, 4, 2, 24, 8, 0xff, 0x2f, 0)
+	event, err := (&IFFChunk{Data: data}).ReadEvent()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &MidiMessageTimeSignature{Numerator: 4, Denominator: 2, Metronome: 24, DemiSemiQuaverPerQuarter: 8}
+	if len(event.Messages) != 2048 || !reflect.DeepEqual(event.Messages[2046], want) {
+		t.Fatalf("incorrect event count or time signature: %d messages", len(event.Messages))
+	}
+}
+
+func TestReadEventRejectsTruncation(t *testing.T) {
+	for _, data := range [][]byte{
+		nil,
+		{0xc0, 5},             // Complete event, but no EOT.
+		{10},                  // Delay at EOF.
+		{0x90, 60, 100},       // Missing duration.
+		{0xff, 0x58, 4, 4, 2}, // Short meta payload.
+		{0xff, 0x2f},          // Missing EOT length.
+		{0xff, 0x2f, 1, 0},    // Invalid EOT payload.
+	} {
+		if _, err := (&IFFChunk{Data: data}).ReadEvent(); err == nil {
+			t.Fatalf("accepted truncated or invalid event stream: % x", data)
+		}
+	}
+	if _, err := (&IFFChunk{Data: []byte{0xc0, 5}}).ReadEvent(); !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("missing EOT: error = %v, want unexpected EOF", err)
+	}
+	// A valid EOT ends the event stream; padding must not become more events.
+	event, err := (&IFFChunk{Data: []byte{0xff, 0x2f, 0, 0}}).ReadEvent()
+	if err != nil || len(event.Messages) != 1 {
+		t.Fatalf("EOT with padding: event = %v, error = %v", event, err)
+	}
+}
+
+func TestConvertToMidiPropagatesReadErrors(t *testing.T) {
+	valid := testXMID(testIFFChunk("EVNT", []byte{0xff, 0x2f, 0}))
+	for _, nested := range [][]byte{
+		[]byte("E"),                            // Partial chunk ID.
+		[]byte("EVNT"),                         // Missing size.
+		{'E', 'V', 'N', 'T', 0, 0, 0, 4, 0xff}, // Truncated payload.
+	} {
+		// A later valid sequence must not hide an earlier broken subchunk.
+		data := append(testXMID(nested), valid...)
+		if _, err := ConvertToMidi(bytes.NewReader(data)); !errors.Is(err, io.ErrUnexpectedEOF) {
+			t.Fatalf("nested % x: error = %v, want unexpected EOF", nested, err)
+		}
+	}
+	children := append(testIFFChunk("TIMB", []byte{1, 0}), testIFFChunk("EVNT", []byte{0xff, 0x2f, 0})...)
+	if _, err := ConvertToMidi(bytes.NewReader(testXMID(children))); err == nil || !strings.Contains(err.Error(), "TIMB") {
+		t.Fatalf("broken timbre: error = %v, want TIMB error", err)
+	}
+	for _, data := range [][]byte{[]byte("F"), []byte("FORM")} {
+		if _, err := ConvertToMidi(bytes.NewReader(data)); !errors.Is(err, io.ErrUnexpectedEOF) {
+			t.Fatalf("root % x: error = %v, want unexpected EOF", data, err)
+		}
+	}
+	failure := errors.New("test read failure")
+	reader := io.MultiReader(bytes.NewReader(testIFFChunk("JUNK", nil)), iotest.ErrReader(failure))
+	if _, err := ConvertToMidi(reader); !errors.Is(err, failure) {
+		t.Fatalf("I/O error = %v, want original read failure", err)
+	}
+	if _, err := ConvertToMidi(iotest.OneByteReader(bytes.NewReader(valid))); err != nil {
+		t.Fatalf("valid file with short reads: %v", err)
 	}
 }
