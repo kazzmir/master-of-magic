@@ -171,6 +171,26 @@ func (song Songs) Choose() Song {
     return randomChoose(song.Songs...)
 }
 
+// PlaybackProgress describes audio played, excluding startup and buffering time.
+type PlaybackProgress struct {
+    Position time.Duration // Position in the source song; jumps at loop boundaries.
+    Duration time.Duration // Source song length, or the first infinite loop's end.
+    Total time.Duration // Total time played, including completed loops.
+    Loops int64 // Number of section or whole-song loop restarts.
+}
+
+// Music uses a larger budget than MeltySynth's general-purpose default: layered
+// SoundFont instruments and release tails can exhaust 64 voices in MUSIC.LBX.
+const DefaultMaximumPolyphony = meltysynth.MaximumSupportedPolyphony
+
+type PlayOptions struct {
+    // MaximumPolyphony is the voice budget (8–256). Zero uses the music default.
+    MaximumPolyphony int32
+    // Progress receives snapshots about every 50 ms. Updates are dropped when
+    // the receiver is not ready; callers must not close the channel during play.
+    Progress chan<- PlaybackProgress
+}
+
 type Music struct {
     Cache *lbx.LbxCache
     done context.Context
@@ -183,6 +203,7 @@ type Music struct {
 
     SoundFont *meltysynth.SoundFont
     XmiCache map[Song]*smf.SMF
+    volumeMutex sync.Mutex // Guards volume and publishing/replacing MusicEvents.
     volume float64 // 1 for loud, 0 for silence
 
     // queue of songs being played. a new song can be pushed on top, or popped off
@@ -206,13 +227,23 @@ func randomChoose[T any](choices... T) T {
 }
 
 func (music *Music) GetVolume() float64 {
+    music.volumeMutex.Lock()
+    defer music.volumeMutex.Unlock()
     return music.volume
 }
 
 func (music *Music) SetVolume(volume float64) {
+    music.volumeMutex.Lock()
+    defer music.volumeMutex.Unlock()
     music.volume = volume
 
     if music.MusicEvents != nil {
+        // The one-slot queue currently carries only volume updates. Replace
+        // an older pending update, rather than dropping the newest value.
+        select {
+            case <-music.MusicEvents:
+            default:
+        }
         select {
             case music.MusicEvents <- MusicEventSetVolume{Volume: volume}:
             default:
@@ -380,7 +411,7 @@ func (music *Music) LoadSoundFont() (*meltysynth.SoundFont, error) {
     return nil, fmt.Errorf("could not open any soundfont")
 }
 
-func (music *Music) PlaySong(index Song){
+func (music *Music) PlaySong(index Song, options... PlayOptions){
     if !music.Enabled {
         return
     }
@@ -404,7 +435,9 @@ func (music *Music) PlaySong(index Song){
     }
 
     musicEvents := make(chan MusicEvent, 1)
+    music.volumeMutex.Lock()
     music.MusicEvents = musicEvents
+    music.volumeMutex.Unlock()
 
     music.wait.Add(1)
     go func(){
@@ -418,7 +451,7 @@ func (music *Music) PlaySong(index Song){
             }
         }
 
-        err := playMidi(song, music.done, soundFont, music.volume, musicEvents)
+        err := playMidi(song, music.done, soundFont, music.GetVolume(), musicEvents, options)
         if err != nil {
             log.Printf("Error: could not play midi %v: %v", index, err)
         }
@@ -429,7 +462,9 @@ func (music *Music) Stop() {
     music.cancel()
     music.wait.Wait()
 
+    music.volumeMutex.Lock()
     music.MusicEvents = nil
+    music.volumeMutex.Unlock()
 }
 
 // implements the io.Reader interface for ebiten's NewPlayerF32 function
@@ -448,8 +483,8 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
         player.Right = make([]float32, samples)
     }
 
-    left := player.Left
-    right := player.Right
+    left := player.Left[:samples]
+    right := player.Right[:samples]
 
     // actually generate the audio
     player.Sequencer.Render(left, right)
@@ -458,13 +493,14 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
 
     // write left and right channels to p
     for i := 0; i < samples; i++ {
-        v := math.Float32bits(left[i])
+        leftSample, rightSample := limitStereo(left[i], right[i])
+        v := math.Float32bits(leftSample)
         p[i*8] = byte(v)
         p[i*8+1] = byte(v >> 8)
         p[i*8+2] = byte(v >> 16)
         p[i*8+3] = byte(v >> 24)
 
-        v = math.Float32bits(right[i])
+        v = math.Float32bits(rightSample)
         p[i*8+4] = byte(v)
         p[i*8+5] = byte(v >> 8)
         p[i*8+6] = byte(v >> 16)
@@ -476,14 +512,38 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     return n, nil
 }
 
+func playbackProgress(playback *meltysynth.MidiFilePlayback, total time.Duration) PlaybackProgress {
+    playback.AdvanceTo(total)
+    return PlaybackProgress{
+        Position: playback.Position(),
+        Duration: playback.Duration(),
+        Total: total,
+        Loops: playback.Loops(),
+    }
+}
+
+func synthesizerSettings(options []PlayOptions) (*meltysynth.SynthesizerSettings, error) {
+    settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
+    settings.MaximumPolyphony = DefaultMaximumPolyphony
+    for _, option := range options {
+        if option.MaximumPolyphony == 0 {
+            continue
+        }
+        if option.MaximumPolyphony < meltysynth.MinimumSupportedPolyphony || option.MaximumPolyphony > meltysynth.MaximumSupportedPolyphony {
+            return nil, fmt.Errorf("music polyphony must be between %d and %d, got %d", meltysynth.MinimumSupportedPolyphony, meltysynth.MaximumSupportedPolyphony, option.MaximumPolyphony)
+        }
+        settings.MaximumPolyphony = option.MaximumPolyphony
+    }
+    return settings, nil
+}
+
 // FIXME: replace smf.SMF with meltysynth.MidiFile
-func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent) error {
+func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent, options []PlayOptions) error {
     var buffer bytes.Buffer
     // write out a normal midi file
     song.WriteTo(&buffer)
 
-    settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
-    synthesizer, err := meltysynth.NewSynthesizer(soundFont, settings)
+    synthesizer, err := newMusicSynthesizer(soundFont, options)
     if err != nil {
         return err
     }
@@ -494,7 +554,7 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     }
 
     sequencer := meltysynth.NewMidiFileSequencer(synthesizer)
-    sequencer.Play(midi, true)
+    sequencer.PlayXMI(midi, true)
 
     midiPlayer := &MidiPlayer{
         Sequencer: sequencer,
@@ -509,11 +569,36 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     player.SetBufferSize(time.Second / 10)
     player.Play()
 
+    // Position is the audio player's monotonic playback clock, even when the
+    // sequencer loops. Do not read the sequencer from this goroutine: Render
+    // runs on the audio thread.
+    var progressTicks <-chan time.Time
+    if len(options) > 0 {
+        ticker := time.NewTicker(50 * time.Millisecond)
+        defer ticker.Stop()
+        progressTicks = ticker.C
+    }
+    playback := meltysynth.NewXMIDIPlayback(midi, true)
+    reportProgress := func() {
+        progress := playbackProgress(playback, player.Position())
+        for _, option := range options {
+            if option.Progress != nil {
+                select {
+                    case option.Progress <- progress:
+                    default:
+                }
+            }
+        }
+    }
+    reportProgress()
+
     quit := false
     for !quit {
         select {
             case <-done.Done():
                 quit = true
+            case <-progressTicks:
+                reportProgress()
             case event := <-events:
                 switch e := event.(type) {
                     case MusicEventSetVolume:

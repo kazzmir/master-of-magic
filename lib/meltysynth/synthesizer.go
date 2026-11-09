@@ -191,6 +191,9 @@ func (s *Synthesizer) ProcessMidiMessage(channel int32, command int32, data1 int
 	case 0xC0: // Program Change
 		channelInfo.setPatch(data1)
 
+	case 0xD0: // Channel Pressure (one data byte)
+		channelInfo.setPressure(data1)
+
 	case 0xE0: // Pitch Bend
 		channelInfo.setPitchBend(data1, data2)
 	}
@@ -209,7 +212,19 @@ func (s *Synthesizer) NoteOff(channel int32, key int32) {
 	}
 }
 
+func (s *Synthesizer) noteOffInstance(noteID uint64) {
+	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
+		if voice := s.voices.voices[i]; voice.noteID == noteID {
+			voice.end()
+		}
+	}
+}
+
 func (s *Synthesizer) NoteOn(channel int32, key int32, velocity int32) {
+	s.noteOn(channel, key, velocity, 0)
+}
+
+func (s *Synthesizer) noteOn(channel int32, key int32, velocity int32, noteID uint64) {
 	if velocity == 0 {
 		s.NoteOff(channel, key)
 		return
@@ -254,6 +269,7 @@ func (s *Synthesizer) NoteOn(channel int32, key int32, velocity int32) {
 					voice := s.voices.requestNew(instrumentRegion, channel)
 					if voice != nil {
 						voice.start(regionPair, channel, key, velocity)
+						voice.noteID = noteID
 					}
 				}
 			}
@@ -268,6 +284,24 @@ func (s *Synthesizer) NoteOffAll(immediate bool) {
 		for i := 0; i < int(s.voices.activeVoiceCount); i++ {
 			s.voices.voices[i].end()
 		}
+	}
+}
+
+// A section jump preserves notes until their individual scheduled note-offs.
+// Already-expired sustained notes release, and surviving notes must not become
+// stuck on the next iteration's pedal. Whole-song restarts still end all notes.
+// Restore sustain and pressure without resetting unrelated controllers.
+func (s *Synthesizer) restartLoop(state midiLoopState, wholeSong bool) {
+	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
+		voice := s.voices.voices[i]
+		if wholeSong {
+			voice.end()
+		}
+		voice.ignoreHoldPedal = true
+	}
+	for i, channel := range s.channels {
+		channel.holdPedal = state.sustain[i]
+		channel.setPressure(state.pressure[i])
 	}
 }
 
@@ -343,9 +377,10 @@ func (s *Synthesizer) Render(left []float32, right []float32) {
 
 func (s *Synthesizer) renderBlock() {
 	blockSize := int(s.BlockSize)
-	activeVoiceCount := int(s.voices.activeVoiceCount)
 
 	s.voices.process()
+	// Processing removes finished voices and compacts the active prefix.
+	activeVoiceCount := int(s.voices.activeVoiceCount)
 
 	for i := 0; i < blockSize; i++ {
 		s.blockLeft[i] = 0

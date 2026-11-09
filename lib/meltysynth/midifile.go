@@ -20,6 +20,7 @@ type message struct {
 	command byte
 	data1   byte
 	data2   byte
+	noteID  uint64 // Runtime-only identity for an XMIDI note and its scheduled off.
 }
 
 type MidiFile struct {

@@ -8,6 +8,7 @@ type channel struct {
 	patchNumber int32
 
 	modulation int16
+	pressure   int32
 	volume     int16
 	pan        int16
 	expression int16
@@ -45,6 +46,7 @@ func (ch *channel) reset() {
 	ch.patchNumber = 0
 
 	ch.modulation = 0
+	ch.pressure = 0
 	ch.volume = 100 << 7
 	ch.pan = 64 << 7
 	ch.expression = 127 << 7
@@ -63,6 +65,7 @@ func (ch *channel) reset() {
 
 func (ch *channel) resetAllControllers() {
 	ch.modulation = 0
+	ch.pressure = 0
 	ch.expression = 127 << 7
 	ch.holdPedal = false
 
@@ -155,12 +158,23 @@ func (ch *channel) dataEntryFine(value int32) {
 	}
 }
 
+func (ch *channel) setPressure(value int32) {
+	ch.pressure = max(0, min(value, 127))
+}
+
 func (ch *channel) setPitchBend(value1 int32, value2 int32) {
 	ch.pitchBend = (float32(1) / float32(8192)) * float32((value1|(value2<<7))-8192)
 }
 
 func (ch *channel) getModulation() float32 {
 	return (float32(50) / float32(16383)) * float32(ch.modulation)
+}
+
+// The default SoundFont modulators route both modulation wheel and channel
+// pressure to vibrato LFO pitch depth, each contributing up to 50 cents.
+// Return their combined depth in semitones.
+func (ch *channel) getVibratoDepth() float32 {
+	return 0.01*ch.getModulation() + (0.5/127)*float32(ch.pressure)
 }
 
 func (ch *channel) getVolume() float32 {

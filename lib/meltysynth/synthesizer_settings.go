@@ -2,6 +2,12 @@ package meltysynth
 
 import "errors"
 
+// Supported voice-budget bounds for a synthesizer instance.
+const (
+	MinimumSupportedPolyphony int32 = 8
+	MaximumSupportedPolyphony int32 = 256
+)
+
 const (
 	synth_DefaultBlockSize             int32 = 64
 	synth_DefaultMaximumPolyphony      int32 = 64
@@ -35,7 +41,7 @@ func (settings *SynthesizerSettings) validate() error {
 		return errors.New("the block size must be between 8 and 1024")
 	}
 
-	if !(8 <= settings.MaximumPolyphony && settings.MaximumPolyphony <= 256) {
+	if !(MinimumSupportedPolyphony <= settings.MaximumPolyphony && settings.MaximumPolyphony <= MaximumSupportedPolyphony) {
 		return errors.New("the maximum number of polyphony must be between 8 and 256")
 	}
 
