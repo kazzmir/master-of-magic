@@ -163,7 +163,7 @@ func (v *voice) process() bool {
 	v.vibLfo.process()
 	v.modLfo.process()
 
-	vibPitchChange := (0.01*channelInfo.getModulation() + v.vibLfoToPitch) * v.vibLfo.value
+	vibPitchChange := (channelInfo.getVibratoDepth() + v.vibLfoToPitch) * v.vibLfo.value
 	modPitchChange := v.modLfoToPitch*v.modLfo.value + v.modEnvToPitch*v.modEnv.value
 	channelPitchChange := channelInfo.getTune() + channelInfo.getPitchBend()
 	pitch := float32(v.key) + vibPitchChange + modPitchChange + channelPitchChange

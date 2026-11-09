@@ -2,11 +2,16 @@ package meltysynth
 
 import "time"
 
+type midiLoopState struct {
+	sustain  [16]bool
+	pressure [16]int32
+}
+
 type midiLoop struct {
 	index     int
 	start     time.Duration
 	remaining byte
-	sustain   [16]bool
+	state     midiLoopState
 }
 
 // MidiFilePlayback follows a MIDI event timeline without rendering audio. Its
@@ -22,7 +27,7 @@ type MidiFilePlayback struct {
 	duration time.Duration
 	loops    int64
 	stack    []midiLoop
-	sustain  [16]bool
+	state    midiLoopState
 }
 
 func newMidiFilePlayback(file *MidiFile, loop, xmi bool) *MidiFilePlayback {
@@ -79,7 +84,7 @@ func (p *MidiFilePlayback) Position() time.Duration {
 func (p *MidiFilePlayback) Duration() time.Duration { return p.duration }
 func (p *MidiFilePlayback) Loops() int64            { return p.loops }
 
-func (p *MidiFilePlayback) processEvents(emit func(message), onLoop func([16]bool)) {
+func (p *MidiFilePlayback) processEvents(emit func(message), onLoop func(midiLoopState)) {
 	for {
 		if p.index == len(p.file.messages) {
 			length := p.file.GetLength()
@@ -90,9 +95,9 @@ func (p *MidiFilePlayback) processEvents(emit func(message), onLoop func([16]boo
 			p.index = 0
 			p.stack = p.stack[:0]
 			p.loops++
-			p.sustain = [16]bool{}
+			p.state = midiLoopState{}
 			if onLoop != nil {
-				onLoop(p.sustain)
+				onLoop(p.state)
 			}
 		}
 		if p.file.times[p.index] > p.position {
@@ -104,18 +109,22 @@ func (p *MidiFilePlayback) processEvents(emit func(message), onLoop func([16]boo
 		if msg.getMessageType() != msg_Normal {
 			continue
 		}
+		if msg.command == 0xd0 && msg.channel < 16 {
+			p.state.pressure[msg.channel] = int32(msg.data1)
+		}
 		if msg.command == 0xb0 && msg.channel < 16 {
 			switch msg.data1 {
 			case 64:
-				p.sustain[msg.channel] = msg.data2 >= 64
-			case 121: // Reset All Controllers also releases the pedal.
-				p.sustain[msg.channel] = false
+				p.state.sustain[msg.channel] = msg.data2 >= 64
+			case 121: // Reset All Controllers releases pedal and aftertouch.
+				p.state.sustain[msg.channel] = false
+				p.state.pressure[msg.channel] = 0
 			}
 		}
 		if p.xmi && msg.command == 0xb0 {
 			switch msg.data1 {
 			case 116:
-				p.stack = append(p.stack, midiLoop{index: p.index, start: timestamp, remaining: msg.data2, sustain: p.sustain})
+				p.stack = append(p.stack, midiLoop{index: p.index, start: timestamp, remaining: msg.data2, state: p.state})
 				continue
 			case 117:
 				if len(p.stack) == 0 {
@@ -135,9 +144,9 @@ func (p *MidiFilePlayback) processEvents(emit func(message), onLoop func([16]boo
 				p.position -= period
 				p.index = frame.index
 				p.loops++
-				p.sustain = frame.sustain
+				p.state = frame.state
 				if onLoop != nil {
-					onLoop(p.sustain)
+					onLoop(p.state)
 				}
 				continue
 			}

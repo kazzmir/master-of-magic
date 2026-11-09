@@ -191,6 +191,9 @@ func (s *Synthesizer) ProcessMidiMessage(channel int32, command int32, data1 int
 	case 0xC0: // Program Change
 		channelInfo.setPatch(data1)
 
+	case 0xD0: // Channel Pressure (one data byte)
+		channelInfo.setPressure(data1)
+
 	case 0xE0: // Pitch Bend
 		channelInfo.setPitchBend(data1, data2)
 	}
@@ -271,16 +274,18 @@ func (s *Synthesizer) NoteOffAll(immediate bool) {
 	}
 }
 
-// restartLoop releases the previous iteration's voices independently of the
-// pedal, without cutting their release envelopes or changing other controllers.
-func (s *Synthesizer) restartLoop(sustain [16]bool) {
+// restartLoop releases old voices independently of the pedal, preserving their
+// release envelopes. Restore sustain and pressure without resetting unrelated
+// controllers.
+func (s *Synthesizer) restartLoop(state midiLoopState) {
 	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
 		voice := s.voices.voices[i]
 		voice.end()
 		voice.ignoreHoldPedal = true
 	}
 	for i, channel := range s.channels {
-		channel.holdPedal = sustain[i]
+		channel.holdPedal = state.sustain[i]
+		channel.setPressure(state.pressure[i])
 	}
 }
 

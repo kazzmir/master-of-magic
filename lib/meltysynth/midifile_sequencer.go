@@ -68,7 +68,7 @@ func (seq *MidiFileSequencer) processEvents() {
 	}
 	seq.playback.processEvents(func(msg message) {
 		seq.synthesizer.ProcessMidiMessage(int32(msg.channel), int32(msg.command), int32(msg.data1), int32(msg.data2))
-	}, func(sustain [16]bool) {
-		seq.synthesizer.restartLoop(sustain)
+	}, func(state midiLoopState) {
+		seq.synthesizer.restartLoop(state)
 	})
 }
