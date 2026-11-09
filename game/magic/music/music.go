@@ -173,10 +173,10 @@ func (song Songs) Choose() Song {
 
 // PlaybackProgress describes audio played, excluding startup and buffering time.
 type PlaybackProgress struct {
-    Position time.Duration // Position within the current loop.
-    Duration time.Duration // MIDI song length.
+    Position time.Duration // Position in the source song; jumps at loop boundaries.
+    Duration time.Duration // Source song length, or the first infinite loop's end.
     Total time.Duration // Total time played, including completed loops.
-    Loops int64 // Number of completed loops.
+    Loops int64 // Number of section or whole-song loop restarts.
 }
 
 type PlayOptions struct {
@@ -490,31 +490,14 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
     return n, nil
 }
 
-// The sequencer processes events at block boundaries and starts the next loop
-// on the boundary at or after the final event. Match its rounded clock, then
-// convert the number of blocks to actual audio time.
-func loopDuration(duration time.Duration, blockSize, sampleRate int32) time.Duration {
-    blockTime := time.Duration(float64(time.Second) * float64(blockSize) / float64(sampleRate))
-    blocks := duration / blockTime
-    if duration % blockTime != 0 {
-        blocks++
+func playbackProgress(playback *meltysynth.MidiFilePlayback, total time.Duration) PlaybackProgress {
+    playback.AdvanceTo(total)
+    return PlaybackProgress{
+        Position: playback.Position(),
+        Duration: playback.Duration(),
+        Total: total,
+        Loops: playback.Loops(),
     }
-    if blocks < 1 {
-        blocks = 1
-    }
-    return time.Duration(float64(blocks) * float64(blockSize) * float64(time.Second) / float64(sampleRate))
-}
-
-func playbackProgress(total, duration, period time.Duration) PlaybackProgress {
-    progress := PlaybackProgress{Total: total, Duration: duration}
-    if period > 0 {
-        progress.Position = total % period
-        progress.Loops = int64(total / period)
-        if progress.Position > duration {
-            progress.Position = duration
-        }
-    }
-    return progress
 }
 
 // FIXME: replace smf.SMF with meltysynth.MidiFile
@@ -535,7 +518,7 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     }
 
     sequencer := meltysynth.NewMidiFileSequencer(synthesizer)
-    sequencer.Play(midi, true)
+    sequencer.PlayXMI(midi, true)
 
     midiPlayer := &MidiPlayer{
         Sequencer: sequencer,
@@ -559,10 +542,9 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
         defer ticker.Stop()
         progressTicks = ticker.C
     }
-    duration := midi.GetLength()
-    period := loopDuration(duration, synthesizer.BlockSize, synthesizer.SampleRate)
+    playback := meltysynth.NewXMIDIPlayback(midi, true)
     reportProgress := func() {
-        progress := playbackProgress(player.Position(), duration, period)
+        progress := playbackProgress(playback, player.Position())
         for _, option := range options {
             if option.Progress != nil {
                 select {

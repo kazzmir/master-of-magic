@@ -253,6 +253,8 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageChannelPressure:
                 emit(midi.AfterTouch(message.Channel, message.Pressure).Bytes())
             case *MidiMessageControlChange:
+                // Preserve XMIDI FOR/NEXT (116/117) for XMIDI-aware playback;
+                // standard MIDI itself cannot express an infinite section loop.
                 emit(midi.ControlChange(message.Channel, message.Controller, message.Value).Bytes())
             case *MidiMessageDelay:
                 currentTick += message.Delay

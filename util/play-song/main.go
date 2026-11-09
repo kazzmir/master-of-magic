@@ -47,7 +47,7 @@ func formatTime(duration time.Duration) string {
 func (game *playerGame) Draw(screen *ebiten.Image) {
 	progress := game.progress
 	ebitenutil.DebugPrint(screen, fmt.Sprintf(
-		"Playing MUSIC.LBX entry %d (looping)\nSong: %s / %s\nCompleted loops: %d\nTotal played: %s\nEscape or close the window to stop.",
+		"Playing MUSIC.LBX entry %d (looping)\nSong: %s / %s\nLoop restarts: %d\nTotal played: %s\nEscape or close the window to stop.",
 		game.entry, formatTime(progress.Position), formatTime(progress.Duration), progress.Loops, formatTime(progress.Total)))
 }
 

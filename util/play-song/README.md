@@ -14,4 +14,7 @@ This uses the engine's XMI-to-MIDI conversion, soundfont discovery, and audio
 player unchanged. A working graphical/audio environment and a soundfont are
 required, just as for the game. Playback loops; press Escape, close the window,
 or press Ctrl+C in the terminal to stop. The window shows the current position
-and song length, completed loops, and total audio playback time across loops.
+and song length, loop restarts, and total audio playback time across loops.
+XMIDI loop controllers are honored, so introductions outside a loop play only
+once and looping sections restart at their own loop marker. Finite loop counts
+are also honored. Songs without a complete loop region repeat as a whole.
