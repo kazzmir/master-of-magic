@@ -175,3 +175,138 @@ func TestXMIDIUnmatchedStartFallsBackToWholeFileLoop(t *testing.T) {
 		t.Fatalf("position=%v loops=%d stack=%v", p.Position(), p.Loops(), p.stack)
 	}
 }
+
+func sustainTestSynth() *Synthesizer {
+	synth := &Synthesizer{
+		BlockSize:            64,
+		SampleRate:           44100,
+		minimumVoiceDuration: 88,
+		voices:               &voiceCollection{},
+	}
+	for range 16 {
+		synth.channels = append(synth.channels, newChannel(synth, false))
+	}
+	return synth
+}
+
+func sustainedTestVoice(synth *Synthesizer, channel int32) *voice {
+	v := newVoice(synth)
+	v.channel = channel
+	v.voiceLength = synth.minimumVoiceDuration
+	v.noteGain = 0.5
+	v.end()
+	return v
+}
+
+func TestLoopRestartReleasesSustainedVoices(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		xmi             bool
+		reenableAtStart bool
+	}{
+		{"whole song", false, false},
+		{"section", true, false},
+		{"section immediately reenables pedal", true, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			file := &MidiFile{
+				messages: []message{common3b(0xb5, 64, 127), endOfTrack()},
+				times:    []time.Duration{time.Second, 2 * time.Second},
+			}
+			if test.xmi {
+				pedalTime := time.Second
+				if test.reenableAtStart {
+					pedalTime = 0
+				}
+				file = &MidiFile{
+					messages: []message{common3b(0xb0, 116, 0), common3b(0xb5, 64, 127), common3b(0xb0, 117, 127), endOfTrack()},
+					times:    []time.Duration{0, pedalTime, 2 * time.Second, 3 * time.Second},
+				}
+			}
+			synth := sustainTestSynth()
+			seq := NewMidiFileSequencer(synth)
+			seq.play(file, true, test.xmi)
+			seq.playback.position = time.Second
+			seq.processEvents()
+			if !synth.channels[5].holdPedal {
+				t.Fatal("test failed to enable sustain")
+			}
+			old := sustainedTestVoice(synth, 5)
+			synth.voices.voices = []*voice{old}
+			synth.voices.activeVoiceCount = 1
+			synth.channels[5].volume = 73 << 7
+			synth.channels[5].pitchBend = 0.25
+			seq.playback.position = 2 * time.Second
+			seq.processEvents()
+			if synth.channels[5].holdPedal != test.reenableAtStart {
+				t.Fatalf("incorrect pedal state after restart: %v", synth.channels[5].holdPedal)
+			}
+			old.releaseIfNecessary(synth.channels[5])
+			if old.voiceState != voice_Released || old.volEnv.stage != env_Release || old.modEnv.stage != env_Release || old.noteGain != 0.5 {
+				t.Fatalf("old voice did not enter its normal release envelope: state=%d gain=%v", old.voiceState, old.noteGain)
+			}
+			if synth.channels[5].volume != 73<<7 || synth.channels[5].pitchBend != 0.25 {
+				t.Fatal("loop restart reset unrelated controllers")
+			}
+			if test.reenableAtStart {
+				fresh := sustainedTestVoice(synth, 5)
+				fresh.releaseIfNecessary(synth.channels[5])
+				if fresh.voiceState != voice_ReleaseRequested {
+					t.Fatal("new iteration's voices no longer honor sustain")
+				}
+			}
+		})
+	}
+}
+
+func TestSectionLoopRestoresSustainAtStart(t *testing.T) {
+	file := &MidiFile{
+		messages: []message{
+			common3b(0xb6, 64, 127),
+			common3b(0xb0, 116, 0),
+			common3b(0xb6, 64, 0),
+			common3b(0xb0, 117, 127),
+			endOfTrack(),
+		},
+		times: []time.Duration{0, time.Second, 2 * time.Second, 3 * time.Second, 4 * time.Second},
+	}
+	synth := sustainTestSynth()
+	seq := NewMidiFileSequencer(synth)
+	seq.PlayXMI(file, true)
+	seq.playback.position = 2 * time.Second
+	seq.processEvents()
+	if synth.channels[6].holdPedal {
+		t.Fatal("pedal should be off at the end of the loop body")
+	}
+	old := sustainedTestVoice(synth, 6)
+	synth.voices.voices = []*voice{old}
+	synth.voices.activeVoiceCount = 1
+	seq.playback.position = 3 * time.Second
+	seq.processEvents()
+	if !synth.channels[6].holdPedal {
+		t.Fatal("loop-start pedal state was not restored")
+	}
+	old.releaseIfNecessary(synth.channels[6])
+	if old.voiceState != voice_Released {
+		t.Fatal("restored sustain prevented the old voice from releasing")
+	}
+}
+
+func TestLoopReleaseStillHonorsMinimumVoiceDuration(t *testing.T) {
+	synth := sustainTestSynth()
+	v := sustainedTestVoice(synth, 0)
+	v.voiceLength = 0
+	synth.voices.voices = []*voice{v}
+	synth.voices.activeVoiceCount = 1
+	sustain := [16]bool{true}
+	synth.restartLoop(sustain)
+	v.releaseIfNecessary(synth.channels[0])
+	if v.voiceState != voice_ReleaseRequested {
+		t.Fatal("loop restart bypassed minimum voice duration")
+	}
+	v.voiceLength = synth.minimumVoiceDuration
+	v.releaseIfNecessary(synth.channels[0])
+	if v.voiceState != voice_Released {
+		t.Fatal("old voice stayed sustained after minimum duration")
+	}
+}

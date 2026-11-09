@@ -271,6 +271,19 @@ func (s *Synthesizer) NoteOffAll(immediate bool) {
 	}
 }
 
+// restartLoop releases the previous iteration's voices independently of the
+// pedal, without cutting their release envelopes or changing other controllers.
+func (s *Synthesizer) restartLoop(sustain [16]bool) {
+	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
+		voice := s.voices.voices[i]
+		voice.end()
+		voice.ignoreHoldPedal = true
+	}
+	for i, channel := range s.channels {
+		channel.holdPedal = sustain[i]
+	}
+}
+
 func (s *Synthesizer) NoteOffAllChannel(channel int32, immediate bool) {
 	if immediate {
 		for i := 0; i < int(s.voices.activeVoiceCount); i++ {

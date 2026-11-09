@@ -68,6 +68,9 @@ type voice struct {
 
 	voiceState  int32
 	voiceLength int32
+	// Voices left over from a loop restart must release even if the new
+	// iteration enables sustain before the next audio block is rendered.
+	ignoreHoldPedal bool
 }
 
 func newVoice(s *Synthesizer) *voice {
@@ -130,6 +133,7 @@ func (v *voice) start(region regionPair, channel int32, key int32, velocity int3
 
 	v.voiceState = voice_Playing
 	v.voiceLength = 0
+	v.ignoreHoldPedal = false
 }
 
 func (v *voice) end() {
@@ -235,7 +239,7 @@ func (v *voice) releaseIfNecessary(channelInfo *channel) {
 		return
 	}
 
-	if v.voiceState == voice_ReleaseRequested && !channelInfo.holdPedal {
+	if v.voiceState == voice_ReleaseRequested && (!channelInfo.holdPedal || v.ignoreHoldPedal) {
 		v.volEnv.release()
 		v.modEnv.release()
 		v.oscillator.release()
