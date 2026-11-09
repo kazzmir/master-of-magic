@@ -47,7 +47,9 @@ func (seq *MidiFileSequencer) Render(left []float32, right []float32) {
 			seq.processEvents()
 			seq.blockWrote = 0
 			if seq.playback != nil {
-				seq.playback.position += time.Duration(float64(time.Second) * float64(seq.synthesizer.BlockSize) / float64(seq.synthesizer.SampleRate))
+				blockTime := time.Duration(float64(time.Second) * float64(seq.synthesizer.BlockSize) / float64(seq.synthesizer.SampleRate))
+				seq.playback.position += blockTime
+				seq.playback.elapsed += blockTime
 			}
 		}
 
@@ -67,8 +69,16 @@ func (seq *MidiFileSequencer) processEvents() {
 		return
 	}
 	seq.playback.processEvents(func(msg message) {
+		if msg.noteID != 0 {
+			if msg.command == 0x90 && msg.data2 != 0 {
+				seq.synthesizer.noteOn(int32(msg.channel), int32(msg.data1), int32(msg.data2), msg.noteID)
+			} else {
+				seq.synthesizer.noteOffInstance(msg.noteID)
+			}
+			return
+		}
 		seq.synthesizer.ProcessMidiMessage(int32(msg.channel), int32(msg.command), int32(msg.data1), int32(msg.data2))
-	}, func(state midiLoopState) {
-		seq.synthesizer.restartLoop(state)
+	}, func(state midiLoopState, wholeSong bool) {
+		seq.synthesizer.restartLoop(state, wholeSong)
 	})
 }

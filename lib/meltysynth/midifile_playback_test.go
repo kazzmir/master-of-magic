@@ -299,7 +299,7 @@ func TestLoopReleaseStillHonorsMinimumVoiceDuration(t *testing.T) {
 	synth.voices.voices = []*voice{v}
 	synth.voices.activeVoiceCount = 1
 	state := midiLoopState{sustain: [16]bool{true}}
-	synth.restartLoop(state)
+	synth.restartLoop(state, true)
 	v.releaseIfNecessary(synth.channels[0])
 	if v.voiceState != voice_ReleaseRequested {
 		t.Fatal("loop restart bypassed minimum voice duration")

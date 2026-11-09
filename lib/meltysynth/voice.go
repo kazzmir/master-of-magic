@@ -41,6 +41,7 @@ type voice struct {
 	channel        int32
 	key            int32
 	velocity       int32
+	noteID         uint64
 
 	noteGain float32
 
@@ -68,8 +69,8 @@ type voice struct {
 
 	voiceState  int32
 	voiceLength int32
-	// Voices left over from a loop restart must release even if the new
-	// iteration enables sustain before the next audio block is rendered.
+	// Once ended, notes carried from a previous loop must release even if
+	// the new iteration has enabled sustain before the next audio block.
 	ignoreHoldPedal bool
 }
 

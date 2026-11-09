@@ -212,7 +212,19 @@ func (s *Synthesizer) NoteOff(channel int32, key int32) {
 	}
 }
 
+func (s *Synthesizer) noteOffInstance(noteID uint64) {
+	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
+		if voice := s.voices.voices[i]; voice.noteID == noteID {
+			voice.end()
+		}
+	}
+}
+
 func (s *Synthesizer) NoteOn(channel int32, key int32, velocity int32) {
+	s.noteOn(channel, key, velocity, 0)
+}
+
+func (s *Synthesizer) noteOn(channel int32, key int32, velocity int32, noteID uint64) {
 	if velocity == 0 {
 		s.NoteOff(channel, key)
 		return
@@ -257,6 +269,7 @@ func (s *Synthesizer) NoteOn(channel int32, key int32, velocity int32) {
 					voice := s.voices.requestNew(instrumentRegion, channel)
 					if voice != nil {
 						voice.start(regionPair, channel, key, velocity)
+						voice.noteID = noteID
 					}
 				}
 			}
@@ -274,13 +287,16 @@ func (s *Synthesizer) NoteOffAll(immediate bool) {
 	}
 }
 
-// restartLoop releases old voices independently of the pedal, preserving their
-// release envelopes. Restore sustain and pressure without resetting unrelated
-// controllers.
-func (s *Synthesizer) restartLoop(state midiLoopState) {
+// A section jump preserves notes until their individual scheduled note-offs.
+// Already-expired sustained notes release, and surviving notes must not become
+// stuck on the next iteration's pedal. Whole-song restarts still end all notes.
+// Restore sustain and pressure without resetting unrelated controllers.
+func (s *Synthesizer) restartLoop(state midiLoopState, wholeSong bool) {
 	for i := int32(0); i < s.voices.activeVoiceCount; i++ {
 		voice := s.voices.voices[i]
-		voice.end()
+		if wholeSong {
+			voice.end()
+		}
 		voice.ignoreHoldPedal = true
 	}
 	for i, channel := range s.channels {
