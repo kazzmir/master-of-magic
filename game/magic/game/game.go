@@ -757,26 +757,6 @@ func (area CityValidArea) FindLocation() (int, int, bool) {
     return point.X, point.Y, true
 }
 
-func (game *Game) MakeCityValidArea(plane data.Plane) CityValidArea {
-    out := make(CityValidArea)
-
-    mapUse := game.GetMap(plane)
-    continents := mapUse.Map.FindContinents()
-
-    for _, continent := range continents {
-        if continent.Size() > 100 {
-            for _, point := range continent.Values() {
-                tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
-                if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
-                    out[point] = true
-                }
-            }
-        }
-    }
-
-    return out
-}
-
 func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
     mapUse := game.GetMap(plane)
     continents := mapUse.Map.FindContinents()
@@ -3156,12 +3136,6 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
     customWizard.StartingSpells.AddAllSpells(setup.GetStartingSpells(&customWizard, allSpells))
     return customWizard, true
 
-}
-
-/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
- */
-func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
-    return ChooseUniqueWizard(game.Model.Players, game.AllSpells())
 }
 
 func (game *Game) RefreshUI() {

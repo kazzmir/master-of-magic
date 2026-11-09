@@ -8,6 +8,7 @@ import (
     "math/rand/v2"
     "errors"
     "strings"
+    "cmp"
     "fmt"
     "log"
 
@@ -122,6 +123,108 @@ func (model *GameModel) SwitchPlane() {
     }
 }
 
+/* starting units are swordsmen and spearmen of the appropriate race
+ */
+func StartingUnits(race data.Race) []units.Unit {
+    switch race {
+        case data.RaceLizard: return []units.Unit{units.LizardSwordsmen, units.LizardSpearmen}
+        case data.RaceNomad: return []units.Unit{units.NomadSwordsmen, units.NomadSpearmen}
+        case data.RaceOrc: return []units.Unit{units.OrcSwordsmen, units.OrcSpearmen}
+        case data.RaceTroll: return []units.Unit{units.TrollSwordsmen, units.TrollSpearmen}
+        case data.RaceBarbarian: return []units.Unit{units.BarbarianSwordsmen, units.BarbarianSpearmen}
+        case data.RaceBeastmen: return []units.Unit{units.BeastmenSwordsmen, units.BeastmenSpearmen}
+        case data.RaceDarkElf: return []units.Unit{units.DarkElfSwordsmen, units.DarkElfSpearmen}
+        case data.RaceDraconian: return []units.Unit{units.DraconianSwordsmen, units.DraconianSpearmen}
+        case data.RaceDwarf: return []units.Unit{units.DwarfSwordsmen, units.DwarfSwordsmen}
+        case data.RaceGnoll: return []units.Unit{units.GnollSwordsmen, units.GnollSpearmen}
+        case data.RaceHalfling: return []units.Unit{units.HalflingSwordsmen, units.HalflingSpearmen}
+        case data.RaceHighElf: return []units.Unit{units.HighElfSwordsmen, units.HighElfSpearmen}
+        case data.RaceHighMen: return []units.Unit{units.HighMenSwordsmen, units.HighMenSpearmen}
+        case data.RaceKlackon: return []units.Unit{units.KlackonSwordsmen, units.KlackonSpearmen}
+        default: return nil
+    }
+}
+
+func euclideanDistance(x1, y1, x2, y2 int) float64 {
+    dx := float64(x1 - x2)
+    dy := float64(y1 - y2)
+
+    return math.Sqrt(dx*dx + dy*dy)
+}
+
+func FindCityLocation(model *GameModel, startingPlane data.Plane, cityArea CityValidArea) (int, int) {
+    allCities := model.AllCities()
+
+    closestDistance := func(x, y int) int {
+        distance := -1
+
+        for _, city := range allCities {
+            if city.Plane == startingPlane {
+                d := int(euclideanDistance(x, y, city.X, city.Y))
+                if distance == -1 || d < distance {
+                    distance = d
+                }
+            }
+        }
+
+        if distance == -1 {
+            return 0
+        } else {
+            return distance
+        }
+    }
+
+    type CityLocation struct {
+        X, Y int
+        // distance to closest city
+        Distance int
+        Population int
+    }
+
+    var locations []CityLocation
+    for range 10 {
+        // x, y, ok := game.FindValidCityLocation(startingPlane)
+        x, y, ok := cityArea.FindLocation()
+        if ok {
+            distance := closestDistance(x, y)
+            // either there are no other cities nearby (distance=0) or the closest city is farther than 10 squares away
+            if distance == 0 || distance > 10 {
+                locations = append(locations, CityLocation{X: x, Y: y, Distance: distance, Population: model.ComputeMaximumPopulation(x, y, startingPlane)})
+            }
+        }
+    }
+
+    // compute a weighted sum of distance to other cities and maximum population of the location
+    computeValue := func (point CityLocation) float64 {
+        distance := point.Distance
+        // assume a distance if no other cities are nearby
+        if distance == 0 {
+            distance = 150
+        }
+
+        return math.Log2(float64(distance)) * 2 + float64(point.Population) * 0.5
+    }
+
+    slices.SortFunc(locations, func(pointA, pointB CityLocation) int {
+        return cmp.Compare(computeValue(pointA), computeValue(pointB))
+    })
+
+    if len(locations) > 0 {
+        // choose furthest point
+        return locations[len(locations) - 1].X, locations[len(locations) - 1].Y
+    } else {
+        // couldn't find a good spot, just pick anything
+        for range 100 {
+            cityX, cityY, ok := cityArea.FindLocation()
+            if ok {
+                return cityX, cityY
+            }
+        }
+    }
+
+    return -1, -1
+}
+
 /* initial casting skill power is computed as follows:
  * skill = total number of magic books * 2
  * power = (skill-1)^2 + skill
@@ -141,6 +244,12 @@ func computeInitialCastingSkillPower(books []data.WizardBook) int {
     v := total - 1
 
     return v * v + total
+}
+
+/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
+ */
+func (model *GameModel) ChooseWizard() (setup.WizardCustom, bool) {
+    return ChooseUniqueWizard(model.Players, model.allSpells)
 }
 
 func (model *GameModel) AddPlayer(wizard setup.WizardCustom, human bool) *playerlib.Player {
@@ -1900,6 +2009,27 @@ func (model *GameModel) DoNextUnit(player *playerlib.Player){
     }
 }
 
+func (model *GameModel) MakeCityValidArea(plane data.Plane) CityValidArea {
+    out := make(CityValidArea)
+
+    mapUse := model.GetMap(plane)
+    continents := mapUse.Map.FindContinents()
+
+    for _, continent := range continents {
+        if continent.Size() > 100 {
+            for _, point := range continent.Values() {
+                tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
+                if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
+                    out[point] = true
+                }
+            }
+        }
+    }
+
+    return out
+}
+
+
 func (model *GameModel) StartPlayerTurn(player *playerlib.Player) {
     if player.IsHuman() {
         model.ScrollEvents = nil
@@ -3143,7 +3273,7 @@ func (model *GameModel) DoAiMoveUnit(handlers MovementHandler, player *playerlib
 
         stack.Move(to.X - stack.X(), to.Y - stack.Y(), terrainCost, model.GetNormalizeCoordinateFunc())
 
-        if model.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
+        if model.GetHumanPlayer() != nil && model.GetHumanPlayer().IsVisible(oldX, oldY, stack.Plane()) {
             handlers.ShowMovement(oldX, oldY, stack, false)
         }
 

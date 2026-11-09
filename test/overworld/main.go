@@ -2286,7 +2286,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
 
     player.LiftFog(stack.X(), stack.Y(), 20, data.PlaneArcanus)
 
-    enemyWizard, _ := game.ChooseWizard()
+    enemyWizard, _ := game.Model.ChooseWizard()
 
     enemy := game.AddPlayer(enemyWizard, false)
 
@@ -2296,7 +2296,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     enemy.WarWithPlayer(player)
     player.WarWithPlayer(enemy)
 
-    enemyWizard2, _ := game.ChooseWizard()
+    enemyWizard2, _ := game.Model.ChooseWizard()
     enemy2 := game.AddPlayer(enemyWizard2, false)
     enemy.AwarePlayer(enemy2)
     enemy2.AwarePlayer(enemy)
@@ -2312,7 +2312,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     enemy2.AllianceWithPlayer(player)
     player.AllianceWithPlayer(enemy2)
 
-    enemyWizard3, _ := game.ChooseWizard()
+    enemyWizard3, _ := game.Model.ChooseWizard()
     enemy3 := game.AddPlayer(enemyWizard3, false)
 
     enemy3.AwarePlayer(player)
@@ -2321,7 +2321,7 @@ func createScenario23(cache *lbx.LbxCache) *gamelib.Game {
     enemy.WarWithPlayer(enemy3)
     enemy3.WarWithPlayer(enemy)
 
-    enemyWizard4, _ := game.ChooseWizard()
+    enemyWizard4, _ := game.Model.ChooseWizard()
     enemy4 := game.AddPlayer(enemyWizard4, false)
 
     enemy4.AwarePlayer(player)

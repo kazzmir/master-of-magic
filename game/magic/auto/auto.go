@@ -4,11 +4,13 @@ import (
     "fmt"
     "log"
     "slices"
+    "image"
 
     "github.com/kazzmir/master-of-magic/game/magic/setup"
     "github.com/kazzmir/master-of-magic/game/magic/units"
     "github.com/kazzmir/master-of-magic/game/magic/data"
     "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
     "github.com/kazzmir/master-of-magic/game/magic/terrain"
     "github.com/kazzmir/master-of-magic/game/magic/spellbook"
     "github.com/kazzmir/master-of-magic/game/magic/combat"
@@ -67,6 +69,63 @@ func (handler *HeadlessHandlers) DefeatCity(player *playerlib.Player, stack *pla
 func (handler *HeadlessHandlers) DiscoverWizards() {
 }
 
+func initializePlayer(model *game.GameModel, wizard setup.WizardCustom, isHuman bool, arcanusCityArea game.CityValidArea, myrrorCityArea game.CityValidArea) *playerlib.Player {
+    area := arcanusCityArea
+    startingPlane := data.PlaneArcanus
+    if wizard.RetortEnabled(data.RetortMyrran) {
+        startingPlane = data.PlaneMyrror
+        area = myrrorCityArea
+    }
+
+    player := model.AddPlayer(wizard, isHuman)
+
+    cityName := model.SuggestCityName(player.Wizard.Race)
+
+    cityX, cityY := game.FindCityLocation(model, startingPlane, area)
+    area[image.Pt(cityX, cityY)] = false
+
+    model.GetMap(startingPlane).SetRoad(cityX, cityY, startingPlane == data.PlaneMyrror)
+
+    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, model.BuildingInfo, model.GetMap(startingPlane), model, player)
+    introCity.Population = 4000
+    introCity.Plane = startingPlane
+
+    for _, building := range []buildinglib.Building{buildinglib.BuildingSmithy, buildinglib.BuildingBarracks, buildinglib.BuildingBuildersHall} {
+        if introCity.GetBuildableBuildings().Contains(building) {
+            introCity.Buildings.Insert(building)
+        }
+    }
+
+    introCity.Buildings.Insert(buildinglib.BuildingFortress)
+    introCity.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Farmers = 4
+
+    introCity.ResetCitizens()
+
+    player.AddCity(introCity)
+
+    for _, unit := range game.StartingUnits(player.Wizard.Race) {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+    // for debugging purposes, to start the game super powered
+    /*
+    if isHuman {
+        player.Admin = true
+        player.Mana = 90000
+        for range 3 {
+            player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+        }
+    }
+    */
+
+    player.LiftFog(cityX, cityY, 3, introCity.Plane)
+
+    return player
+}
+
 func RunAutoGame() error {
     settings := setup.NewGameSettings{
         Opponents: 3,
@@ -112,6 +171,23 @@ func RunAutoGame() error {
     gameSettings := settingslib.MakeSettings(lbxCache)
 
     gameModel := game.MakeGameModel(terrainData, settings, gameSettings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
+    gameModel.AIMode = ai.AIEnemy2
+
+    arcanusCityArea := gameModel.MakeCityValidArea(data.PlaneArcanus)
+    myrrorCityArea := gameModel.MakeCityValidArea(data.PlaneMyrror)
+
+    for range settings.Opponents {
+        wizard, ok := gameModel.ChooseWizard()
+        if ok {
+            initializePlayer(gameModel, wizard, false, arcanusCityArea, myrrorCityArea)
+        } else {
+            log.Printf("Warning: unable to add another wizard to the game")
+        }
+    }
+
+    gameModel.CurrentPlayer = 0
+    gameModel.Plane = data.PlaneArcanus
+    gameModel.StartPlayerTurn(gameModel.Players[gameModel.CurrentPlayer])
 
     for range 100 {
 
@@ -145,6 +221,8 @@ func RunAutoGame() error {
             }
 
             player.AIBehavior.PostUpdate(player, gameModel)
+
+            gameModel.DoNextTurn()
         }
     }
 
