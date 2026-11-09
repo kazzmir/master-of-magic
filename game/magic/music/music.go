@@ -493,13 +493,14 @@ func (player *MidiPlayer) Read(p []byte) (int, error) {
 
     // write left and right channels to p
     for i := 0; i < samples; i++ {
-        v := math.Float32bits(left[i])
+        leftSample, rightSample := limitStereo(left[i], right[i])
+        v := math.Float32bits(leftSample)
         p[i*8] = byte(v)
         p[i*8+1] = byte(v >> 8)
         p[i*8+2] = byte(v >> 16)
         p[i*8+3] = byte(v >> 24)
 
-        v = math.Float32bits(right[i])
+        v = math.Float32bits(rightSample)
         p[i*8+4] = byte(v)
         p[i*8+5] = byte(v >> 8)
         p[i*8+6] = byte(v >> 16)
@@ -542,11 +543,7 @@ func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFo
     // write out a normal midi file
     song.WriteTo(&buffer)
 
-    settings, err := synthesizerSettings(options)
-    if err != nil {
-        return err
-    }
-    synthesizer, err := meltysynth.NewSynthesizer(soundFont, settings)
+    synthesizer, err := newMusicSynthesizer(soundFont, options)
     if err != nil {
         return err
     }

@@ -10,7 +10,9 @@ go run ./util/play-song -polyphony 128 59
 
 Music defaults to 256 synth voices to accommodate layered instruments and
 release tails. Use `-polyphony` (8–256) to choose a lower CPU/memory budget;
-lower budgets can steal voices in dense passages.
+lower budgets can steal voices in dense passages. The engine reserves synth
+output headroom and uses stereo-linked soft limiting to prevent float32 output
+from exceeding full scale with louder soundfonts.
 
 Entries are zero-based. Without `-lbx`, the engine's automatic LBX cache searches
 for game data. Put options before the entry number.

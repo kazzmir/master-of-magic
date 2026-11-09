@@ -28,7 +28,7 @@ func TestMusicPolyphonyDefaultAndOverrides(t *testing.T) {
 			if settings.MaximumPolyphony != test.want || settings.SampleRate != audio.SampleRate {
 				t.Fatalf("settings = %+v, want %d voices at %d Hz", settings, test.want, audio.SampleRate)
 			}
-			synth, err := meltysynth.NewSynthesizer(&meltysynth.SoundFont{}, settings)
+			synth, err := newMusicSynthesizer(&meltysynth.SoundFont{}, test.options)
 			if err != nil {
 				t.Fatal(err)
 			}
