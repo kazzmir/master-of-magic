@@ -144,8 +144,8 @@ func (roadMap *RoadMap) DrawTileLayer2(screen *ebiten.Image, imageCache *util.Im
     }
 }
 
-func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
-    useMap := game.GetMap(stack.Plane())
+func (model *GameModel) FindRoadPath(oldX int, oldY int, newX int, newY int, player *playerlib.Player, stack playerlib.PathStack, fog data.FogMap) pathfinding.Path {
+    useMap := model.GetMap(stack.Plane())
 
     if newY < 0 || newY >= useMap.Height() {
         return nil
@@ -167,7 +167,7 @@ func (game *Game) FindRoadPath(oldX int, oldY int, newX int, newY int, player *p
     enemyStacks := make(map[image.Point]struct{})
     enemyCities := make(map[image.Point]struct{})
 
-    for _, enemy := range game.Model.Players {
+    for _, enemy := range model.Players {
         if enemy != player {
             for _, enemyStack := range enemy.Stacks {
                 enemyStacks[image.Pt(enemyStack.X(), enemyStack.Y())] = struct{}{}
@@ -456,7 +456,7 @@ func (game *Game) ShowRoadBuilder(yield coroutine.YieldFunc, engineerStack *play
             if leftClick && selectedPoint != newPoint {
                 selectedPoint = newPoint
 
-                newPath := game.FindRoadPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
+                newPath := game.Model.FindRoadPath(engineerStack.X(), engineerStack.Y(), newX, newY, player, engineerStack, player.GetFog(engineerStack.Plane()))
 
                 if len(newPath) > 0 {
 

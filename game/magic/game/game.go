@@ -60,7 +60,6 @@ import (
     "github.com/kazzmir/master-of-magic/lib/font"
     "github.com/kazzmir/master-of-magic/lib/coroutine"
     "github.com/kazzmir/master-of-magic/lib/fraction"
-    "github.com/kazzmir/master-of-magic/lib/set"
     "github.com/kazzmir/master-of-magic/lib/system"
     "github.com/kazzmir/master-of-magic/lib/optional"
 
@@ -93,12 +92,26 @@ func MakeGameFonts(cache *lbx.LbxCache) *GameFonts {
 type GameEvent interface {
 }
 
+type EventGroup struct {
+    Events []GameEvent
+}
+
+func (group *EventGroup) AddEvent(event GameEvent) {
+    group.Events = append(group.Events, event)
+}
+
 type GameEventMagicView struct {
 }
 
 type GameEventDiplomacy struct {
     Player *playerlib.Player
     Enemy *playerlib.Player
+}
+
+type GameEventResurrectHero struct {
+    Player *playerlib.Player
+    Heroes []*herolib.Hero
+    Spell spellbook.Spell
 }
 
 type GameEventArmyView struct {
@@ -110,6 +123,11 @@ type GameEventRefreshUI struct {
 type GameEventSurveyor struct {
 }
 
+type GameEventDisjunctionUI struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
 type GameEventCartographer struct {
 }
 
@@ -117,6 +135,9 @@ type GameEventNextTurn struct {
 }
 
 type GameEventDefaultItemEditor struct {
+}
+
+type GameEventDiscoverWizards struct {
 }
 
 type GameEventSpellOfMasteryComplete struct {
@@ -129,6 +150,17 @@ type GameEventCityListView struct {
 type GameEventApprenticeUI struct {
 }
 
+type GameEventSubversion struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
+type GameEventTranquilityFizzle struct {
+    TranquilityOwner *playerlib.Player
+    Caster *playerlib.Player
+    Spell spellbook.Spell
+}
+
 type GameEventAstrologer struct {
 }
 
@@ -136,6 +168,24 @@ type GameEventHistorian struct {
 }
 
 type GameEventCastSpellBook struct {
+}
+
+type GameEventSpellBinding struct {
+    Player *playerlib.Player
+    Spell spellbook.Spell
+}
+
+type GameEventSelectTargetSpellBlastUI struct {
+    Player *playerlib.Player
+    Selected func(*playerlib.Player) bool
+}
+
+type GameEventCastOnMap struct {
+    TileX int
+    TileY int
+    AnimationIndex int
+    SoundIndex int
+    Update func(int, int, int)
 }
 
 type GameEventBuildRoad struct {
@@ -199,7 +249,7 @@ type GameEventSelectLocationForSpell struct {
     Spell spellbook.Spell
     Player *playerlib.Player
     LocationType LocationType
-    SelectedFunc func (yield coroutine.YieldFunc, tileX int, tileY int)
+    SelectedFunc func (yield coroutine.YieldFunc, game *Game, tileX int, tileY int)
 }
 
 type GameEventLearnedSpell struct {
@@ -264,6 +314,14 @@ type GameEventCityName struct {
     // position on screen where to show the input box
     X int
     Y int
+}
+
+type GameEventSelectTargetWizard struct {
+    Title string
+    Player *playerlib.Player
+    Sound int
+    Sparks int
+    Selected func(*playerlib.Player) (bool, string)
 }
 
 type GameEventHeroLevelUp struct {
@@ -522,7 +580,7 @@ func (loader *DummyGameLoader) LoadNew(path string) error {
     return errors.New("cannot load")
 }
 
-func createArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
+func CreateArtifactPool(lbxCache *lbx.LbxCache) *artifact.Catalog {
     artifacts, err := artifact.ReadArtifacts(lbxCache)
     if err != nil {
         log.Printf("Error reading artifacts")
@@ -561,7 +619,7 @@ func MakeGame(lbxCache *lbx.LbxCache, music *musiclib.Music, gameSettings *setti
     }
 
     return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-        return MakeGameModel(terrainData, settings, data.PlaneArcanus, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo)
+        return MakeGameModel(terrainData, settings, gameSettings, data.PlaneArcanus, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
     })
 }
 
@@ -597,7 +655,7 @@ func MakeGameFromSerialized(lbxCache *lbx.LbxCache, music *musiclib.Music, gameS
     }
 
     return MakeGameWithModel(lbxCache, music, gameSettings, func (lbxCache *lbx.LbxCache, events chan GameEvent) *GameModel {
-        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, createArtifactPool(lbxCache), buildingInfo, terrainData)
+        return MakeModelFromSerialized(serializedGame, events, heroNames, allSpells, CreateArtifactPool(lbxCache), buildingInfo, terrainData)
     })
 }
 
@@ -697,26 +755,6 @@ func (area CityValidArea) FindLocation() (int, int, bool) {
 
     point := choices[rand.N(len(choices))]
     return point.X, point.Y, true
-}
-
-func (game *Game) MakeCityValidArea(plane data.Plane) CityValidArea {
-    out := make(CityValidArea)
-
-    mapUse := game.GetMap(plane)
-    continents := mapUse.Map.FindContinents()
-
-    for _, continent := range continents {
-        if continent.Size() > 100 {
-            for _, point := range continent.Values() {
-                tile := terrain.GetTile(mapUse.Map.Terrain[point.X][point.Y])
-                if point.Y > 3 && point.Y < mapUse.Map.Rows() - 3 && tile.IsLand() && !tile.IsMagic() && mapUse.GetEncounter(point.X, point.Y) == nil {
-                    out[point] = true
-                }
-            }
-        }
-    }
-
-    return out
 }
 
 func (game *Game) FindValidCityLocation(plane data.Plane) (int, int, bool) {
@@ -832,50 +870,6 @@ func chooseCityName(allNames []string, choices []string) string {
 
         suffix += 1
     }
-}
-
-func (game *Game) SuggestCityName(race data.Race) (string) {
-    allCities := game.Model.AllCities()
-    fallback := fmt.Sprintf("City %d", len(allCities)+1)
-
-    predefinedNames, err := citylib.ReadCityNames(game.Cache)
-    if err != nil {
-        log.Printf("Unable to read predefined city names: %v", err)
-        return fallback
-    }
-
-    if len(predefinedNames) % 14 != 0 {
-        log.Printf("Predefined city names not dividable by number of races")
-        return fallback
-    }
-
-    raceIndex := 0
-    switch race {
-        case data.RaceBarbarian: raceIndex = 0
-        case data.RaceBeastmen: raceIndex = 1
-        case data.RaceDarkElf: raceIndex = 2
-        case data.RaceDraconian: raceIndex = 3
-        case data.RaceDwarf: raceIndex = 4
-        case data.RaceGnoll: raceIndex = 5
-        case data.RaceHalfling: raceIndex = 6
-        case data.RaceHighElf: raceIndex = 7
-        case data.RaceHighMen: raceIndex = 8
-        case data.RaceKlackon: raceIndex = 9
-        case data.RaceLizard: raceIndex = 10
-        case data.RaceNomad: raceIndex = 11
-        case data.RaceOrc: raceIndex = 12
-        case data.RaceTroll: raceIndex = 13
-    }
-
-    var existingNames []string
-    for _, city := range allCities {
-        existingNames = append(existingNames, city.Name)
-    }
-
-    entriesPerRace := len(predefinedNames) / 14
-    choices := predefinedNames[raceIndex * entriesPerRace: (raceIndex + 1) * entriesPerRace]
-
-    return chooseCityName(existingNames, choices)
 }
 
 // FIXME: probably make this an iterator
@@ -1799,57 +1793,6 @@ func (game *Game) doVault(yield coroutine.YieldFunc, newArtifact *artifact.Artif
     game.PopDrawer()
 }
 
-/* random chance to create a hire hero event
- */
-func (game *Game) maybeHireHero(player *playerlib.Player) {
-    if len(player.AliveHeroes()) >= 6 {
-        return
-    }
-    // chance as an integer between 0-100
-
-    // every 25 fame increases chance by 1
-    // every hero reduces chance by a fraction (1 hero = halve chance. 2 heroes = 1/3 chance)
-    chance := (3 + player.GetFame() / 25) / ((len(player.AliveHeroes()) + 3) / 2)
-    if player.Wizard.RetortEnabled(data.RetortFamous) {
-        chance *= 2
-    }
-
-    if chance > 10 {
-        chance = 10
-    }
-
-    if rand.N(100) < chance {
-        var heroCandidates []*herolib.Hero
-        for _, hero := range player.HeroPool {
-            // torin can never be hired
-            if hero.HeroType == herolib.HeroTorin {
-                continue
-            }
-
-            if hero.Status == herolib.StatusAvailable {
-                if hero.GetRequiredFame() <= player.GetFame() {
-                    heroCandidates = append(heroCandidates, hero)
-                }
-            }
-        }
-
-        if len(heroCandidates) > 0 {
-            hero := heroCandidates[rand.N(len(heroCandidates))]
-
-            fee := hero.GetHireFee()
-            if fee > player.Gold {
-                // hero gains a level if the player can't afford to hire them
-                hero.GainLevel(units.ExperienceChampionHero)
-            } else {
-                select {
-                    case game.Events <- &GameEventHireHero{Cost: fee, Hero: hero, Player: player}:
-                    default:
-                }
-            }
-        }
-    }
-}
-
 /* show the hire hero popup, and if the user clicks 'hire' then add the hero to the player's list of heroes
  */
 func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.Hero, player *playerlib.Player, atFortress bool, point data.PlanePoint) {
@@ -1876,7 +1819,7 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
                 name := game.doInput(yield, "Hero Name", hero.GetName(), 70, 50)
                 hero.SetName(name)
 
-                game.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
+                game.Model.ResolveStackAt(hero.GetX(), hero.GetY(), hero.GetPlane())
 
                 if player.SelectedStack == nil {
                     player.SelectedStack = player.FindStack(hero.GetX(), hero.GetY(), hero.GetPlane())
@@ -1906,130 +1849,6 @@ func (game *Game) doHireHero(yield coroutine.YieldFunc, cost int, hero *herolib.
     yield()
 }
 
-/* random chance to create a hire mercenaries event
- */
-func (game *Game) maybeHireMercenaries(player *playerlib.Player) {
-    if game.Model.TurnNumber <= 30 {
-        return
-    }
-
-    fortressCity := player.FindFortressCity()
-    if fortressCity == nil {
-        return  // player is being banished
-    }
-
-    // chance to create an event
-    chance := 1 + player.GetFame() / 20
-    if player.Wizard.RetortEnabled(data.RetortFamous) {
-        chance *= 2
-    }
-    if chance > 10 {
-        chance = 10
-    }
-
-    if rand.N(100) >= chance {
-        return
-    }
-
-    // unit type
-    presentOnArcanus := false
-    presentOnMyrror := false
-    for _, city := range player.Cities {
-        if city.Plane == data.PlaneArcanus {
-            presentOnArcanus = true
-        }
-        if city.Plane == data.PlaneMyrror {
-            presentOnMyrror = true
-        }
-    }
-
-    var unitCandidates []*units.Unit
-    for _, unit := range units.AllUnits {
-        if unit.Race == data.RaceFantastic || unit.Race == data.RaceHero {
-            continue
-        }
-
-        if unit.IsSettlers() {
-            continue
-        }
-
-        if unit.Name == "Trireme" || unit.Name == "Galley" || unit.Name == "Warship" {
-            continue
-        }
-
-        isFromPresentPlane := false
-        if presentOnArcanus {
-            for _, race := range data.ArcanianRaces() {
-                if unit.Race == race {
-                    isFromPresentPlane = true
-                    break
-                }
-            }
-        }
-        if !isFromPresentPlane && presentOnMyrror {
-            for _, race := range data.MyrranRaces() {
-                if unit.Race == race {
-                    isFromPresentPlane = true
-                    break
-                }
-            }
-        }
-        if !isFromPresentPlane {
-            continue
-        }
-
-        unitCandidates = append(unitCandidates, &unit)
-    }
-    if len(unitCandidates) == 0 {
-        return
-    }
-
-    unit := unitCandidates[rand.IntN(len(unitCandidates))]
-
-    // number of units
-    count := 1
-    countRoll := rand.N(100) + player.GetFame()
-    switch {
-        case countRoll > 90: count = 3
-        case countRoll > 60: count = 2
-    }
-
-    // experience
-    level := 1
-    experience := 20
-    experienceRoll := rand.N(100) + player.GetFame()
-    switch {
-        case experienceRoll > 90:
-            level = 3
-            experience = 120
-        case experienceRoll > 60:
-            level = 2
-            experience = 60
-    }
-
-    // cost
-    cost := count * unit.ProductionCost * (level + 3) / 2
-    if player.Wizard.RetortEnabled(data.RetortCharismatic) {
-        cost /= 2
-    }
-    if player.Gold < cost {
-        return
-    }
-
-    // create units
-    var overworldUnits []*units.OverworldUnit
-    for range count {
-        overworldUnit := units.MakeOverworldUnitFromUnit(*unit, fortressCity.X, fortressCity.Y, fortressCity.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
-        overworldUnit.Experience = experience
-        overworldUnits = append(overworldUnits, overworldUnit)
-    }
-
-    select {
-        case game.Events <- &GameEventHireMercenaries{Cost: cost, Units: overworldUnits, Player: player}:
-        default:
-    }
-}
-
 /* show the hire mercenaries popup, and if the user clicks 'hire' then add the units to the player's list of units
  */
 func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units []*units.OverworldUnit, player *playerlib.Player) {
@@ -2048,7 +1867,7 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         if hired {
             for _, unit := range units {
                 player.AddUnit(unit)
-                game.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
+                game.Model.ResolveStackAt(unit.GetX(), unit.GetY(), unit.GetPlane())
             }
             player.Gold -= cost
             game.RefreshUI()
@@ -2061,58 +1880,6 @@ func (game *Game) doHireMercenaries(yield coroutine.YieldFunc, cost int, units [
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
-    }
-}
-
-/* random chance to create a merchant event
- */
-func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
-    // chance to create an event
-    chance := 2 + player.GetFame() / 25
-    if player.Wizard.RetortEnabled(data.RetortFamous) {
-        chance *= 2
-    }
-    if chance > 10 {
-        chance = 10
-    }
-
-    if rand.N(100) >= chance {
-        return
-    }
-
-    var artifactCandidates []*artifact.Artifact
-    for _, candidate := range game.Model.ArtifactPool.AvailableArtifacts() {
-        requirementsMet := true
-        for _, requirement := range candidate.Requirements {
-            if requirement.Amount > 12 {
-                requirementsMet = false
-                break
-            }
-        }
-        if !requirementsMet {
-            continue
-        }
-
-        artifactCandidates = append(artifactCandidates, candidate)
-    }
-    if len(artifactCandidates) == 0 {
-        return
-    }
-
-    artifact := artifactCandidates[rand.IntN(len(artifactCandidates))]
-
-    // cost
-    cost := artifact.Cost
-    if player.Wizard.RetortEnabled(data.RetortCharismatic) {
-        cost /= 2
-    }
-    if player.Gold < cost {
-        return
-    }
-
-    select {
-        case game.Events <- &GameEventMerchant{Cost: cost, Artifact: artifact, Player: player}:
-        default:
     }
 }
 
@@ -2140,16 +1907,6 @@ func (game *Game) maybeBuyFromMerchant(player *playerlib.Player) {
         game.Counter += 1
         game.HudUI.StandardUpdate()
         yield()
-    }
-}
-
-// FIXME: add a "reason" of fizzling, like "Spell X was fizzled because of Y"
-func (game *Game) ShowFizzleSpell(spell spellbook.Spell, caster *playerlib.Player) {
-    if caster.IsHuman() {
-        game.Events <- &GameEventNotice{
-            // FIXME: align this message with how dos mom does it
-            Message: fmt.Sprintf("The spell %v has fizzled.", spell.Name),
-        }
     }
 }
 
@@ -2182,7 +1939,7 @@ func (game *Game) doNotice(yield coroutine.YieldFunc, ui *uilib.UI, message stri
  */
 func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
     player := game.Model.GetHumanPlayer()
-    goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
+    goldIssue, foodIssue, manaIssue := game.Model.CheckDisband(player)
 
     if goldIssue || foodIssue || manaIssue {
 
@@ -2231,25 +1988,6 @@ func (game *Game) doNextTurn(yield coroutine.YieldFunc) {
     }
 
     game.DoNextTurn()
-}
-
-func (game *Game) AddExperience(player *playerlib.Player, unit units.StackUnit, amount int) {
-    if player.IsHuman() && unit.IsHero() {
-        level_before := unit.GetHeroExperienceLevel()
-
-        unit.AddExperience(amount)
-
-        level_after := unit.GetHeroExperienceLevel()
-
-        if level_before != level_after {
-            hero := unit.(*herolib.Hero)
-            game.Events <- &GameEventHeroLevelUp{
-                Hero: hero,
-            }
-        }
-    } else {
-        unit.AddExperience(amount)
-    }
 }
 
 type RandomEventFonts struct {
@@ -2577,254 +2315,342 @@ func (game *Game) DoPause(yield coroutine.YieldFunc) {
     }
 }
 
+func (game *Game) handleRunUI(yield coroutine.YieldFunc, runUI *GameEventRunUI) {
+    if runUI.Song != musiclib.SongNone {
+        game.Music.PushSong(runUI.Song)
+    }
+
+    game.doRunUI(yield, runUI.Group, runUI.Quit)
+
+    if runUI.Song != musiclib.SongNone {
+        game.Music.PopSong()
+    }
+}
+
+func (game *Game) processEvent(yield coroutine.YieldFunc, event GameEvent, lastEvent GameEvent) {
+    switch event.(type) {
+        case *EventGroup:
+            group := event.(*EventGroup)
+            for _, subEvent := range group.Events {
+                game.processEvent(yield, subEvent, lastEvent)
+                lastEvent = subEvent
+            }
+
+        case *GameEventMagicView:
+            game.doMagicView(yield)
+        case *GameEventDiplomacy:
+            diplomacy := event.(*GameEventDiplomacy)
+            game.doDiplomacy(yield, diplomacy.Player, diplomacy.Enemy)
+        case *GameEventRefreshUI:
+            // compress ui refreshes
+            switch lastEvent.(type) {
+                case *GameEventRefreshUI: // nothing, since we just did a refresh
+                default:
+                    game.HudUI = game.MakeHudUI()
+                    if game.WatchMode {
+                        game.WatchUI = game.MakeWatchUI()
+                    }
+            }
+
+        case *GameEventSelectTargetWizard:
+            event := event.(*GameEventSelectTargetWizard)
+            playersInGame := len(game.Model.Players)
+            quit, cancel := context.WithCancel(context.Background())
+            wizSelectionUiGroup := makeSelectTargetWizardUI(cancel, game.Cache, &game.ImageCache, event.Title, event.Sparks, event.Sound, event.Player, playersInGame, event.Selected)
+            game.doRunUI(yield, wizSelectionUiGroup, quit)
+
+        case *GameEventDisjunctionUI:
+            event := event.(*GameEventDisjunctionUI)
+
+            uiGroup, quit, err := game.MakeDisjunctionUI(event.Player, event.Spell)
+            if err != nil {
+                game.doNotice(yield, game.HudUI, err.Error())
+            } else {
+                game.handleRunUI(yield, &GameEventRunUI{Group: uiGroup, Quit: quit})
+            }
+
+        case *GameEventSelectTargetSpellBlastUI:
+            event := event.(*GameEventSelectTargetSpellBlastUI)
+
+            playersInGame := len(game.Model.Players)
+            quit, cancel := context.WithCancel(context.Background())
+            wizSelectionUiGroup := makeSelectSpellBlastTargetUI(cancel, game.Cache, &game.ImageCache, event.Player, playersInGame, event.Selected)
+            game.doRunUI(yield, wizSelectionUiGroup, quit)
+
+        case *GameEventSpellBinding:
+            event := event.(*GameEventSpellBinding)
+
+            uiGroup, quit, err := game.MakeSpellBindingUI(event.Player, event.Spell)
+            if err != nil {
+                game.doNotice(yield, game.HudUI, err.Error())
+            } else {
+                game.handleRunUI(yield, &GameEventRunUI{Group: uiGroup, Quit: quit})
+            }
+
+        case *GameEventResurrectHero:
+            event := event.(*GameEventResurrectHero)
+
+            group, quit := game.MakeResurrectionUI(event.Player, event.Heroes, event.Spell.Sound)
+
+            game.handleRunUI(yield, &GameEventRunUI{
+                Group: group,
+                Quit: quit,
+            })
+
+        case *GameEventSubversion:
+            event := event.(*GameEventSubversion)
+
+            uiGroup, quit, err := game.MakeSubversionUI(event.Player, event.Spell)
+            if err != nil {
+                game.doNotice(yield, game.HudUI, fmt.Sprintf("%v", err))
+            } else {
+                game.handleRunUI(yield, &GameEventRunUI{
+                    Group: uiGroup,
+                    Quit: quit,
+                })
+            }
+
+        case *GameEventTranquilityFizzle:
+            event := event.(*GameEventTranquilityFizzle)
+            group, quit := game.makeTranquilityFizzleUI(event.TranquilityOwner, event.Caster, event.Spell)
+
+            game.handleRunUI(yield, &GameEventRunUI{
+                Group: group,
+                Quit: quit,
+                Song: musiclib.SongSupressMagicActivating,
+            })
+        case *GameEventCastOnMap:
+            event := event.(*GameEventCastOnMap)
+            game.doCastOnMap(yield, event.TileX, event.TileY, event.AnimationIndex, event.SoundIndex, event.Update)
+        case *GameEventDiscoverWizards:
+            game.discoverWizards(yield)
+        case *GameEventHireHero:
+            hire := event.(*GameEventHireHero)
+            player := hire.Player
+            if player.IsHuman() {
+                game.doHireHero(yield, hire.Cost, hire.Hero, player, true, data.PlanePoint{})
+            } else {
+                if player.AIBehavior != nil {
+                    player.AIBehavior.HandleHireHero(player, hire.Hero, 0, true, data.PlanePoint{})
+                }
+            }
+        case *GameEventHireMercenaries:
+            hire := event.(*GameEventHireMercenaries)
+            player := hire.Player
+            if player.IsHuman() {
+                game.doHireMercenaries(yield, hire.Cost, hire.Units, player)
+            } else {
+                if player.AIBehavior != nil {
+                    player.AIBehavior.HandleHireMercenaries(player, hire.Units, hire.Cost)
+                }
+            }
+        case *GameEventPauseWatchMode:
+            game.WatchModePaused = !game.WatchModePaused
+            if game.WatchModePaused {
+                game.DoPause(yield)
+            }
+
+        case *GameEventMerchant:
+            merchant := event.(*GameEventMerchant)
+            if merchant.Player.IsHuman() {
+                game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
+            } else {
+                merchant.Player.AIBehavior.HandleMerchantItem(merchant.Player, merchant.Artifact, merchant.Cost)
+            }
+        case *GameEventRunUI:
+            game.handleRunUI(yield, event.(*GameEventRunUI))
+
+        case *GameEventBuildRoad:
+            road := event.(*GameEventBuildRoad)
+            stack := road.Stack
+
+            player := game.Model.GetHumanPlayer()
+
+            path := game.ShowRoadBuilder(yield, stack, player)
+            if len(path) > 0 {
+                for _, unit := range stack.Units() {
+                    if unit.HasAbility(data.AbilityConstruction) {
+                        unit.SetBuildRoadPath(path)
+
+                        /*
+                        unit.SetBusy(units.BusyStatusBuildRoad)
+                        stack.SetActive(unit, false)
+                        */
+                    }
+                }
+
+                if !game.Model.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
+                    select {
+                        case game.Events <- &GameEventMoveUnit{Player: player}:
+                        default:
+                    }
+                }
+            }
+
+        case *GameEventNextTurn:
+            game.doNextTurn(yield)
+        case *GameEventSpellOfMasteryComplete:
+            masteryEvent := event.(*GameEventSpellOfMasteryComplete)
+            game.doSpellOfMasteryVictory(yield, masteryEvent.Player)
+        case *GameEventDefaultItemEditor:
+            game.doDefaultItemEditor(yield)
+        case *GameEventSurveyor:
+            game.doSurveyor(yield)
+        case *GameEventCartographer:
+            game.doCartographer(yield)
+        case *GameEventAstrologer:
+            game.ShowAstrologer(yield)
+        case *GameEventHistorian:
+            game.ShowHistorian(yield)
+        case *GameEventApprenticeUI:
+            game.ShowApprenticeUI(yield, game.Model.GetHumanPlayer())
+        case *GameEventArmyView:
+            game.doArmyView(yield)
+        case *GameEventShowBanish:
+            banishEvent := event.(*GameEventShowBanish)
+            game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
+        case *GameEventNotice:
+            notice := event.(*GameEventNotice)
+            game.doNotice(yield, game.HudUI, notice.Message)
+        case *GameEventCastSpellBook:
+            game.ShowSpellBookCastUI(yield, game.Model.GetHumanPlayer())
+        case *GameEventCityListView:
+            game.doCityListView(yield)
+        case *GameEventNewOutpost:
+            outpost := event.(*GameEventNewOutpost)
+            if outpost.Player.IsHuman() {
+                game.showOutpost(yield, outpost.City, outpost.Stack, outpost.Player, true)
+            }
+        case *GameEventVault:
+            vaultEvent := event.(*GameEventVault)
+            if vaultEvent.Player.IsHuman() {
+                game.doVault(yield, vaultEvent.CreatedArtifact)
+            } else {
+                // FIXME: give item to AI
+            }
+        case *GameEventShowRandomEvent:
+            randomEvent := event.(*GameEventShowRandomEvent)
+            target := randomEvent.Event.TargetPlayer
+            if !game.WatchMode && (target == nil || target == game.Model.GetHumanPlayer()) {
+                game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.GetHumanPlayer().Wizard)
+            }
+        case *GameEventScroll:
+            scroll := event.(*GameEventScroll)
+            game.showScroll(yield, scroll.Title, scroll.Text)
+            if !scroll.Old {
+                game.Model.ScrollEvents = append(game.Model.ScrollEvents, scroll)
+            }
+        case *GameEventLearnedSpell:
+            learnedSpell := event.(*GameEventLearnedSpell)
+            game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
+        case *GameEventResearchSpell:
+            researchSpell := event.(*GameEventResearchSpell)
+            game.ResearchNewSpell(yield, researchSpell.Player)
+        case *GameEventInvokeRoutine:
+            invokeRoutine := event.(*GameEventInvokeRoutine)
+            invokeRoutine.Routine(yield)
+        case *GameEventCastGlobalEnchantment:
+            castGlobal := event.(*GameEventCastGlobalEnchantment)
+            player := castGlobal.Player
+
+            if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                after := castGlobal.After
+                if after == nil {
+                    after = func(){}
+                }
+                game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment, after)
+            }
+        case *GameEventSelectLocationForSpell:
+            selectLocation := event.(*GameEventSelectLocationForSpell)
+            if selectLocation.Player.IsHuman() {
+                tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
+                if !cancel {
+                    // this function could return a list of events that get locally processed
+                    selectLocation.SelectedFunc(yield, game, tileX, tileY)
+                }
+            } else {
+                // FIXME: implement AI location selection
+            }
+        case *GameEventCastSpell:
+            castSpell := event.(*GameEventCastSpell)
+            // in cast.go
+            game.Model.doCastSpell(castSpell.Player, castSpell.Spell)
+        case *GameEventTreasure:
+            treasure := event.(*GameEventTreasure)
+            if treasure.Player.IsHuman() {
+                game.doTreasurePopup(yield, treasure.Player, treasure.Treasure)
+            }
+
+            game.ApplyTreasure(yield, treasure.Player, treasure.Treasure)
+            yield()
+
+        case *GameEventNewBuilding:
+            buildingEvent := event.(*GameEventNewBuilding)
+            game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
+            game.Music.PushSong(musiclib.SongBuildingFinished)
+            game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
+            game.Music.PopSong()
+            game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
+        case *GameEventCityName:
+            cityEvent := event.(*GameEventCityName)
+            city := cityEvent.City
+            city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
+        case *GameEventSummonUnit:
+            summonUnit := event.(*GameEventSummonUnit)
+            player := summonUnit.Player
+
+            if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                game.Music.PushSong(musiclib.SongCommonSummoningSpell)
+                game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
+                game.Music.PopSong()
+            }
+        case *GameEventSummonArtifact:
+            summonArtifact := event.(*GameEventSummonArtifact)
+            player := summonArtifact.Player
+
+            if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
+                game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
+                game.Music.PopSong()
+            }
+        case *GameEventSummonHero:
+            summonHero := event.(*GameEventSummonHero)
+            player := summonHero.Player
+
+            if player.IsHuman() || game.CastingDetectableByHuman(player) {
+                game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
+                game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman(), summonHero.Female))
+                game.Music.PopSong()
+            }
+        case *GameEventGameMenu:
+            game.doGameMenu(yield)
+        case *GameEventHeroLevelUp:
+            levelEvent := event.(*GameEventHeroLevelUp)
+            game.Music.PushSong(musiclib.SongHeroGainedALevel)
+            game.showHeroLevelUpPopup(yield, levelEvent.Hero)
+            game.Music.PopSong()
+        case *GameEventMoveCamera:
+            moveCamera := event.(*GameEventMoveCamera)
+            game.Model.Plane = moveCamera.Plane
+
+            if moveCamera.Instant {
+                game.Camera.Center(moveCamera.X, moveCamera.Y)
+            } else {
+                game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
+            }
+        case *GameEventMoveUnit:
+            moveUnit := event.(*GameEventMoveUnit)
+            game.doMoveSelectedUnit(yield, moveUnit.Player)
+    }
+}
+
 func (game *Game) ProcessEvents(yield coroutine.YieldFunc) {
     // keep processing events until we don't receive one in the events channel
     var lastEvent GameEvent
     for {
         select {
             case event := <-game.Events:
-                switch event.(type) {
-                    case *GameEventMagicView:
-                        game.doMagicView(yield)
-                    case *GameEventDiplomacy:
-                        diplomacy := event.(*GameEventDiplomacy)
-                        game.doDiplomacy(yield, diplomacy.Player, diplomacy.Enemy)
-                    case *GameEventRefreshUI:
-                        // compress ui refreshes
-                        switch lastEvent.(type) {
-                            case *GameEventRefreshUI: // nothing, since we just did a refresh
-                            default:
-                                game.HudUI = game.MakeHudUI()
-                                if game.WatchMode {
-                                    game.WatchUI = game.MakeWatchUI()
-                                }
-                        }
-                    case *GameEventHireHero:
-                        hire := event.(*GameEventHireHero)
-                        player := hire.Player
-                        if player.IsHuman() {
-                            game.doHireHero(yield, hire.Cost, hire.Hero, player, true, data.PlanePoint{})
-                        } else {
-                            if player.AIBehavior != nil {
-                                player.AIBehavior.HandleHireHero(player, hire.Hero, 0, true, data.PlanePoint{})
-                            }
-                        }
-                    case *GameEventHireMercenaries:
-                        hire := event.(*GameEventHireMercenaries)
-                        player := hire.Player
-                        if player.IsHuman() {
-                            game.doHireMercenaries(yield, hire.Cost, hire.Units, player)
-                        } else {
-                            if player.AIBehavior != nil {
-                                player.AIBehavior.HandleHireMercenaries(player, hire.Units, hire.Cost)
-                            }
-                        }
-                    case *GameEventPauseWatchMode:
-                        game.WatchModePaused = !game.WatchModePaused
-                        if game.WatchModePaused {
-                            game.DoPause(yield)
-                        }
-
-                    case *GameEventMerchant:
-                        merchant := event.(*GameEventMerchant)
-                        if merchant.Player.IsHuman() {
-                            game.doMerchant(yield, merchant.Cost, merchant.Artifact, merchant.Player)
-                        } else {
-                            merchant.Player.AIBehavior.HandleMerchantItem(merchant.Player, merchant.Artifact, merchant.Cost)
-                        }
-                    case *GameEventRunUI:
-                        runUI := event.(*GameEventRunUI)
-                        if runUI.Song != musiclib.SongNone {
-                            game.Music.PushSong(runUI.Song)
-                        }
-
-                        game.doRunUI(yield, runUI.Group, runUI.Quit)
-
-                        if runUI.Song != musiclib.SongNone {
-                            game.Music.PopSong()
-                        }
-                    case *GameEventBuildRoad:
-                        road := event.(*GameEventBuildRoad)
-                        stack := road.Stack
-
-                        player := game.Model.GetHumanPlayer()
-
-                        path := game.ShowRoadBuilder(yield, stack, player)
-                        if len(path) > 0 {
-                            for _, unit := range stack.Units() {
-                                if unit.HasAbility(data.AbilityConstruction) {
-                                    unit.SetBuildRoadPath(path)
-
-                                    /*
-                                    unit.SetBusy(units.BusyStatusBuildRoad)
-                                    stack.SetActive(unit, false)
-                                    */
-                                }
-                            }
-
-                            if !game.MaybeBuildRoads(stack, player) && stack == player.SelectedStack {
-                                select {
-                                    case game.Events <- &GameEventMoveUnit{Player: player}:
-                                    default:
-                                }
-                            }
-                        }
-
-                    case *GameEventNextTurn:
-                        game.doNextTurn(yield)
-                    case *GameEventSpellOfMasteryComplete:
-                        masteryEvent := event.(*GameEventSpellOfMasteryComplete)
-                        game.doSpellOfMasteryVictory(yield, masteryEvent.Player)
-                    case *GameEventDefaultItemEditor:
-                        game.doDefaultItemEditor(yield)
-                    case *GameEventSurveyor:
-                        game.doSurveyor(yield)
-                    case *GameEventCartographer:
-                        game.doCartographer(yield)
-                    case *GameEventAstrologer:
-                        game.ShowAstrologer(yield)
-                    case *GameEventHistorian:
-                        game.ShowHistorian(yield)
-                    case *GameEventApprenticeUI:
-                        game.ShowApprenticeUI(yield, game.Model.GetHumanPlayer())
-                    case *GameEventArmyView:
-                        game.doArmyView(yield)
-                    case *GameEventShowBanish:
-                        banishEvent := event.(*GameEventShowBanish)
-                        game.doBanish(yield, banishEvent.Attacker, banishEvent.Defender)
-                    case *GameEventNotice:
-                        notice := event.(*GameEventNotice)
-                        game.doNotice(yield, game.HudUI, notice.Message)
-                    case *GameEventCastSpellBook:
-                        game.ShowSpellBookCastUI(yield, game.Model.GetHumanPlayer())
-                    case *GameEventCityListView:
-                        game.doCityListView(yield)
-                    case *GameEventNewOutpost:
-                        outpost := event.(*GameEventNewOutpost)
-                        if outpost.Player.IsHuman() {
-                            game.showOutpost(yield, outpost.City, outpost.Stack, outpost.Player, true)
-                        }
-                    case *GameEventVault:
-                        vaultEvent := event.(*GameEventVault)
-                        if vaultEvent.Player.IsHuman() {
-                            game.doVault(yield, vaultEvent.CreatedArtifact)
-                        } else {
-                            // FIXME: give item to AI
-                        }
-                    case *GameEventShowRandomEvent:
-                        randomEvent := event.(*GameEventShowRandomEvent)
-                        target := randomEvent.Event.TargetPlayer
-                        if !game.WatchMode && (target == nil || target == game.Model.GetHumanPlayer()) {
-                            game.doRandomEvent(yield, randomEvent.Event, randomEvent.Starting, game.Model.GetHumanPlayer().Wizard)
-                        }
-                    case *GameEventScroll:
-                        scroll := event.(*GameEventScroll)
-                        game.showScroll(yield, scroll.Title, scroll.Text)
-                        if !scroll.Old {
-                            game.Model.ScrollEvents = append(game.Model.ScrollEvents, scroll)
-                        }
-                    case *GameEventLearnedSpell:
-                        learnedSpell := event.(*GameEventLearnedSpell)
-                        game.doLearnSpell(yield, learnedSpell.Player, learnedSpell.Spell)
-                    case *GameEventResearchSpell:
-                        researchSpell := event.(*GameEventResearchSpell)
-                        game.ResearchNewSpell(yield, researchSpell.Player)
-                    case *GameEventInvokeRoutine:
-                        invokeRoutine := event.(*GameEventInvokeRoutine)
-                        invokeRoutine.Routine(yield)
-                    case *GameEventCastGlobalEnchantment:
-                        castGlobal := event.(*GameEventCastGlobalEnchantment)
-                        player := castGlobal.Player
-
-                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            after := castGlobal.After
-                            if after == nil {
-                                after = func(){}
-                            }
-                            game.doCastGlobalEnchantment(yield, player, castGlobal.Enchantment, after)
-                        }
-                    case *GameEventSelectLocationForSpell:
-                        selectLocation := event.(*GameEventSelectLocationForSpell)
-                        if selectLocation.Player.IsHuman() {
-                            tileX, tileY, cancel := game.selectLocationForSpell(yield, selectLocation.Spell, selectLocation.Player, selectLocation.LocationType)
-                            if !cancel {
-                                selectLocation.SelectedFunc(yield, tileX, tileY)
-                            }
-                        } else {
-                            // FIXME: implement AI location selection
-                        }
-                    case *GameEventCastSpell:
-                        castSpell := event.(*GameEventCastSpell)
-                        // in cast.go
-                        game.doCastSpell(castSpell.Player, castSpell.Spell)
-                    case *GameEventTreasure:
-                        treasure := event.(*GameEventTreasure)
-                        if treasure.Player.IsHuman() {
-                            game.doTreasurePopup(yield, treasure.Player, treasure.Treasure)
-                        }
-
-                        game.ApplyTreasure(yield, treasure.Player, treasure.Treasure)
-                        yield()
-
-                    case *GameEventNewBuilding:
-                        buildingEvent := event.(*GameEventNewBuilding)
-                        game.Camera.Center(buildingEvent.City.X, buildingEvent.City.Y)
-                        game.Music.PushSong(musiclib.SongBuildingFinished)
-                        game.showNewBuilding(yield, buildingEvent.City, buildingEvent.Building, buildingEvent.Player)
-                        game.Music.PopSong()
-                        game.doCityScreen(yield, buildingEvent.City, buildingEvent.Player, buildingEvent.Building)
-                    case *GameEventCityName:
-                        cityEvent := event.(*GameEventCityName)
-                        city := cityEvent.City
-                        city.Name = game.doInput(yield, cityEvent.Title, city.Name, cityEvent.X, cityEvent.Y)
-                    case *GameEventSummonUnit:
-                        summonUnit := event.(*GameEventSummonUnit)
-                        player := summonUnit.Player
-
-                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(musiclib.SongCommonSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonUnit(game.Cache, summonUnit.Unit, player.Wizard.Base, !player.IsHuman()))
-                            game.Music.PopSong()
-                        }
-                    case *GameEventSummonArtifact:
-                        summonArtifact := event.(*GameEventSummonArtifact)
-                        player := summonArtifact.Player
-
-                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonArtifact(game.Cache, player.Wizard.Base, !player.IsHuman()))
-                            game.Music.PopSong()
-                        }
-                    case *GameEventSummonHero:
-                        summonHero := event.(*GameEventSummonHero)
-                        player := summonHero.Player
-
-                        if player.IsHuman() || game.CastingDetectableByHuman(player) {
-                            game.Music.PushSong(musiclib.SongVeryRareSummoningSpell)
-                            game.doSummon(yield, summon.MakeSummonHero(game.Cache, player.Wizard.Base, summonHero.Champion, !player.IsHuman(), summonHero.Female))
-                            game.Music.PopSong()
-                        }
-                    case *GameEventGameMenu:
-                        game.doGameMenu(yield)
-                    case *GameEventHeroLevelUp:
-                        levelEvent := event.(*GameEventHeroLevelUp)
-                        game.Music.PushSong(musiclib.SongHeroGainedALevel)
-                        game.showHeroLevelUpPopup(yield, levelEvent.Hero)
-                        game.Music.PopSong()
-                    case *GameEventMoveCamera:
-                        moveCamera := event.(*GameEventMoveCamera)
-                        game.Model.Plane = moveCamera.Plane
-
-                        if moveCamera.Instant {
-                            game.Camera.Center(moveCamera.X, moveCamera.Y)
-                        } else {
-                            game.doMoveCamera(yield, moveCamera.X, moveCamera.Y)
-                        }
-                    case *GameEventMoveUnit:
-                        moveUnit := event.(*GameEventMoveUnit)
-                        game.doMoveSelectedUnit(yield, moveUnit.Player)
-                }
-
+                game.processEvent(yield, event, lastEvent)
                 lastEvent = event
             default:
                 return
@@ -3312,12 +3138,6 @@ func ChooseUniqueWizard(players []*playerlib.Player, allSpells spellbook.Spells)
 
 }
 
-/* returns a wizard definition and true if successful, otherwise false if no more wizards can be created
- */
-func (game *Game) ChooseWizard() (setup.WizardCustom, bool) {
-    return ChooseUniqueWizard(game.Model.Players, game.AllSpells())
-}
-
 func (game *Game) RefreshUI() {
     select {
         case game.Events <- &GameEventRefreshUI{}:
@@ -3497,125 +3317,6 @@ func (game *Game) doMoveCamera(yield coroutine.YieldFunc, x int, y int) {
     game.Camera.Center(game.Model.CurrentMap().WrapX(x), y)
 }
 
-func (game *Game) ResolveStackAt(x int, y int, plane data.Plane) {
-    stack, player := game.Model.FindStack(x, y, plane)
-    if stack == nil {
-        return
-    }
-
-    count := len(stack.Units())
-    if count <= data.MaxUnitsInStack {
-        return
-    }
-
-    // try to move random units to a nearby tile
-    stackUnits := stack.Units()
-    for _, i := range rand.Perm(len(stackUnits)) {
-        unit := stackUnits[i]
-
-        positions := game.Model.FindEscapePosition(player, unit)
-
-        if len(positions) != 0 {
-            // set to a random position
-            position := positions[rand.IntN(len(positions))]
-            unit.SetX(position.X)
-            unit.SetY(position.Y)
-
-            // merge stacks
-            stack.RemoveUnit(unit)
-            player.AddStack(playerlib.MakeUnitStackFromUnits([]units.StackUnit{unit}))
-            allStacks := player.FindAllStacks(position.X, position.Y, stack.Plane())
-            for i := 1; i < len(allStacks); i++ {
-                player.MergeStacks(allStacks[0], allStacks[i])
-            }
-
-            count -= 1
-            if count <= data.MaxUnitsInStack {
-                break
-            }
-        }
-    }
-
-    // kill units until enough room
-    if count > data.MaxUnitsInStack {
-        stackUnits = stack.Units()
-        slices.SortFunc(stackUnits, func(unitA, unitB units.StackUnit) int {
-            // non-heros before heroes
-            if unitA.IsHero() != unitB.IsHero() {
-                if unitA.IsHero() {
-                    return 1
-                }
-                return -1
-            }
-
-            // low-leveled heroes first
-            if unitA.IsHero() && unitB.IsHero() {
-                return unitA.GetExperience() - unitB.GetExperience()
-            }
-
-            // low production or casting cost first
-            minCostA := min(unitA.GetRawUnit().ProductionCost, unitA.GetRawUnit().CastingCost)
-            minCostB := min(unitB.GetRawUnit().ProductionCost, unitB.GetRawUnit().CastingCost)
-            return minCostA - minCostB
-        })
-
-        for _, unit := range stackUnits {
-            log.Printf("Unit %v killed by ResolveStack", unit)
-            player.RemoveUnit(unit)
-            count -= 1
-            if count <= data.MaxUnitsInStack {
-                break
-            }
-        }
-    }
-}
-
-// returns true if the city was razed, and the amount of gold plundered from the city
-func (game *Game) defeatCity(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, city *citylib.City) (bool, int) {
-    raze := false
-    gold := defender.ComputePlunderedGold(city)
-
-    if attacker.IsHuman() {
-        raze = game.confirmRazeTown(yield, city)
-    } else {
-        raze = attacker.AIBehavior.ConfirmRazeTown(city)
-    }
-
-    containedFortress := city.Buildings.Contains(buildinglib.BuildingFortress)
-
-    if raze {
-        defender.RemoveCity(city)
-    } else {
-        ChangeCityOwner(city, defender, attacker, ChangeCityRemoveOwnerEnchantments)
-    }
-
-    attacker.DidConquerCity(city, raze)
-    defender.DidLoseCity(city)
-
-    // player is defeated if they have no cities left
-    defeated := len(defender.Cities) == 0
-
-    if defeated {
-        defender.Defeated = true
-        attacker.DidDefeat(defender)
-    }
-
-    if containedFortress {
-        defender.Banished = true
-
-        attacker.DidBanish(defender)
-
-        if attacker.IsHuman() || defender.IsHuman() {
-            game.Events <- &GameEventShowBanish{Attacker: attacker, Defender: defender}
-        }
-
-        if !defeated {
-            defender.CastSpellOfReturn()
-        }
-    }
-
-    return raze, gold
-}
 
 func (game *Game) doBanish(yield coroutine.YieldFunc, attacker *playerlib.Player, defender *playerlib.Player) {
     banishLogic, banishDraw := banish.ShowBanishAnimation(game.Cache, attacker, defender)
@@ -3718,7 +3419,9 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.discoverWizards(yield)
 
                     stack.ExhaustMoves()
-                    state := game.doEncounter(yield, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    state := game.Model.DoEncounter(&UICombatHandler{Yield: yield, Game: game}, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    // asborb clicks
+                    yield()
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
@@ -3753,7 +3456,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     defenderPlayer := game.GetStackOwner(otherStack)
 
                     // note: doCombat will already call defeatCity if the attacker wins the battle
-                    state := game.doCombat(yield, player, stack, defenderPlayer, otherStack, zone)
+                    state := game.Model.DoCombat(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherStack, zone)
                     if state == combat.CombatStateAttackerFlee {
                         stack.SetX(oldX)
                         stack.SetY(oldY)
@@ -3772,7 +3475,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                 otherCity := entityInfo.FindCity(stack.X(), stack.Y(), stack.Plane())
                 if otherCity != nil {
                     defenderPlayer := game.GetCityOwner(otherCity)
-                    raze, gold := game.defeatCity(yield, player, stack, defenderPlayer, otherCity)
+                    raze, gold := game.Model.DefeatCity(&UICombatHandler{Yield: yield, Game: game}, player, stack, defenderPlayer, otherCity)
 
                     // FIXME: show a notice about any fame won
                     player.Fame = max(0, player.Fame + otherCity.FameForCaptureOrRaze(!raze))
@@ -3826,7 +3529,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
     // then all units should be out of moves once the unit with least amount of movement points is done
     if stack.GetRemainingMoves().IsZero() {
         stack.ExhaustMoves()
-        game.DoNextUnit(player)
+        game.Model.DoNextUnit(player)
         game.RefreshUI()
     }
 
@@ -4153,8 +3856,7 @@ func (game *Game) Update(yield coroutine.YieldFunc) GameState {
 }
 
 type GameMoveHandlers struct {
-    Game *Game
-    Yield coroutine.YieldFunc
+    UICombatHandler
 }
 
 func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool) {
@@ -4162,15 +3864,15 @@ func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.Un
 }
 
 func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
-    return handlers.Game.doEncounter(handlers.Yield, player, stack, encounter, map_, x, y)
+    return handlers.Game.Model.DoEncounter(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, encounter, map_, x, y)
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    return handlers.Game.doCombat(handlers.Yield, player, stack, enemy, enemyStack, zone)
+    return handlers.Game.Model.DoCombat(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, enemyStack, zone)
 }
 
 func (handlers *GameMoveHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
-    return handlers.Game.defeatCity(handlers.Yield, player, stack, enemy, city)
+    return handlers.Game.Model.DefeatCity(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, enemy, city)
 }
 
 func (handlers *GameMoveHandlers) DiscoverWizards() {
@@ -4246,95 +3948,14 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
 
         // log.Printf("AI %v Decisions: %v", player.Wizard.Name, decisions)
 
-        for _, decision := range decisions {
-            switch decision.(type) {
-                case *playerlib.AIMoveStackDecision:
-                    moveDecision := decision.(*playerlib.AIMoveStackDecision)
-                    useStack := moveDecision.Stack
-
-                    if len(moveDecision.Units) > 0 && len(moveDecision.Units) != len(moveDecision.Stack.Units()) {
-                        useStack = player.SplitStack(moveDecision.Stack, moveDecision.Units)
-                    }
-
-                    useStack.CurrentPath = moveDecision.Path
-
-                // mainly for the raider ai
-                case *playerlib.AICreateUnitDecision:
-                    create := decision.(*playerlib.AICreateUnitDecision)
-                    log.Printf("ai %v creating %+v", player.Wizard.Name, create)
-
-                    overworldUnit := units.MakeOverworldUnitFromUnit(create.Unit, create.X, create.Y, create.Plane, player.Wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
-                    if create.Patrol {
-                        overworldUnit.SetBusy(units.BusyStatusPatrol)
-                    }
-                    player.CreateUnit(overworldUnit)
-                    game.ResolveStackAt(create.X, create.Y, create.Plane)
-                case *playerlib.AIUpdateCityDecision:
-                    update := decision.(*playerlib.AIUpdateCityDecision)
-
-                    update.City.Farmers = update.Farmers
-                    update.City.Workers = update.Workers
-                    update.City.ResetCitizens()
-
-                case *playerlib.AIBuildOutpostDecision:
-                    build := decision.(*playerlib.AIBuildOutpostDecision)
-
-                    stack := build.Stack.GetActiveUnitWithAbility(data.AbilityCreateOutpost)
-                    if stack != nil {
-                        game.CreateOutpost(stack, player)
-                    }
-                case *playerlib.AIBuildRoadDecision:
-                    build := decision.(*playerlib.AIBuildRoadDecision)
-                    roadStack := build.Stack
-                    path := game.FindRoadPath(roadStack.X(), roadStack.Y(), build.X, build.Y, player, roadStack, player.GetFog(roadStack.Plane()))
-                    if len(path) > 0 {
-                        for _, unit := range roadStack.Units() {
-                            if unit.HasAbility(data.AbilityConstruction) {
-                                unit.SetBuildRoadPath(path)
-                            }
-                        }
-                        game.MaybeBuildRoads(roadStack, player)
-                    }
-                case *playerlib.AIMeldNodeDecision:
-                    meld := decision.(*playerlib.AIMeldNodeDecision)
-                    game.tryMeldNode(meld.Stack, player)
-                case *playerlib.AIPlaneShiftDecision:
-                    shift := decision.(*playerlib.AIPlaneShiftDecision)
-                    if err := game.PlaneShift(shift.Stack, player); err == nil {
-                        shift.Stack.CurrentPath = nil
-                    }
-                case *playerlib.AIProduceDecision:
-                    produce := decision.(*playerlib.AIProduceDecision)
-                    log.Printf("Year=%v AI %v(%v) city %v producing %v %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), produce.City.Name, game.Model.BuildingInfo.Name(produce.Building), produce.Unit.Name)
-                    produce.City.ProducingBuilding = produce.Building
-                    produce.City.ProducingUnit = produce.Unit
-                case *playerlib.AIResearchSpellDecision:
-                    research := decision.(*playerlib.AIResearchSpellDecision)
-                    if player.ResearchingSpell.Invalid() {
-                        player.ResearchingSpell = research.Spell
-                    }
-
-                case *playerlib.AICastSpellDecision:
-                    cast := decision.(*playerlib.AICastSpellDecision)
-
-                    if player.CastingSpell.Invalid() {
-                        player.CastingSpell = cast.Spell
-                    }
-                case *playerlib.AICastUnitSpellDecision:
-                    cast := decision.(*playerlib.AICastUnitSpellDecision)
-                    if player.CastingSpell.Invalid() {
-                        player.CastingSpell = cast.Spell
-                        player.CastingSpellTarget = cast.Target
-                    }
-            }
-        }
+        game.Model.ApplyAIDecisions(player, decisions)
 
         moveHandlers := MakeMoveHandlers(game, yield)
 
         for _, stack := range slices.Clone(player.Stacks) {
             // stop moving once any unit in the stack has no moves left
             for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
-                stack.CurrentPath = game.Model.doAiMoveUnit(moveHandlers, player, stack)
+                stack.CurrentPath = game.Model.DoAiMoveUnit(moveHandlers, player, stack)
             }
         }
 
@@ -4343,13 +3964,13 @@ func (game *Game) doAiUpdate(yield coroutine.YieldFunc, player *playerlib.Player
         for _, stack := range slices.Clone(player.Stacks) {
             for _, unit := range stack.Units() {
                 if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
-                    game.MaybeBuildRoads(stack, player)
+                    game.Model.MaybeBuildRoads(stack, player)
                     break
                 }
             }
         }
         for _, stack := range slices.Clone(player.Stacks) {
-            game.tryMeldNode(stack, player)
+            game.Model.TryMeldNode(stack, player)
         }
 
         player.AIBehavior.PostUpdate(player, game.Model)
@@ -4638,103 +4259,6 @@ func (game *Game) confirmLairEncounter(yield coroutine.YieldFunc, encounter *map
     return game.confirmEncounter(yield, fmt.Sprintf("You have found %v %v. Scouts have spotted %v within the %v. Do you wish to enter?", article, encounter.Type.Name(), guardianName, encounter.Type.Name()), animation)
 }
 
-func (game *Game) doEncounter(yield coroutine.YieldFunc, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
-    // there was nothing in the encounter, just give treasure
-    if len(encounter.Units) == 0 {
-        mapUse.RemoveEncounter(x, y)
-        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
-        yield()
-        return combat.CombatStateNoCombat
-    }
-
-    wizard := setup.WizardCustom{
-        Name: encounter.Type.ShortName(),
-    }
-
-    defender := playerlib.MakePlayer(wizard, false, 1, 1, make(map[herolib.HeroType]string), game.Model)
-    defender.StrategicCombat = true
-
-    var enemies []units.StackUnit
-
-    for _, unit := range encounter.Units {
-        enemies = append(enemies, units.MakeOverworldUnit(unit, x, y, mapUse.Plane))
-    }
-
-    zone := combat.ZoneType{
-    }
-
-    switch encounter.Type {
-        case maplib.EncounterTypeLair, maplib.EncounterTypeCave: zone.Encounter = combat.ZoneLair
-        case maplib.EncounterTypePlaneTower: zone.Encounter = combat.ZoneTower
-        case maplib.EncounterTypeAncientTemple: zone.Encounter = combat.ZoneAncientTemple
-        case maplib.EncounterTypeFallenTemple: zone.Encounter = combat.ZoneFallenTemple
-        case maplib.EncounterTypeRuins: zone.Encounter = combat.ZoneRuins
-        case maplib.EncounterTypeAbandonedKeep: zone.Encounter = combat.ZoneAbandonedKeep
-        case maplib.EncounterTypeDungeon: zone.Encounter = combat.ZoneDungeon
-        case maplib.EncounterTypeNatureNode: zone.Encounter = combat.ZoneNatureNode
-        case maplib.EncounterTypeSorceryNode: zone.Encounter = combat.ZoneSorceryNode
-        case maplib.EncounterTypeChaosNode: zone.Encounter = combat.ZoneChaosNode
-    }
-
-    result := game.doCombat(yield, player, stack, defender, playerlib.MakeUnitStackFromUnits(enemies), zone)
-    if result == combat.CombatStateAttackerWin {
-        mapUse.RemoveEncounter(x, y)
-
-        game.createTreasure(encounter.Type, encounter.Budget, data.PlanePoint{X: x, Y: y, Plane: mapUse.Plane}, player)
-
-        // defeating a plane tower also removes the tower from the other plane
-        if encounter.Type == maplib.EncounterTypePlaneTower {
-            mapUse.SetPlaneTower(x, y)
-            otherMap := game.GetMap(mapUse.Plane.Opposite())
-            otherMap.RemoveEncounter(x, y)
-            otherMap.SetPlaneTower(x, y)
-        }
-
-    } else {
-        var remaining []units.Unit
-        for index := range enemies {
-            if enemies[index].GetHealth() > 0 {
-                remaining = append(remaining, encounter.Units[index])
-            }
-        }
-        encounter.Units = remaining
-    }
-
-    // absorb extra clicks
-    yield()
-
-    return result
-}
-
-func (game *Game) createTreasure(encounterType maplib.EncounterType, budget int, point data.PlanePoint, player *playerlib.Player){
-    allSpells, err := spellbook.ReadSpellsFromCache(game.Cache)
-    if err != nil {
-        log.Printf("Error: unable to read spells: %v", err)
-    } else {
-        var heroes []*herolib.Hero
-        for _, hero := range player.HeroPool {
-            // only include available heroes that are not champions
-            if hero.Status == herolib.StatusAvailable && !hero.IsChampion() {
-                heroes = append(heroes, hero)
-            }
-        }
-
-        makeArtifacts := func () []*artifact.Artifact {
-            return game.Model.ArtifactPool.AvailableArtifacts()
-        }
-
-        // cannot find the last spell in treasure
-        allSpells.RemoveSpell(allSpells.FindByName("Spell of Mastery"))
-
-        treasure := makeTreasure(game.Cache, encounterType, budget, point, player.Wizard, player.KnownSpells, allSpells, heroes, makeArtifacts)
-        // FIXME: show treasure ui for human, otherwise just apply treasure for AI
-        select {
-            case game.Events <- &GameEventTreasure{Treasure: treasure, Player: player}:
-            default:
-        }
-    }
-}
-
 type TreasureFonts struct {
     TreasureFont *font.Font
 }
@@ -4868,488 +4392,103 @@ func (game *Game) ApplyTreasure(yield coroutine.YieldFunc, player *playerlib.Pla
     }
 }
 
-func (game *Game) GetCombatLandscape(x int, y int, plane data.Plane) combat.CombatLandscape {
-    tile := game.GetMap(plane).GetTile(x, y)
-
-    switch tile.Tile.TerrainType() {
-        case terrain.Hill, terrain.Grass,
-             terrain.Forest, terrain.River, terrain.Shore,
-             terrain.Swamp: return combat.CombatLandscapeGrass
-
-        case terrain.Desert: return combat.CombatLandscapeDesert
-        case terrain.Mountain: return combat.CombatLandscapeMountain
-        case terrain.Tundra: return combat.CombatLandscapeTundra
-
-        // FIXME: these cases are special
-        case terrain.Ocean: return combat.CombatLandscapeWater
-        case terrain.Volcano: return combat.CombatLandscapeGrass
-        case terrain.Lake: return combat.CombatLandscapeGrass
-        case terrain.NatureNode: return combat.CombatLandscapeGrass
-        case terrain.SorceryNode: return combat.CombatLandscapeGrass
-        case terrain.ChaosNode: return combat.CombatLandscapeMountain
-    }
-
-    return combat.CombatLandscapeGrass
+type CombatHandler interface {
+    RunCombat(combatModel *combat.CombatModel) combat.CombatState
+    ConfirmRazeTown(city *citylib.City) bool
+    ShowCombatEndScreen(attacker combat.ArmyPlayer, defenderFame int, attackerFame int, state combat.CombatState, combatModel *combat.CombatModel, cityPopulationLoss int, cityBuildingLoss int)
+    ShowUndeadAnimation(undeadUnits int)
+    Finish()
 }
 
-// get the kind of magic that is influencing the given tile
-func (game *Game) GetInfluenceMagic(x int, y int, plane data.Plane) data.MagicType {
-    map_ := game.GetMap(plane)
-
-    node := map_.GetMagicInfluence(x, y)
-    if node != nil {
-        return node.Kind.MagicType()
-    }
-
-    return data.MagicNone
+type UICombatHandler struct {
+    Yield coroutine.YieldFunc
+    Game *Game
+    PopCombatScreen bool
 }
 
-// 5% chance to destroy a building in every city, and 15% chance to destroy a garrisoned unit
-func (game *Game) maybeDoNaturesWrath(caster *playerlib.Player) {
-    if game.Model.HasRivalEnchantment(caster, data.EnchantmentNaturesWrath) {
-        for _, city := range caster.Cities {
-            var toRemove []buildinglib.Building
-            for _, building := range city.Buildings.Values() {
-                if rand.N(100) < 5 {
-                    toRemove = append(toRemove, building)
-                }
-            }
-
-            // FIXME: emit a message for each building that was destroyed
-            for _, building := range toRemove {
-                log.Printf("Natures wrath: destroy building %v", building)
-                city.RemoveBuilding(building)
-            }
-
-            stack := caster.FindStack(city.X, city.Y, city.Plane)
-            var removeUnits []units.StackUnit
-            if stack != nil {
-                for _, unit := range stack.Units() {
-                    if rand.N(100) < 15 {
-                        log.Printf("Natures wrath: destroy unit %v", unit.GetName())
-                        removeUnits = append(removeUnits, unit)
-                    }
-                }
-            }
-
-            for _, unit := range removeUnits {
-                caster.RemoveUnit(unit)
-            }
-        }
+func (handler *UICombatHandler) Finish() {
+    if handler.PopCombatScreen {
+        handler.Game.PopDrawer()
     }
 }
 
-/* run the tactical combat screen. returns the combat state as a result (attackers win, defenders win, flee, etc)
- * this also shows the raze city ui so that fame can be incorporated based on whether the city is razed or not
- */
-func (game *Game) doCombat(yield coroutine.YieldFunc, attacker *playerlib.Player, attackerStack *playerlib.UnitStack, defender *playerlib.Player, defenderStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
-    landscape := game.GetCombatLandscape(defenderStack.X(), defenderStack.Y(), defenderStack.Plane())
+func (handler *UICombatHandler) RunCombat(combatModel *combat.CombatModel) combat.CombatState {
+    defer mouse.Mouse.SetImage(handler.Game.MouseData.Normal)
 
-    // do graphic combat only if a human is involved
-    useHuman := attacker.IsHuman() || defender.IsHuman()
-
-    // the human player's preference lives on Settings (togglable live in the settings
-    // screen); non-human sides use their own StrategicCombat field, which is always true
-    // for ai/monster players.
-    wantsStrategicCombat := func(player *playerlib.Player) bool {
-        if player.IsHuman() {
-            return game.Settings.StrategicCombatOnly
-        }
-        return player.StrategicCombat
-    }
-    // skip the battle screen entirely and auto-resolve if the human has enabled 'Strategic Combat Only'
-    useStrategicCombat := useHuman && !game.WatchMode && wantsStrategicCombat(attacker) && wantsStrategicCombat(defender)
-
-    createArmy := func (player *playerlib.Player, stack *playerlib.UnitStack) *combat.Army {
-        army := combat.Army{
-            Player: player,
-        }
-
-        for _, unit := range stack.Units() {
-            // flying units always get added to battle
-            if !unit.IsFlying() {
-                if landscape == combat.CombatLandscapeWater && unit.IsLandWalker() {
-                    continue
-                }
-
-                // dont add sailing units to non-water combat
-                if landscape != combat.CombatLandscapeWater && unit.IsSailing() {
-                    continue
-                }
-            }
-
-            army.AddUnit(unit)
-        }
-
-        return &army
+    controllingPlayer := optional.Of[combat.ArmyPlayer](handler.Game.Model.GetHumanPlayer())
+    if handler.Game.WatchMode {
+        controllingPlayer = optional.Empty[combat.ArmyPlayer]()
     }
 
-    attackingArmy := createArmy(attacker, attackerStack)
-    defendingArmy := createArmy(defender, defenderStack)
+    combatScreen := combat.MakeCombatScreen(handler.Game.Cache, controllingPlayer, combatModel)
 
-    var state combat.CombatState
-    var defeatedDefenders int
-    var defeatedAttackers int
-    var recalledAttackers []units.StackUnit
-    var recalledDefenders []units.StackUnit
+    handler.Game.PushDrawer(func (screen *ebiten.Image){
+        combatScreen.Draw(screen)
+    })
+    handler.PopCombatScreen = true
 
-    events := make(chan combat.CombatEvent, 1000)
+    handler.Game.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
 
-    combatModel := combat.MakeCombatModel(game.AllSpells(), defendingArmy, attackingArmy, landscape, defenderStack.Plane(), zone, game.GetInfluenceMagic(attackerStack.X(), attackerStack.Y(), attackerStack.Plane()), attackerStack.X(), attackerStack.Y(), events, nil)
-
-    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentHeavenlyLight) {
-        combatModel.AddGlobalEnchantment(data.CombatEnchantmentTrueLight)
-    }
-    if zone.City != nil && zone.City.HasEnchantment(data.CityEnchantmentCloudOfShadow) {
-        combatModel.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
-    } else {
-        for _, enchantments := range game.Model.GetAllGlobalEnchantments() {
-            if enchantments.Contains(data.EnchantmentEternalNight) {
-                combatModel.AddGlobalEnchantment(data.CombatEnchantmentDarkness)
-                break
-            }
+    state := combat.CombatStateRunning
+    for state == combat.CombatStateRunning {
+        state = combatScreen.Update(handler.Yield)
+        if handler.Yield() != nil {
+            break
         }
     }
 
-    // ebiten.SetCursorMode(ebiten.CursorModeHidden)
-
-    popCombatScreen := false
-
-    if useStrategicCombat {
-        state, defeatedAttackers, defeatedDefenders = combat.DoStrategicCombat(attackingArmy, defendingArmy)
-    } else if useHuman || game.WatchMode {
-        defer mouse.Mouse.SetImage(game.MouseData.Normal)
-
-        controllingPlayer := optional.Of[combat.ArmyPlayer](game.Model.GetHumanPlayer())
-        if game.WatchMode {
-            controllingPlayer = optional.Empty[combat.ArmyPlayer]()
-        }
-
-        combatScreen := combat.MakeCombatScreen(game.Cache, defendingArmy, attackingArmy, controllingPlayer, landscape, attackerStack.Plane(), zone, combatModel)
-
-        game.PushDrawer(func (screen *ebiten.Image){
-            combatScreen.Draw(screen)
-        })
-        popCombatScreen = true
-
-        game.Music.PushSong(randomChoose(musiclib.SongCombat1, musiclib.SongCombat2))
-
-        state = combat.CombatStateRunning
-        for state == combat.CombatStateRunning {
-            state = combatScreen.Update(yield)
-            if yield() != nil {
-                break
-            }
-        }
-
-        game.Music.PopSong()
-        combatScreen.MouseState = combat.CombatClickHud
-    } else {
-        // do non-graphical combat (ai vs ai)
-        state = combat.Run(combatModel)
-    }
-
-    if !useStrategicCombat {
-        defeatedDefenders = combatModel.DefeatedDefenders
-        defeatedAttackers = combatModel.DefeatedAttackers
-    }
-
-    // FIXME: resolve the attacker/defender stack at the end of combat?
-    for _, unit := range combatModel.AttackingArmy.RecalledUnits {
-        recalledAttackers = append(recalledAttackers, unit.Unit.(units.StackUnit))
-    }
-    for _, unit := range combatModel.DefendingArmy.RecalledUnits {
-        recalledDefenders = append(recalledDefenders, unit.Unit.(units.StackUnit))
-    }
-
-    // returns the fame that should be added to the winner and loser. the loser fame is negative
-    distributeFame := func(winner *playerlib.Player, loser *playerlib.Player, loserStack *playerlib.UnitStack, defeatedUnits int) (int, int) {
-        winnerFame := 0
-        loserFame := 0
-
-        if defeatedUnits >= 4 {
-            winnerFame += 1
-            loserFame -= 1
-        }
-
-        for _, unit := range loserStack.Units() {
-            if unit.GetRawUnit().CastingCost >= 600 {
-                winnerFame += 1
-                loserFame -= 1
-                break
-            }
-            if unit.IsHero() {
-                hero := unit.(*herolib.Hero)
-                loserFame -= (int(hero.GetExperienceLevel()) + 1) / 2
-            }
-        }
-
-        return winnerFame, loserFame
-    }
-
-    // fame
-    var attackerFame, defenderFame int
-
-    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-        if zone.City != nil {
-            razeCity, gold := game.defeatCity(yield, attacker, attackerStack, defender, zone.City)
-            // if razeCity is true then we pass in false to get the fame for capturing the city
-            attackerFame += zone.City.FameForCaptureOrRaze(!razeCity)
-            defenderFame += zone.City.FameForCaptureOrRaze(false)
-
-            attacker.Gold += gold
-            defender.Gold -= gold
-        }
-
-        winner, loser := distributeFame(attacker, defender, defenderStack, defeatedDefenders)
-        attackerFame += winner
-        defenderFame += loser
-
-        // some units might have been raised from the dead but been owned by the opposite side
-        for _, unit := range attackingArmy.GetUnits() {
-            if unit.Unit.GetHealth() > 0 {
-                attackerStack.AddUnit(unit.Unit)
-                // FIXME: its annoying to have to set all 3 of these fields. maybe consolidate them into just
-                // SetOwner(player)
-                unit.Unit.SetBanner(attacker.GetBanner())
-                unit.Unit.SetGlobalEnchantmentProvider(attacker.MakeUnitEnchantmentProvider())
-                unit.Unit.SetExperienceInfo(attacker.MakeExperienceInfo())
-                defender.RemoveUnit(unit.Unit)
-            }
-        }
-
-    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
-        winner, loser := distributeFame(defender, attacker, attackerStack, defeatedAttackers)
-        defenderFame += winner
-        attackerFame += loser
-
-        for _, unit := range defendingArmy.GetUnits() {
-            if unit.Unit.GetHealth() > 0 {
-                defenderStack.AddUnit(unit.Unit)
-                unit.Unit.SetBanner(defender.GetBanner())
-                unit.Unit.SetGlobalEnchantmentProvider(defender.MakeUnitEnchantmentProvider())
-                unit.Unit.SetExperienceInfo(defender.MakeExperienceInfo())
-                attacker.RemoveUnit(unit.Unit)
-            }
-        }
-    }
-
-    attacker.Fame = max(0, attacker.Fame + attackerFame)
-    defender.Fame = max(0, defender.Fame + defenderFame)
-
-    cityPopulationLoss := 0
-    var cityBuildingLoss []buildinglib.Building
-
-    if zone.City != nil && state == combat.CombatStateAttackerWin {
-        // maximum chance is 50%, minimum is 10%
-        chance := min(50, 10 + combatModel.CollateralDamage * 2)
-        for range zone.City.Citizens() - 1 {
-            if rand.N(100) < chance {
-                cityPopulationLoss += 1
-            }
-        }
-
-        minBuildingChance := 10
-        if attacker.GetBanner() == data.BannerBrown {
-            minBuildingChance = 50
-        }
-
-        chance = min(75, minBuildingChance + combatModel.CollateralDamage)
-        for _, building := range zone.City.Buildings.Values() {
-            if building == buildinglib.BuildingFortress || building == buildinglib.BuildingSummoningCircle {
-                continue
-            }
-
-            if rand.N(100) < chance {
-                cityBuildingLoss = append(cityBuildingLoss, building)
-            }
-        }
-
-        zone.City.Population -= cityPopulationLoss * 1000
-        for _, building := range cityBuildingLoss {
-            zone.City.Buildings.Remove(building)
-        }
-        zone.City.ResetCitizens()
-    }
-
-    // Show end screen
-    if useHuman {
-        result := combat.CombatEndScreenResultLose
-        humanAttacker := attacker.IsHuman()
-        fame := defenderFame
-
-        if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-            fame = attackerFame
-        }
-
-        switch {
-            case state == combat.CombatStateAttackerWin && humanAttacker,
-                 state == combat.CombatStateDefenderWin && !humanAttacker:
-                result = combat.CombatEndScreenResultWin
-            case state == combat.CombatStateAttackerFlee && humanAttacker,
-                 state == combat.CombatStateDefenderFlee && !humanAttacker:
-                result = combat.CombatEndScreenResultRetreat
-        }
-
-        // FIXME: show how much gold was plundered (or lost)
-        endScreen := combat.MakeCombatEndScreen(game.Cache, result, combatModel.DiedWhileFleeing, fame, cityPopulationLoss, len(cityBuildingLoss))
-
-        lastDrawer := game.LastDrawer()
-        game.PushDrawer(func (screen *ebiten.Image){
-            lastDrawer(screen)
-            endScreen.Draw(screen)
-        })
-
-        state2 := combat.CombatEndScreenRunning
-        for state2 == combat.CombatEndScreenRunning {
-            state2 = endScreen.Update()
-            yield()
-        }
-        game.PopDrawer()
-    }
-
-    // remove combat screen after showing the victory/defeat screen
-    if popCombatScreen {
-        game.PopDrawer()
-    }
-
-    // Redistribute equipment of died heros
-    showHeroNotice := false
-
-    // recall units
-    relocateUnits := func(player *playerlib.Player, units []units.StackUnit) {
-        for _, unit := range units {
-            game.RelocateUnit(player, unit)
-        }
-    }
-
-    relocateUnits(attacker, recalledAttackers)
-    relocateUnits(defender, recalledDefenders)
-
-    // remove dead units
-    killUnits := func (player *playerlib.Player, stack *playerlib.UnitStack, landscape combat.CombatLandscape){
-        // first remove sailing units
-        for _, unit := range stack.Units() {
-            if unit.IsSailing() && unit.GetHealth() <= 0 {
-                player.LoseUnit(unit)
-            }
-        }
-
-        transport := stack.HasSailingUnits(false)
-
-        for _, unit := range stack.Units() {
-            dead := unit.GetHealth() <= 0
-
-            // if combat was on water and there are no sailing ships left then all units should die
-            // FIXME: handle the case that there were originally two ships and one died, thus not being able to transport some units
-            if landscape == combat.CombatLandscapeWater && unit.IsLandWalker() && !transport {
-                dead = true
-            }
-
-            if dead {
-                player.RemoveUnit(unit)
-
-                if unit.IsHero() {
-                    hero := unit.(*herolib.Hero)
-                    vaultEvents := game.Model.distributeEquipment(player, hero)
-                    if player.IsHuman() {
-                        showHeroNotice = showHeroNotice || len(vaultEvents) > 0
-                    }
-
-                    for _, event := range vaultEvents {
-                        select {
-                            case game.Events <- event:
-                            default:
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-
-    killUnits(attacker, attackerStack, landscape)
-    killUnits(defender, defenderStack, landscape)
-
-    var undeadUnits int
-
-    switch state {
-        case combat.CombatStateAttackerWin, combat.CombatStateDefenderFlee:
-            undeadUnits = len(combatModel.UndeadUnits)
-
-            for _, unit := range combatModel.UndeadUnits {
-                defender.RemoveUnit(unit.Unit)
-                if len(attackerStack.Units()) < data.MaxUnitsInStack {
-                    attacker.AddUnit(attacker.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if attacker.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(attackerStack.Units()) < data.MaxUnitsInStack {
-                        attacker.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, attackerStack.X(), attackerStack.Y(), attackerStack.Plane(), attacker.GetBanner(), attacker.MakeExperienceInfo(), attacker.MakeUnitEnchantmentProvider()))
-                    }
-                }
-            }
-
-        case combat.CombatStateDefenderWin, combat.CombatStateAttackerFlee:
-            undeadUnits = len(combatModel.UndeadUnits)
-
-            for _, unit := range combatModel.UndeadUnits {
-                attacker.RemoveUnit(unit.Unit)
-                if len(defenderStack.Units()) < data.MaxUnitsInStack {
-                    defender.AddUnit(defender.UpdateUnit(unit.Unit))
-                }
-            }
-
-            if defender.HasEnchantment(data.EnchantmentZombieMastery) {
-                for _, unit := range append(slices.Clone(defendingArmy.KilledUnits), attackingArmy.KilledUnits...) {
-                    if unit.GetRace() != data.RaceFantastic && unit.GetRace() != data.RaceHero && len(defenderStack.Units()) < data.MaxUnitsInStack {
-                        defender.AddUnit(units.MakeOverworldUnitFromUnit(units.Zombie, defenderStack.X(), defenderStack.Y(), defenderStack.Plane(), defender.GetBanner(), defender.MakeExperienceInfo(), defender.MakeUnitEnchantmentProvider()))
-                    }
-                }
-            }
-    }
-
-    // show the undead animation if there were undead units raised
-    if undeadUnits > 0 && useHuman {
-        undeadUI, undeadQuit := MakeUndeadUI(game.Cache, &game.ImageCache, true, undeadUnits)
-        game.doRunUI(yield, undeadUI, undeadQuit)
-    }
-
-    // experience
-    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
-        for _, unit := range attackerStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(attacker, unit, defeatedDefenders * 2)
-            }
-        }
-    } else if state == combat.CombatStateDefenderWin || state == combat.CombatStateAttackerFlee {
-        for _, unit := range defenderStack.Units() {
-            if unit.GetRace() != data.RaceFantastic {
-                game.AddExperience(defender, unit, defeatedAttackers * 2)
-            }
-        }
-    }
-
-    // this notice has to appear before the vault events are processed
-    if showHeroNotice {
-        game.doNotice(yield, game.HudUI, "One or more heroes died in combat. You must redistribute their equipment.")
-    }
+    handler.Game.Music.PopSong()
+    combatScreen.MouseState = combat.CombatClickHud
 
     return state
 }
 
-// FIXME: maybe this should be generalized so it can handle any enchantment that cuases a spell to fizzle?
-func (game *Game) ShowTranquilityFizzle(tranquilityOwner *playerlib.Player, caster *playerlib.Player, spell spellbook.Spell) {
-    group, quit := game.makeTranquilityFizzleUI(tranquilityOwner, caster, spell)
+func (handler *UICombatHandler) ConfirmRazeTown(city *citylib.City) bool {
+    return handler.Game.confirmRazeTown(handler.Yield, city)
+}
 
-    game.Events <- &GameEventRunUI{
-        Group: group,
-        Quit: quit,
-        Song: musiclib.SongSupressMagicActivating,
+func (handler *UICombatHandler) ShowCombatEndScreen(attacker combat.ArmyPlayer, defenderFame int, attackerFame int, state combat.CombatState, combatModel *combat.CombatModel, cityPopulationLoss int, cityBuildingLoss int) {
+    result := combat.CombatEndScreenResultLose
+    humanAttacker := attacker.IsHuman()
+    fame := defenderFame
+
+    if state == combat.CombatStateAttackerWin || state == combat.CombatStateDefenderFlee {
+        fame = attackerFame
+    }
+
+    switch {
+        case state == combat.CombatStateAttackerWin && humanAttacker,
+        state == combat.CombatStateDefenderWin && !humanAttacker:
+        result = combat.CombatEndScreenResultWin
+        case state == combat.CombatStateAttackerFlee && humanAttacker,
+        state == combat.CombatStateDefenderFlee && !humanAttacker:
+        result = combat.CombatEndScreenResultRetreat
+    }
+
+    // FIXME: show how much gold was plundered (or lost)
+    endScreen := combat.MakeCombatEndScreen(handler.Game.Cache, result, combatModel.DiedWhileFleeing, fame, cityPopulationLoss, cityBuildingLoss)
+
+    lastDrawer := handler.Game.LastDrawer()
+    handler.Game.PushDrawer(func (screen *ebiten.Image){
+        lastDrawer(screen)
+        endScreen.Draw(screen)
+    })
+    defer handler.Game.PopDrawer()
+
+    state2 := combat.CombatEndScreenRunning
+    for state2 == combat.CombatEndScreenRunning {
+        state2 = endScreen.Update()
+        if handler.Yield() != nil {
+            return
+        }
     }
 }
+
+func (handler *UICombatHandler) ShowUndeadAnimation(undeadUnits int) {
+    undeadUI, undeadQuit := MakeUndeadUI(handler.Game.Cache, &handler.Game.ImageCache, true, undeadUnits)
+    handler.Game.doRunUI(handler.Yield, undeadUI, undeadQuit)
+}
+
 
 func (game *Game) GetWizardAnimal(wizard setup.WizardCustom) *ebiten.Image {
     // devil: 51
@@ -5780,7 +4919,7 @@ func (game *Game) ShowSpellBookCastUI(yield coroutine.YieldFunc, player *playerl
                 player.Mana -= castingCost
                 player.RemainingCastingSkill -= castingCost
 
-                game.doCastSpell(player, spell)
+                game.Model.doCastSpell(player, spell)
             } else {
                 player.CastingSpell = spell
             }
@@ -5848,65 +4987,6 @@ func (game *Game) CityProductionBonus(x int, y int, plane data.Plane) int {
     return production
 }
 
-func (game *Game) CreateOutpost(settlers units.StackUnit, player *playerlib.Player) *citylib.City {
-    cityName := game.SuggestCityName(settlers.GetRace())
-
-    newCity := citylib.MakeCity(cityName, settlers.GetX(), settlers.GetY(), settlers.GetRace(), game.Model.BuildingInfo, game.GetMap(settlers.GetPlane()), game.Model, player)
-    newCity.Plane = settlers.GetPlane()
-    newCity.Population = 300
-    newCity.Outpost = true
-    newCity.ProducingBuilding = buildinglib.BuildingHousing
-    newCity.ProducingUnit = units.UnitNone
-
-    game.GetMap(settlers.GetPlane()).SetRoad(settlers.GetX(), settlers.GetY(), settlers.GetPlane() == data.PlaneMyrror)
-
-    player.RemoveUnit(settlers)
-    player.SelectedStack = nil
-    game.RefreshUI()
-    player.AddCity(newCity)
-
-    stack := player.FindStack(newCity.X, newCity.Y, newCity.Plane)
-
-    select {
-        case game.Events<- &GameEventNewOutpost{City: newCity, Stack: stack, Player: player}:
-        default:
-    }
-
-    return newCity
-}
-
-func (game *Game) DoMeld(unit units.StackUnit, player *playerlib.Player, node *maplib.ExtraMagicNode) bool {
-    melded := node.Meld(player, unit.GetRawUnit())
-    // whether melding succeeded or not the melding unit is removed
-    player.RemoveUnit(unit)
-    return melded
-}
-
-// tryMeldNode melds the magic node the given stack is standing on, if the stack
-// contains a unit able to meld (a magic spirit) and the node is unowned by this
-// player and not warped. Returns true if a meld happened.
-func (game *Game) tryMeldNode(stack *playerlib.UnitStack, player *playerlib.Player) bool {
-    useMap := game.GetMap(stack.Plane())
-    if useMap == nil {
-        return false
-    }
-    if useMap.GetEncounter(stack.X(), stack.Y()) != nil {
-        return false
-    }
-    node := useMap.GetMagicNode(stack.X(), stack.Y())
-    if node == nil || node.Warped || node.MeldingWizard == player {
-        return false
-    }
-    for _, unit := range stack.Units() {
-        if unit.HasAbility(data.AbilityMeld) {
-            if game.DoMeld(unit, player, node) {
-                return true
-            }
-        }
-    }
-    return false
-}
-
 func (game *Game) DoBuildAction(player *playerlib.Player){
     if player.SelectedStack != nil {
         var powers UnitBuildPowers
@@ -5921,7 +5001,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             // search for the settlers (the only unit with the create outpost ability
             for _, settlers := range player.SelectedStack.ActiveUnits() {
                 if game.Model.IsSettlableLocation(settlers.GetX(), settlers.GetY(), settlers.GetPlane()) && settlers.HasAbility(data.AbilityCreateOutpost) {
-                    game.CreateOutpost(settlers, player)
+                    game.Model.CreateOutpost(settlers, player)
                     game.RefreshUI()
                     return
                 }
@@ -5933,7 +5013,7 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
             if node != nil {
                 for _, melder := range player.SelectedStack.ActiveUnits() {
                     if melder.HasAbility(data.AbilityMeld) && !node.Warped {
-                        game.DoMeld(melder, player, node)
+                        game.Model.DoMeld(melder, player, node)
                         game.RefreshUI()
                         return
                     }
@@ -5974,72 +5054,9 @@ func (game *Game) DoBuildAction(player *playerlib.Player){
     }
 }
 
-func (game *Game) IsGlobalEnchantmentActive(enchantment data.Enchantment) bool {
-    return slices.ContainsFunc(game.Model.Players, func (player *playerlib.Player) bool {
-        return player.GlobalEnchantments.Contains(enchantment)
-    })
-}
-
-func (game *Game) PlaneShift(stack *playerlib.UnitStack, player *playerlib.Player) error {
-    if game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
-        return errors.New("Cannot plane shift while the Planar Seal is in effect")
-    }
-
-    canMove := false
-
-    cityOppositePlane := player.FindCity(stack.X(), stack.Y(), stack.Plane().Opposite())
-
-    mapPlane := game.GetMap(stack.Plane().Opposite())
-
-    tile := mapPlane.GetTile(stack.X(), stack.Y())
-    canMove = cityOppositePlane != nil || stack.AllFlyers() || tile.Tile.IsLand()
-
-    if cityOppositePlane != nil {
-        for _, unit := range stack.ActiveUnits() {
-            if !cityOppositePlane.CanEnter(unit) {
-                canMove = false
-                break
-            }
-        }
-    }
-
-    // cannot planar travel if there is an encounter node
-    if canMove && mapPlane.GetEncounter(stack.X(), stack.Y()) != nil {
-        canMove = false
-    }
-
-    if canMove && tile.Tile.IsWater() && stack.AllLandWalkers() {
-        canMove = false
-    }
-
-    cityStackInfo := game.Model.ComputeCityStackInfo()
-
-    if cityStackInfo.ContainsEnemy(stack.X(), stack.Y(), stack.Plane().Opposite(), player) {
-        canMove = false
-    }
-
-    // no matter what the reason, just emit a message that planar travel is not possible
-    if !canMove {
-        return errors.New("The selected units cannot planar travel at this location.")
-    }
-
-    if canMove {
-        // if there is a friendly stack at the new location then merge the stacks
-        mergeStack := cityStackInfo.FindFriendlyStack(stack.X(), stack.Y(), stack.Plane().Opposite(), player)
-        stack.SetPlane(stack.Plane().Opposite())
-        if mergeStack != nil {
-            player.MergeStacks(stack, mergeStack)
-        }
-        player.UpdateFogVisibility()
-        game.discoverWizards(nil)
-    }
-
-    return nil
-}
-
 func (game *Game) doPlanarTraval() {
     // no switching planes if the global enchantment planar seal is in effect
-    if !game.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
+    if !game.Model.IsGlobalEnchantmentActive(data.EnchantmentPlanarSeal) {
         player := game.Model.GetHumanPlayer()
 
         stack := player.SelectedStack
@@ -6070,7 +5087,7 @@ func (game *Game) doPlanarTraval() {
 
             moved := false
             if travelEnabled {
-                err := game.PlaneShift(activeStack, player)
+                err := game.Model.PlaneShift(activeStack, player)
                 if err != nil {
                     select {
                         case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The selected units cannot planar travel at this location.")}:
@@ -6465,7 +5482,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                     player.RemoveUnit(unit)
                     game.RefreshUI()
                     if player.SelectedStack == nil {
-                        game.DoNextUnit(player)
+                        game.Model.DoNextUnit(player)
                     }
                 }
 
@@ -6641,7 +5658,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                         player.SelectedStack.ExhaustMoves()
                     }
 
-                    game.DoNextUnit(player)
+                    game.Model.DoNextUnit(player)
                 },
             })
 
@@ -6685,7 +5702,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
 
                     player.SelectedStack.EnableMovers()
 
-                    game.DoNextUnit(player)
+                    game.Model.DoNextUnit(player)
                 },
             })
 
@@ -6720,7 +5737,7 @@ func (game *Game) MakeHudUI() *uilib.UI {
                 },
                 LeftClickRelease: func(this *uilib.UIElement){
                     waitIndex = 0
-                    game.DoNextUnit(player)
+                    game.Model.DoNextUnit(player)
                 },
             })
 
@@ -7028,720 +6045,12 @@ func (game *Game) MakeHudUI() *uilib.UI {
     return ui
 }
 
-func (game *Game) DoNextUnit(player *playerlib.Player){
-    choose := true
-    for choose {
-        choose = false
-        startingIndex := 0
-        if player.SelectedStack != nil {
-            for i, stack := range player.Stacks {
-                if stack == player.SelectedStack {
-                    startingIndex = i + 1
-                    break
-                }
-            }
-        }
-
-        player.SelectedStack = nil
-
-        for i := 0; i < len(player.Stacks); i++ {
-            index := (i + startingIndex) % len(player.Stacks)
-            stack := player.Stacks[index]
-            if stack.HasMoves() {
-                player.SelectedStack = stack
-                stack.EnableMovers()
-                stack.DisableNonTransport()
-
-                if player.IsHuman() {
-                    select {
-                        case game.Events <- &GameEventMoveCamera{Plane: stack.Plane(), X: stack.X(), Y: stack.Y(), Instant: true}:
-                        default:
-                    }
-                }
-                /*
-                game.Plane = stack.Plane()
-                game.Camera.Center(stack.X(), stack.Y())
-                */
-                break
-            }
-        }
-
-        if player.SelectedStack != nil && len(player.SelectedStack.CurrentPath) == 0 {
-            if game.MaybeBuildRoads(player.SelectedStack, player) {
-                choose = true
-            }
-        }
-    }
-
-    if player.IsHuman() {
-        if player.SelectedStack != nil {
-            if len(player.SelectedStack.CurrentPath) > 0 {
-                select {
-                    case game.Events<- &GameEventMoveUnit{Player: player}:
-                    default:
-                }
-            }
-        }
-
-        game.RefreshUI()
-    }
-}
-
-// return true if the stack is going to build a road this turn
-func (game *Game) MaybeBuildRoads(stack *playerlib.UnitStack, player *playerlib.Player) bool {
-    var buildRoadUnits []units.StackUnit
-    for _, unit := range stack.Units() {
-        if len(unit.GetBuildRoadPath()) > 0 {
-            buildRoadUnits = append(buildRoadUnits, unit)
-        }
-    }
-
-    if len(buildRoadUnits) > 0 {
-        if len(buildRoadUnits) < len(stack.Units()) {
-            stack = player.SplitStack(stack, buildRoadUnits)
-        }
-
-        stack.EnableMovers()
-        roadPath := buildRoadUnits[0].GetBuildRoadPath()
-        stack.CurrentPath = nil
-
-        useMap := game.GetMap(stack.Plane())
-
-        hasRoad := useMap.ContainsRoad(stack.X(), stack.Y())
-
-        // build a road here
-        if !hasRoad {
-            for _, unit := range buildRoadUnits {
-                unit.SetBusy(units.BusyStatusBuildRoad)
-                stack.SetActive(unit, false)
-                unit.SetBuildRoadPath(roadPath[1:])
-            }
-
-            return true
-        } else {
-
-            // i=1
-            // [R, X, X]
-            // path = [R, X]
-            // roadPath = [X, X]
-
-            // move along the road path until we find a point that doesn't have a road
-            i := 0
-            for i < len(roadPath) {
-                point := roadPath[i]
-                hasRoad := useMap.ContainsRoad(point.X, point.Y)
-                if !hasRoad {
-                    break
-                }
-
-                i += 1
-
-                // log.Printf("Unit stack %v is building road along path %v. Current %v, %v hasRoad=%v", stack, roadPath, stack.X(), stack.Y(), hasRoad)
-            }
-
-            if i >= len(roadPath) {
-                i = len(roadPath) - 1
-            }
-
-            stack.CurrentPath = roadPath[:i+1]
-            for _, unit := range buildRoadUnits {
-                unit.SetBuildRoadPath(roadPath[i:])
-            }
-        }
-    }
-
-    return false
-}
-
-/* return a tuple of booleans where each boolean is true if the corresponding resource is not enough
- * to support the units.
- * (gold, food, mana)
- *
- * (false, false, false) means all units are supported.
- */
-func (game *Game) CheckDisband(player *playerlib.Player) (bool, bool, bool) {
-
-    unitsNeedGold := false
-    unitsNeedFood := false
-    unitsNeedMana := false
-
-    for unit := range player.Units() {
-        // dont need to keep checking in this case
-        if unitsNeedGold && unitsNeedFood && unitsNeedMana {
-            break
-        }
-
-        unitsNeedGold = unitsNeedGold || unit.GetUpkeepGold() > 0
-        unitsNeedFood = unitsNeedFood || unit.GetUpkeepFood() > 0
-        unitsNeedMana = unitsNeedMana || unit.GetUpkeepMana() > 0
-    }
-
-    goldPerTurn := player.GoldPerTurn()
-    goldIssue := player.Gold + goldPerTurn < 0 && unitsNeedGold
-    foodIssue := player.FoodPerTurn() < 0 && unitsNeedFood
-
-    // FIXME: can the power be passed in so it doesn't have to be computed multiple times?
-    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game.Model)
-
-    manaIssue := player.Mana + manaPerTurn < 0 && unitsNeedMana
-
-    return goldIssue, foodIssue, manaIssue
-}
-
-/* disband units due to lack of resources, return an array of messages about units that were lost
- */
-func (game *Game) DisbandUnits(player *playerlib.Player) []string {
-    /*
-    if 2 > 1 {
-        return nil
-    }
-    */
-
-    // keep removing units until the upkeep value can be paid
-    ok := false
-    var disbandedMessages []string
-    for player.UnitCount() > 0 && !ok {
-        ok = true
-
-        goldIssue, foodIssue, manaIssue := game.CheckDisband(player)
-
-        if goldIssue || foodIssue || manaIssue {
-            ok = false
-            disbanded := false
-
-            allUnits := slices.Collect(player.Units())
-
-            // try to disband one unit that is taking up resources
-            for i := len(allUnits) - 1; i >= 0; i-- {
-                unit := allUnits[i]
-                // disband the unit for the right reason
-                if goldIssue && unit.GetUpkeepGold() > 0 {
-                    log.Printf("Disband %v due to lack of gold", unit)
-                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of gold", unit.GetName()))
-                    player.RemoveUnit(unit)
-                    disbanded = true
-                    break
-                }
-
-                if foodIssue && unit.GetUpkeepFood() > 0 {
-                    log.Printf("Disband %v due to lack of food", unit)
-                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of food", unit.GetName()))
-                    player.RemoveUnit(unit)
-                    disbanded = true
-                    break
-                }
-
-                if manaIssue && unit.GetUpkeepMana() > 0 {
-                    log.Printf("Disband %v due to lack of mana", unit)
-                    disbandedMessages = append(disbandedMessages, fmt.Sprintf("%v disbanded due to lack of mana", unit.GetName()))
-                    player.RemoveUnit(unit)
-                    disbanded = true
-                    break
-                }
-            }
-
-            if !disbanded {
-                // fail safe to make sure we exit the loop in case somehow a unit was not disbanded
-                break
-            }
-
-            var toRemove []units.StackUnit
-            // check land walkers on ocean tiles that do not have valid transport
-            // FIXME: handle not enough transports
-            for _, stack := range player.Stacks {
-                // if the stack can fly for whatever reason then no units will drown
-                if stack.AllFlyers() {
-                    continue
-                }
-                mapUse := game.GetMap(stack.Plane())
-                hasTransport := stack.HasSailingUnits(false)
-                if !hasTransport && !mapUse.GetTile(stack.X(), stack.Y()).Tile.IsLand() {
-                    for _, unit := range stack.Units() {
-                        if unit.IsLandWalker() {
-                            toRemove = append(toRemove, unit)
-                        }
-                    }
-                }
-            }
-
-            for _, unit := range toRemove {
-                player.RemoveUnit(unit)
-            }
-        }
-    }
-
-    return disbandedMessages
-}
-
-// the amount of experience a unit in a stack should get at the end of each turn
-// if there is a hero in the stack then the hero's armsmaster ability applies
-func (game *Game) GetExperienceBonus(stack *playerlib.UnitStack) int {
-    base := 1
-    bonus := 0
-
-    // only the highest armsmaster bonus applies
-    for _, unit := range stack.Units() {
-        if unit.GetRace() == data.RaceHero {
-            hero := unit.(*herolib.Hero)
-            more := hero.GetAbilityExperienceBonus()
-            if more > bonus {
-                bonus = more
-            }
-        }
-    }
-
-    return base + bonus
-}
-
-
-// turn off enchantments that can not be afforded
-func (game *Game) DissipateEnchantments(player *playerlib.Player, power int) {
-    // if time stop is in effect then only check that spell for dissipation, all other spells have no upkeep
-    if player.HasEnchantment(data.EnchantmentTimeStop) {
-        if player.Mana < data.EnchantmentTimeStop.UpkeepMana() {
-            player.RemoveEnchantment(data.EnchantmentTimeStop)
-        }
-
-        return
-    }
-
-    isManaIssue := func() bool {
-        manaPerTurn := player.ManaPerTurn(power, game.Model)
-        return player.Mana + manaPerTurn < 0
-    }
-
-    // keep removing enchantments until there is no more mana issue
-    for player.GlobalEnchantments.Size() > 0 && isManaIssue() {
-        enchantments := player.GlobalEnchantments.Values()
-        enchantment := enchantments[rand.N(len(enchantments))]
-        player.GlobalEnchantments.Remove(enchantment)
-    }
-
-    // keep removing city enchantments until there is no more mana issue
-    for {
-        enchantments := game.Model.GetCityEnchantmentsByBanner(player.GetBanner())
-        if len(enchantments) == 0 || !isManaIssue() {
-            break
-        }
-
-        enchantment := enchantments[rand.N(len(enchantments))]
-        enchantment.City.CancelEnchantment(enchantment.Enchantment.Enchantment, enchantment.Enchantment.Owner)
-    }
-
-    var enchantedUnits []units.StackUnit
-    for unit := range player.Units() {
-        if len(unit.GetEnchantments()) > 0 {
-            enchantedUnits = append(enchantedUnits, unit)
-        }
-    }
-
-    for len(enchantedUnits) > 0 && isManaIssue() {
-        unit := enchantedUnits[rand.N(len(enchantedUnits))]
-        enchantments := unit.GetEnchantments()
-        enchantment := enchantments[rand.N(len(enchantments))]
-        unit.RemoveEnchantment(enchantment)
-        if len(unit.GetEnchantments()) == 0 {
-            enchantedUnits = slices.DeleteFunc(enchantedUnits, func(u units.StackUnit) bool {
-                return u == unit
-            })
-        }
-    }
-}
-
-func (game *Game) applyChaosChannels(unit *units.OverworldUnit) {
-    choices := set.NewSet(
-        data.UnitEnchantmentChaosChannelsDemonSkin,
-        data.UnitEnchantmentChaosChannelsDemonWings,
-        data.UnitEnchantmentChaosChannelsFireBreath,
-    )
-
-    if unit.IsFlying() {
-        choices.Remove(data.UnitEnchantmentChaosChannelsDemonWings)
-    }
-
-    if unit.GetAbilityValue(data.AbilityFireBreath) > 0 {
-        choices.Remove(data.UnitEnchantmentChaosChannelsFireBreath)
-    }
-
-    slice := choices.Values()
-    choice := slice[rand.N(len(slice))]
-    unit.AddEnchantment(choice)
-}
-
 func handleStasis(stack *playerlib.UnitStack) {
     // this seems like a reasonable place to handle stasis, but it could be moved elsewhere
     for _, unit := range stack.Units() {
         if unit.GetBusy() == units.BusyStatusStasis {
             if rand.N(10) + 1 < combat.GetResistanceFor(unit, data.SorceryMagic) - 5 {
                 unit.SetBusy(units.BusyStatusNone)
-            }
-        }
-    }
-}
-
-func (game *Game) StartPlayerTurn(player *playerlib.Player) {
-    if player.IsHuman() {
-        game.Model.ScrollEvents = nil
-    }
-
-    if player.Skip {
-        return
-    }
-
-    player.MovedStacksThisTurn = 0
-    player.SuppressAutoNextTurn = false
-
-    disbandedMessages := game.DisbandUnits(player)
-
-    if player.IsHuman() && len(disbandedMessages) > 0 {
-        select {
-            case game.Events<- &GameEventScroll{Title: "", Text: strings.Join(disbandedMessages, "\n")}:
-            default:
-        }
-    }
-
-    power := game.Model.ComputePower(player)
-
-    game.DissipateEnchantments(player, power)
-
-    // timestop may have dissipated by now
-    timeStop := player.HasEnchantment(data.EnchantmentTimeStop)
-
-    player.Gold += player.GoldPerTurn()
-    if player.Gold < 0 {
-        player.Gold = 0
-    }
-
-    player.Mana += player.ManaPerTurn(power, game.Model)
-
-    if timeStop {
-        player.Mana -= data.EnchantmentTimeStop.UpkeepMana()
-    }
-
-    player.Mana = max(0, player.Mana)
-
-    if !player.CastingSpell.Invalid() {
-        // mana spent on the skill is the minimum of {player's mana, casting skill, remaining cost for spell}
-        manaSpent := player.Mana
-        if manaSpent > player.RemainingCastingSkill {
-            manaSpent = player.RemainingCastingSkill
-        }
-
-        spellCost := player.ComputeEffectiveSpellCost(player.CastingSpell, true)
-
-        remainingMana := spellCost - player.CastingSpellProgress
-        if remainingMana < manaSpent {
-            manaSpent = remainingMana
-        }
-
-        player.IncreaseCastingSkillProgress(manaSpent)
-
-        if spellCost <= player.CastingSpellProgress {
-            game.doCastSpell(player, player.CastingSpell)
-            player.CastingSpell = spellbook.Spell{}
-            player.CastingSpellProgress = 0
-        }
-    }
-
-    if player.ResearchingSpell.Valid() {
-        if !timeStop {
-            // log.Printf("wizard %v power=%v researching=%v progress=%v/%v perturn=%v", player.Wizard.Name, power, player.ResearchingSpell.Name, player.ResearchProgress, player.ResearchingSpell.ResearchCost, player.SpellResearchPerTurn(power))
-            player.ResearchProgress += player.ComputeEffectiveResearchPerTurn(player.SpellResearchPerTurn(power), player.ResearchingSpell)
-            if player.ResearchProgress >= player.ResearchingSpell.ResearchCost {
-
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventLearnedSpell{Player: player, Spell: player.ResearchingSpell}:
-                        default:
-                    }
-                }
-
-                log.Printf("wizard %v learned %v", player.Wizard.Name, player.ResearchingSpell.Name)
-
-                player.LearnSpell(player.ResearchingSpell)
-
-                if player.IsHuman() {
-                    select {
-                        case game.Events<- &GameEventResearchSpell{Player: player}:
-                        default:
-                    }
-                }
-            }
-        }
-    } else if game.Model.TurnNumber > 0 {
-
-        if player.IsHuman() {
-            select {
-                case game.Events<- &GameEventResearchSpell{Player: player}:
-                default:
-            }
-        }
-    }
-
-    player.CastingSkillPower += player.CastingSkillPerTurn(power)
-
-    // reset casting skill for this turn
-    player.RemainingCastingSkill = player.ComputeOverworldCastingSkill()
-
-    var removeCities []*citylib.City
-
-    if !timeStop {
-        for _, city := range player.Cities {
-            cityEvents := city.DoNextTurn(game.GetMap(city.Plane))
-            for _, event := range cityEvents {
-                switch event.(type) {
-                case *citylib.CityEventPopulationGrowth:
-                    if player.IsHuman() {
-                        growthEvent := event.(*citylib.CityEventPopulationGrowth)
-
-                        verb := "grown"
-                        if !growthEvent.Grow {
-                            verb = "shrunk"
-                        }
-
-                        scrollEvent := GameEventScroll{
-                            Title: "CITY GROWTH",
-                            Text: fmt.Sprintf("%v has %v to a population of %v.", city.Name, verb, city.Citizens()),
-                        }
-
-                        select {
-                            case game.Events<- &scrollEvent:
-                            default:
-                        }
-                    }
-                case *citylib.CityEventCityAbandoned:
-                    removeCities = append(removeCities, city)
-                    if player.IsHuman() {
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The city of %v has been abandoned.", city.Name)}:
-                            default:
-                        }
-                    }
-                case *citylib.CityEventNewBuilding:
-                    newBuilding := event.(*citylib.CityEventNewBuilding)
-
-                    if player.IsHuman() {
-                        select {
-                            case game.Events<- &GameEventNewBuilding{City: city, Building: newBuilding.Building, Player: player}:
-                            default:
-                        }
-                    } else {
-                        log.Printf("Year=%v AI %v(%v) city %v created %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, game.Model.BuildingInfo.Name(newBuilding.Building))
-                    }
-                case *citylib.CityEventOutpostDestroyed:
-                    removeCities = append(removeCities, city)
-                    if player.IsHuman() {
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has been deserted.", city.Name)}:
-                            default:
-                        }
-                    }
-                case *citylib.CityEventOutpostHamlet:
-                    if player.IsHuman() {
-                        select {
-                            case game.Events<- &GameEventNotice{Message: fmt.Sprintf("The outpost of %v has grown into a hamlet.", city.Name)}:
-                            default:
-                        }
-                    }
-                case *citylib.CityEventNewUnit:
-                    newUnit := event.(*citylib.CityEventNewUnit)
-                    overworldUnit := units.MakeOverworldUnitFromUnit(newUnit.Unit, city.X, city.Y, city.Plane, city.GetBanner(), player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider())
-                    // only normal units get weapon bonuses
-                    if overworldUnit.GetRace() != data.RaceFantastic {
-                        overworldUnit.SetWeaponBonus(newUnit.WeaponBonus)
-                    }
-
-                    // automatically apply chaos channels to new normal units
-                    // checking the race is probably redundant because a new unit built by the city will never be a hero nor fantastic
-                    if overworldUnit.GetRace() != data.RaceHero && overworldUnit.GetRace() != data.RaceFantastic && player.HasEnchantment(data.EnchantmentDoomMastery) {
-                        game.applyChaosChannels(overworldUnit)
-                    }
-
-                    overworldUnit.AddExperience(newUnit.Experience)
-                    player.CreateUnit(overworldUnit)
-                    game.ResolveStackAt(city.X, city.Y, city.Plane)
-
-                    if player.AIBehavior != nil {
-                        player.AIBehavior.ProducedUnit(city, player)
-                        log.Printf("Year=%v AI %v(%v) city %v created unit %v", game.Model.TurnNumber, player.Wizard.Name, player.GetBanner(), city.Name, overworldUnit.GetName())
-                    }
-                }
-            }
-        }
-    }
-
-    game.Model.DoBuildRoads(player)
-    game.Model.DoPurify(player)
-
-    for _, stack := range player.Stacks {
-
-        // every unit gains 1 experience at each turn
-        unitExperience := game.GetExperienceBonus(stack)
-        for _, unit := range stack.Units() {
-            switch unit.GetRace() {
-                case data.RaceHero: game.AddExperience(player, unit, 1)
-                case data.RaceFantastic: // nothing
-                default:
-                    game.AddExperience(player, unit, unitExperience)
-            }
-        }
-
-        // base healing rate is 5%. in a town is 10%, with animists guild is 16.67%
-        rate := 0.05
-
-        city := player.FindCity(stack.X(), stack.Y(), stack.Plane())
-
-        if city != nil {
-            rate = 0.1
-            if city.Buildings.Contains(buildinglib.BuildingAnimistsGuild) {
-                rate = 0.1667
-            }
-
-            if city.HasEnchantment(data.CityEnchantmentStreamOfLife) {
-                rate = 1
-            }
-        }
-
-        // any healer in the same stack provides an additional 20% healing rate
-        for _, unit := range stack.Units() {
-            if unit.HasAbility(data.AbilityHealer) {
-                rate += 0.2
-                break
-            }
-        }
-
-        // heal all the way up
-        if player.HasEnchantment(data.EnchantmentHerbMastery) {
-            rate = 1
-        }
-
-        handleStasis(stack)
-
-        stack.NaturalHeal(rate)
-        stack.ResetMoves()
-        stack.EnableMovers()
-    }
-
-    for _, city := range removeCities {
-        player.RemoveCity(city)
-    }
-
-    game.maybeHireHero(player)
-    game.maybeHireMercenaries(player)
-    game.maybeBuyFromMerchant(player)
-
-    player.UpdateFogVisibility()
-
-    if player.GlobalEnchantments.Contains(data.EnchantmentAwareness) {
-        game.doExploreFogForAwareness(player)
-    }
-
-    game.discoverWizards(nil)
-
-    // game.CenterCamera(player.Cities[0].X, player.Cities[0].Y)
-    game.DoNextUnit(player)
-    if player.IsHuman() {
-        game.RefreshUI()
-    }
-}
-
-func (game *Game) revertVolcanos() {
-    mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
-    for _, mapObject := range mapObjects {
-        for location, _ := range mapObject.ExtraMap {
-            if mapObject.HasVolcano(location.X, location.Y) {
-                if rand.N(100) < 2 {
-                    mapObject.RemoveVolcano(location.X, location.Y)
-                }
-            }
-        }
-    }
-}
-
-
-// At the beginning of each turn, Awareness clears the fog from all cities for enchantment's owner (newly built included)
-func (game *Game) doExploreFogForAwareness(awarenessOwner *playerlib.Player) {
-    for _, city := range game.Model.AllCities() {
-        if city.GetBanner() == awarenessOwner.GetBanner() {
-            continue // No need, those cities do already provide vision
-        }
-        awarenessOwner.ExploreFogSquare(city.X, city.Y, 1, city.Plane)
-        _, owner := game.Model.FindCity(city.X, city.Y, city.Plane)
-        if owner != nil {
-            game.meetWizards(nil, awarenessOwner, owner)
-        }
-    }
-}
-
-// raises 4 to 6 volcanoes on random tiles
-func (game *Game) doArmageddon() {
-    info := game.Model.ComputeCityStackInfo()
-    for _, player := range game.Model.Players {
-        if player.GlobalEnchantments.Contains(data.EnchantmentArmageddon) {
-            // get a list of valid map tiles on both planes
-            var points []data.PlanePoint
-            catchment := player.GetAllCatchmentArea()
-            mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
-            for _, mapObject := range mapObjects {
-                for x := range mapObject.Map.Columns() {
-                    for y := range mapObject.Map.Rows() {
-                        point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
-                        tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if tile.IsWater() || tile.IsRiver() || mapObject.HasVolcano(x, y) || mapObject.HasMagicNode(x, y) || catchment.Contains(point) {
-                            continue
-                        }
-
-                        city := info.FindCity(x, y, mapObject.Plane)
-                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
-                            continue
-                        }
-
-                        points = append(points, point)
-                    }
-                }
-            }
-
-            // create 4 to 6 volcanoes
-            for _, index := range rand.Perm(len(points))[:min(len(points), 4 + rand.IntN(2))] {
-                point := points[index]
-                game.GetMap(point.Plane).SetVolcano(point.X, point.Y, player)
-            }
-        }
-    }
-}
-
-// corrupts 3-6 random tiles
-func (game *Game) doGreatWasting() {
-    info := game.Model.ComputeCityStackInfo()
-    for _, player := range game.Model.Players {
-        if player.GlobalEnchantments.Contains(data.EnchantmentGreatWasting) {
-            // get a list of valid map tiles on both planes
-            var points []data.PlanePoint
-            catchment := player.GetAllCatchmentArea()
-            mapObjects := []*maplib.Map{game.Model.ArcanusMap, game.Model.MyrrorMap}
-            for _, mapObject := range mapObjects {
-                for x := range mapObject.Map.Columns() {
-                    for y := range mapObject.Map.Rows() {
-                        point := data.PlanePoint{X: x, Y: y, Plane: mapObject.Plane}
-                        tile := terrain.GetTile(mapObject.Map.Terrain[x][y])
-                        if tile.IsWater() || tile.IsRiver() || mapObject.HasCorruption(x, y) || catchment.Contains(point) {
-                            continue
-                        }
-
-                        city := info.FindCity(x, y, mapObject.Plane)
-                        if city != nil && (city.HasEnchantment(data.CityEnchantmentConsecration) || city.HasEnchantment(data.CityEnchantmentChaosWard)) {
-                            continue
-                        }
-
-                        points = append(points, point)
-                    }
-                }
-            }
-
-            // corrupt 3 to 6 tiles
-            for _, index := range rand.Perm(len(points))[:min(len(points), 3 + rand.IntN(3))] {
-                point := points[index]
-                game.GetMap(point.Plane).SetCorruption(point.X, point.Y)
             }
         }
     }
@@ -7784,140 +6093,6 @@ func (game *Game) ActiveConjunctionName() (string, color.Color) {
     return "", color.RGBA{}
 }
 
-func (game *Game) doChaosRift() {
-    for _, city := range game.Model.AllCities() {
-        if city.HasEnchantment(data.CityEnchantmentChaosRift) {
-
-            // do 5 magical attacks of strength 8 to units in the city
-            stack, player := game.Model.FindStack(city.X, city.Y, city.Plane)
-            if stack != nil && !stack.IsEmpty() {
-                stackUnits := stack.Units()
-                for range 5 {
-                    choice := stackUnits[rand.N(len(stackUnits))]
-
-                    // regeneration units are never hurt by overland spells
-                    if choice.HasAbility(data.AbilityRegeneration) {
-                        continue
-                    }
-
-                    wrapper := &UnitDamageWrapper{StackUnit: choice}
-
-                    combat.ApplyDamage(wrapper, []int{combat.ComputeRoll(8, 30)}, units.DamageRangedMagical, combat.DamageSourceSpell, combat.DamageModifiers{ArmorPiercing: true, Magic: data.ChaosMagic})
-                }
-
-                // check for dead units
-                for _, unit := range stackUnits {
-                    if unit.GetHealth() <= 0 {
-                        player.RemoveUnit(unit)
-                    }
-                }
-            }
-
-            // each building has a 5% chance of being destroyed
-            var destroyedBuildings []buildinglib.Building
-            for _, building := range city.Buildings.Values() {
-                if game.Model.BuildingInfo.ProductionCost(building) != 0 {
-                    if rand.N(100) < 5 {
-                        destroyedBuildings = append(destroyedBuildings, building)
-                    }
-                }
-            }
-
-            for _, building := range destroyedBuildings {
-                // emit a notice?
-                city.Buildings.Remove(building)
-            }
-        }
-    }
-}
-
-func (game *Game) doMeteorStorm() {
-    immolate := func (unit units.StackUnit) int {
-        damage, _ := combat.ApplyAreaDamage(&UnitDamageWrapper{StackUnit: unit}, 4, units.DamageImmolation, 0)
-        return damage
-    }
-
-    if !game.Model.HasEnchantment(data.EnchantmentMeteorStorm) {
-        return
-    }
-
-    affectedPlayers := set.NewSet[*playerlib.Player]()
-    for _, player := range game.Model.Players {
-        if player.Defeated {
-            continue
-        }
-
-        // add every other player to the affected set.
-        // if another player also cast meteor storm, then ultimately the current player will also
-        // be added to the set, meaning both players' meteor storms affects the other
-        if player.HasEnchantment(data.EnchantmentMeteorStorm) {
-            for _, otherPlayer := range game.Model.Players {
-                if otherPlayer != player {
-                    affectedPlayers.Insert(otherPlayer)
-                }
-            }
-        }
-    }
-
-    entityInfo := game.Model.ComputeCityStackInfo()
-
-    for _, player := range game.Model.Players {
-        if player.Defeated {
-            continue
-        }
-
-        // non-garrisoned units take immolation damage
-        var toRemove []units.StackUnit
-        for unit := range player.Units() {
-            if entityInfo.FindCity(unit.GetX(), unit.GetY(), unit.GetPlane()) == nil {
-                immolate(unit)
-                if unit.GetHealth() <= 0 {
-                    toRemove = append(toRemove, unit)
-                }
-            }
-        }
-
-        for _, unit := range toRemove {
-            player.RemoveUnit(unit)
-        }
-
-        if affectedPlayers.Contains(player) {
-            var removeCities []*citylib.City
-            for _, city := range player.Cities {
-                // chaos ward and consecration protect the city
-                if city.HasEnchantment(data.CityEnchantmentChaosWard) || city.HasEnchantment(data.CityEnchantmentConsecration) {
-                    continue
-                }
-
-                // destroy all outposts
-                if city.Outpost {
-                    removeCities = append(removeCities, city)
-                    continue
-                }
-
-                // buildings hae a 1% chance of being destroyed
-                var destroyedBuildings []buildinglib.Building
-                for _, building := range city.Buildings.Values() {
-                    if rand.N(100) == 0 {
-                        // FIXME: include nightshade protection
-                        destroyedBuildings = append(destroyedBuildings, building)
-                    }
-                }
-
-                for _, building := range destroyedBuildings {
-                    city.Buildings.Remove(building)
-                }
-
-            }
-
-            for _, city := range removeCities {
-                player.RemoveCity(city)
-            }
-        }
-    }
-
-}
-
 // stolen from combat/model.go
 func computeUnitPower(unit units.StackUnit) int {
     power := 0
@@ -7931,124 +6106,12 @@ func computeUnitPower(unit units.StackUnit) int {
     return power
 }
 
-func (game *Game) ComputeWizardPower(player *playerlib.Player) playerlib.WizardPower {
-    armyStrength := 0
-
-    for _, stack := range player.Stacks {
-        for _, unit := range stack.Units() {
-            armyStrength += computeUnitPower(unit)
-        }
-    }
-
-    manaPerTurn := player.ManaPerTurn(game.Model.ComputePower(player), game.Model)
-
-    research := 0
-    for _, spell := range player.KnownSpells.Spells {
-        research += spell.ResearchCost
-    }
-
-    return playerlib.WizardPower{
-        Army: armyStrength / 2,
-        Magic: max(0, player.Mana / 2 + manaPerTurn),
-        SpellResearch: research / 20,
-    }
-}
-
-func (game *Game) EndOfTurn() {
-    // put stuff here that should happen when all players have taken their turn
-
-    for _, player := range game.Model.Players {
-        if !player.Defeated {
-            player.AddPowerHistory(game.ComputeWizardPower(player))
-        }
-    }
-
-    game.revertVolcanos()
-
-    // FIXME: the wiki says armageddon will not do anything while time stop is in effect.
-    // figure out what other global spells don't have any effect (great wasting, chaos rift, meteor storm)
-    if !game.Model.HasEnchantment(data.EnchantmentTimeStop) {
-        game.doArmageddon()
-    }
-
-    game.doGreatWasting()
-
-    game.doChaosRift()
-
-    game.doMeteorStorm()
-
-    game.Model.TurnNumber += 1
-
-     // gate random-event rolls behind the user toggle; in-flight events continue
-     // their normal decay path inside DoRandomEvents and this just skips new rolls.
-    if game.Settings.RandomEvents {
-        game.Model.DoRandomEvents()
-    }
-
-    for _, player := range game.Model.Players {
-        if player.Defeated || player.Banished {
-            continue
-        }
-
-        player.UpdateDiplomaticRelations()
-    }
-
-    if game.WatchMode {
-        log.Printf("---- End of Year %v Summary ----", game.Model.TurnNumber - 1)
-        for _, player := range game.Model.Players {
-            if !player.IsHuman() {
-                power := game.Model.ComputePower(player)
-                log.Printf("Wizard %v (%v) - Gold: %v (%v), Food: %v, Mana: %v (%v), Cities: %v, Units: %v, Tax: %v, Research: %v (%v)",
-                    player.Wizard.Name, player.GetBanner(), player.Gold, player.GoldPerTurn(), player.FoodPerTurn(), player.Mana, player.ManaPerTurn(power, game.Model),
-                    len(player.Cities), player.UnitCount(), player.TaxRate,
-                    player.ResearchingSpell.Name, player.ResearchProgress)
-            }
-        }
-    }
-
-}
-
 func (game *Game) DoNextTurn(){
     if game.TurnHook != nil {
         game.TurnHook()
     }
 
-    // if time stop is enabled then don't move to the other players, just keep doing the current player
-    if game.Model.CurrentPlayer >= 0 && game.Model.Players[game.Model.CurrentPlayer].HasEnchantment(data.EnchantmentTimeStop) {
-        game.EndOfTurn()
-    } else {
-        game.Model.CurrentPlayer += 1
-        if game.Model.CurrentPlayer >= len(game.Model.Players) {
-            // all players did their turn, so the next global turn starts
-            game.EndOfTurn()
-            game.Model.CurrentPlayer = 0
-        }
-    }
-
-    if len(game.Model.Players) > 0 {
-        player := game.Model.Players[game.Model.CurrentPlayer]
-
-        aiPlayer := game.Model.Players[game.Model.CurrentPlayer]
-
-        if aiPlayer.AIBehavior != nil {
-            aiPlayer.AIBehavior.PreTurn(aiPlayer)
-        }
-
-        if player.Wizard.Banner != data.BannerBrown {
-            game.StartPlayerTurn(player)
-        } else {
-            // neutral enemies should reset their moves each turn
-            for _, stack := range player.Stacks {
-                handleStasis(stack)
-                stack.ResetMoves()
-                stack.EnableMovers()
-            }
-        }
-
-        if aiPlayer.AIBehavior != nil {
-            aiPlayer.AIBehavior.NewTurn(aiPlayer)
-        }
-    }
+    game.Model.DoNextTurn()
 }
 
 func (overworld *Overworld) DrawFog(screen *ebiten.Image, geom ebiten.GeoM){
@@ -8614,22 +6677,4 @@ func (game *Game) CastingDetectableByHuman(caster *playerlib.Player) bool {
         }
     }
     return false
-}
-
-func (game *Game) RelocateUnit(player *playerlib.Player, unit units.StackUnit) {
-    summonCity := player.FindSummoningCity()
-    if summonCity == nil {
-        return
-    }
-
-    player.UpdateUnitLocation(unit, summonCity.X, summonCity.Y, summonCity.Plane)
-
-    allStacks := player.FindAllStacks(summonCity.X, summonCity.Y, summonCity.Plane)
-    for i := 1; i < len(allStacks); i++ {
-        player.MergeStacks(allStacks[0], allStacks[i])
-    }
-
-    game.ResolveStackAt(summonCity.X, summonCity.Y, summonCity.Plane)
-
-    unit.SetBusy(units.BusyStatusNone)
 }

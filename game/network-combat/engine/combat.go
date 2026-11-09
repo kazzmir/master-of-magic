@@ -256,7 +256,7 @@ func makeGenericScenario(isServer bool, remote *combat.Remote, defendingUnit uni
 		player = defendingPlayer
 	}
 
-	combatScreen := combat.MakeCombatScreen(cache, defendingArmy, attackingArmy, optional.Of[combat.ArmyPlayer](player), combat.CombatLandscapeGrass, data.PlaneArcanus, combat.ZoneType{}, model)
+	combatScreen := combat.MakeCombatScreen(cache, optional.Of[combat.ArmyPlayer](player), model)
 
 	if combatScreen == nil {
 		return nil, nil, fmt.Errorf("unable to create combat screen (check game assets)")

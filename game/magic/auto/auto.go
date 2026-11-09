@@ -1,0 +1,230 @@
+package auto
+
+import (
+    "fmt"
+    "log"
+    "slices"
+    "image"
+
+    "github.com/kazzmir/master-of-magic/game/magic/setup"
+    "github.com/kazzmir/master-of-magic/game/magic/units"
+    "github.com/kazzmir/master-of-magic/game/magic/data"
+    "github.com/kazzmir/master-of-magic/game/magic/game"
+    "github.com/kazzmir/master-of-magic/game/magic/ai"
+    "github.com/kazzmir/master-of-magic/game/magic/terrain"
+    "github.com/kazzmir/master-of-magic/game/magic/spellbook"
+    "github.com/kazzmir/master-of-magic/game/magic/combat"
+    "github.com/kazzmir/master-of-magic/game/magic/maplib"
+    citylib "github.com/kazzmir/master-of-magic/game/magic/city"
+    playerlib "github.com/kazzmir/master-of-magic/game/magic/player"
+    settingslib "github.com/kazzmir/master-of-magic/game/magic/settings"
+    herolib "github.com/kazzmir/master-of-magic/game/magic/hero"
+    buildinglib "github.com/kazzmir/master-of-magic/game/magic/building"
+    "github.com/kazzmir/master-of-magic/lib/lbx"
+)
+
+type HeadlessHandlers struct {
+    Model *game.GameModel
+}
+
+var _ game.MovementHandler = &HeadlessHandlers{}
+
+func (handler *HeadlessHandlers) ShowMovement(x int, y int, stack *playerlib.UnitStack, center bool) {
+}
+
+func (handler *HeadlessHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
+    return handler.Model.DoEncounter(&CombatHandler{}, player, stack, encounter, map_, x, y)
+}
+
+type CombatHandler struct {
+}
+
+
+func (combatHandler *CombatHandler) RunCombat(combatModel *combat.CombatModel) combat.CombatState {
+    return combat.Run(combatModel)
+}
+
+func (combatHandler *CombatHandler) ConfirmRazeTown(city *citylib.City) bool {
+    return true
+}
+
+func (combatHandler *CombatHandler) ShowCombatEndScreen(attacker combat.ArmyPlayer, defenderFame int, attackerFame int, state combat.CombatState, combatModel *combat.CombatModel, cityPopulationLoss int, cityBuildingLoss int) {
+}
+
+func (combatHandler *CombatHandler) ShowUndeadAnimation(undeadUnits int) {
+}
+
+func (combatHandler *CombatHandler) Finish() {
+}
+
+
+func (handler *HeadlessHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {
+    return handler.Model.DoCombat(&CombatHandler{}, player, stack, enemy, enemyStack, zone)
+}
+
+func (handler *HeadlessHandlers) DefeatCity(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, city *citylib.City) (bool, int) {
+    return handler.Model.DefeatCity(&CombatHandler{}, player, stack, enemy, city)
+}
+
+func (handler *HeadlessHandlers) DiscoverWizards() {
+}
+
+func initializePlayer(model *game.GameModel, wizard setup.WizardCustom, isHuman bool, arcanusCityArea game.CityValidArea, myrrorCityArea game.CityValidArea) *playerlib.Player {
+    area := arcanusCityArea
+    startingPlane := data.PlaneArcanus
+    if wizard.RetortEnabled(data.RetortMyrran) {
+        startingPlane = data.PlaneMyrror
+        area = myrrorCityArea
+    }
+
+    player := model.AddPlayer(wizard, isHuman)
+
+    cityName := model.SuggestCityName(player.Wizard.Race)
+
+    cityX, cityY := game.FindCityLocation(model, startingPlane, area)
+    area[image.Pt(cityX, cityY)] = false
+
+    model.GetMap(startingPlane).SetRoad(cityX, cityY, startingPlane == data.PlaneMyrror)
+
+    introCity := citylib.MakeCity(cityName, cityX, cityY, player.Wizard.Race, model.BuildingInfo, model.GetMap(startingPlane), model, player)
+    introCity.Population = 4000
+    introCity.Plane = startingPlane
+
+    for _, building := range []buildinglib.Building{buildinglib.BuildingSmithy, buildinglib.BuildingBarracks, buildinglib.BuildingBuildersHall} {
+        if introCity.GetBuildableBuildings().Contains(building) {
+            introCity.Buildings.Insert(building)
+        }
+    }
+
+    introCity.Buildings.Insert(buildinglib.BuildingFortress)
+    introCity.Buildings.Insert(buildinglib.BuildingSummoningCircle)
+    introCity.ProducingBuilding = buildinglib.BuildingHousing
+    introCity.ProducingUnit = units.UnitNone
+    introCity.Farmers = 4
+
+    introCity.ResetCitizens()
+
+    player.AddCity(introCity)
+
+    for _, unit := range game.StartingUnits(player.Wizard.Race) {
+        player.AddUnit(units.MakeOverworldUnitFromUnit(unit, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+    }
+
+    // for debugging purposes, to start the game super powered
+    /*
+    if isHuman {
+        player.Admin = true
+        player.Mana = 90000
+        for range 3 {
+            player.AddUnit(units.MakeOverworldUnitFromUnit(units.GreatDrake, cityX, cityY, startingPlane, wizard.Banner, player.MakeExperienceInfo(), player.MakeUnitEnchantmentProvider()))
+        }
+    }
+    */
+
+    player.LiftFog(cityX, cityY, 3, introCity.Plane)
+
+    return player
+}
+
+func RunAutoGame() error {
+    settings := setup.NewGameSettings{
+        Opponents: 3,
+        Difficulty: data.DifficultyAverage,
+        Magic: data.MagicSettingNormal,
+        LandSize: 2,
+        DisableRaiders: true,
+    }
+
+    lbxCache := lbx.AutoCache()
+    if lbxCache == nil {
+        return fmt.Errorf("failed to create lbx cache")
+    }
+
+    terrainLbx, err := lbxCache.GetLbxFile("terrain.lbx")
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    terrainData, err := terrain.ReadTerrainData(terrainLbx)
+    if err != nil {
+        log.Printf("Error: could not load terrain: %v", err)
+        return nil
+    }
+
+    allSpells, err := spellbook.ReadSpellsFromCache(lbxCache)
+    if err != nil {
+        log.Printf("Could not read spells from cache: %v", err)
+        return nil
+    }
+
+    heroNames := herolib.ReadNamesPerWizard(lbxCache)
+
+    buildingInfo, err := buildinglib.ReadBuildingInfo(lbxCache)
+    if err != nil {
+        log.Printf("Unable to read building info: %v", err)
+        return nil
+    }
+
+    events := make(chan game.GameEvent, 100)
+
+    gameSettings := settingslib.MakeSettings(lbxCache)
+
+    gameModel := game.MakeGameModel(terrainData, settings, gameSettings, data.PlaneArcanus, events, heroNames, allSpells, game.CreateArtifactPool(lbxCache), buildingInfo, lbxCache)
+    gameModel.AIMode = ai.AIEnemy2
+
+    arcanusCityArea := gameModel.MakeCityValidArea(data.PlaneArcanus)
+    myrrorCityArea := gameModel.MakeCityValidArea(data.PlaneMyrror)
+
+    for range settings.Opponents {
+        wizard, ok := gameModel.ChooseWizard()
+        if ok {
+            initializePlayer(gameModel, wizard, false, arcanusCityArea, myrrorCityArea)
+        } else {
+            log.Printf("Warning: unable to add another wizard to the game")
+        }
+    }
+
+    gameModel.CurrentPlayer = 0
+    gameModel.Plane = data.PlaneArcanus
+    gameModel.StartPlayerTurn(gameModel.Players[gameModel.CurrentPlayer])
+
+    for range 100 {
+
+        log.Printf("Turn %d", gameModel.TurnNumber)
+
+        for _, player := range gameModel.Players {
+            out := player.AIBehavior.Update(player, gameModel)
+            gameModel.ApplyAIDecisions(player, out)
+
+            gameModel.DoNextTurn()
+
+            for _, stack := range slices.Clone(player.Stacks) {
+                // stop moving once any unit in the stack has no moves left
+                for !stack.AnyOutOfMoves() && len(stack.CurrentPath) > 0 {
+                    stack.CurrentPath = gameModel.DoAiMoveUnit(&HeadlessHandlers{Model: gameModel}, player, stack)
+                }
+            }
+
+            // continue any in-progress road building and attempt to meld any node
+            // a stack is now standing on (engineers/melders may have just arrived).
+            for _, stack := range slices.Clone(player.Stacks) {
+                for _, unit := range stack.Units() {
+                    if unit.GetBusy() == units.BusyStatusBuildRoad && len(unit.GetBuildRoadPath()) > 0 {
+                        gameModel.MaybeBuildRoads(stack, player)
+                        break
+                    }
+                }
+            }
+            for _, stack := range slices.Clone(player.Stacks) {
+                gameModel.TryMeldNode(stack, player)
+            }
+
+            player.AIBehavior.PostUpdate(player, gameModel)
+
+            gameModel.DoNextTurn()
+        }
+    }
+
+    return nil
+}

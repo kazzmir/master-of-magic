@@ -451,7 +451,7 @@ func (engine *Engine) MakeBattleFunc() coroutine.AcceptYieldFunc {
     }
 
     model := combat.MakeCombatModel(allSpells, &defendingArmy, &attackingArmy, landscape, data.PlaneArcanus, combat.ZoneType{}, data.MagicNone, 0, 0, make(chan combat.CombatEvent, 100), nil)
-    combatScreen := combat.MakeCombatScreen(engine.Cache, &defendingArmy, &attackingArmy, optional.Of[combat.ArmyPlayer](engine.Player), landscape, data.PlaneArcanus, combat.ZoneType{}, model)
+    combatScreen := combat.MakeCombatScreen(engine.Cache, optional.Of[combat.ArmyPlayer](engine.Player), model)
     engine.CombatScreen = combatScreen
 
     return func(yield coroutine.YieldFunc) error {
