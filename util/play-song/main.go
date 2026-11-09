@@ -17,6 +17,7 @@ import (
 	"github.com/kazzmir/master-of-magic/game/magic/audio"
 	"github.com/kazzmir/master-of-magic/game/magic/music"
 	"github.com/kazzmir/master-of-magic/lib/lbx"
+	"github.com/kazzmir/master-of-magic/lib/meltysynth"
 )
 
 type playerGame struct {
@@ -80,8 +81,9 @@ func loadCache(path string) (*lbx.LbxCache, error) {
 func run(args []string) error {
 	flags := flag.NewFlagSet("play-song", flag.ContinueOnError)
 	path := flags.String("lbx", "", "path to MUSIC.LBX (default: auto-discover game data)")
+	polyphony := flags.Int("polyphony", int(music.DefaultMaximumPolyphony), "maximum synth voices (8-256)")
 	flags.Usage = func() {
-		fmt.Fprintln(flags.Output(), "Usage: play-song [-lbx /path/to/MUSIC.LBX] ENTRY")
+		fmt.Fprintln(flags.Output(), "Usage: play-song [-lbx /path/to/MUSIC.LBX] [-polyphony VOICES] ENTRY")
 		fmt.Fprintln(flags.Output(), "ENTRY is a zero-based music entry. Playback loops until stopped.")
 		flags.PrintDefaults()
 	}
@@ -95,6 +97,10 @@ func run(args []string) error {
 	entry, err := strconv.Atoi(flags.Arg(0))
 	if err != nil || entry < 0 {
 		return fmt.Errorf("invalid music entry %q: expected a non-negative integer", flags.Arg(0))
+	}
+
+	if *polyphony < int(meltysynth.MinimumSupportedPolyphony) || *polyphony > int(meltysynth.MaximumSupportedPolyphony) {
+		return fmt.Errorf("polyphony must be between %d and %d", meltysynth.MinimumSupportedPolyphony, meltysynth.MaximumSupportedPolyphony)
 	}
 
 	cache, err := loadCache(*path)
@@ -116,7 +122,7 @@ func run(args []string) error {
 	defer cancel()
 	audio.Initialize()
 	updates := make(chan music.PlaybackProgress, 1)
-	player.PlaySong(music.Song(entry), music.PlayOptions{Progress: updates})
+	player.PlaySong(music.Song(entry), music.PlayOptions{Progress: updates, MaximumPolyphony: int32(*polyphony)})
 	ebiten.SetWindowTitle(fmt.Sprintf("MUSIC.LBX entry %d", entry))
 	ebiten.SetWindowSize(480, 120)
 	return ebiten.RunGame(&playerGame{ctx: ctx, entry: entry, updates: updates})

@@ -5,7 +5,12 @@ Run from the repository root:
 ```sh
 go run ./util/play-song 115
 go run ./util/play-song -lbx magic-data/MUSIC.LBX 115
+go run ./util/play-song -polyphony 128 59
 ```
+
+Music defaults to 256 synth voices to accommodate layered instruments and
+release tails. Use `-polyphony` (8–256) to choose a lower CPU/memory budget;
+lower budgets can steal voices in dense passages.
 
 Entries are zero-based. Without `-lbx`, the engine's automatic LBX cache searches
 for game data. Put options before the entry number.

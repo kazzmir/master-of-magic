@@ -179,7 +179,13 @@ type PlaybackProgress struct {
     Loops int64 // Number of section or whole-song loop restarts.
 }
 
+// Music uses a larger budget than MeltySynth's general-purpose default: layered
+// SoundFont instruments and release tails can exhaust 64 voices in MUSIC.LBX.
+const DefaultMaximumPolyphony = meltysynth.MaximumSupportedPolyphony
+
 type PlayOptions struct {
+    // MaximumPolyphony is the voice budget (8–256). Zero uses the music default.
+    MaximumPolyphony int32
     // Progress receives snapshots about every 50 ms. Updates are dropped when
     // the receiver is not ready; callers must not close the channel during play.
     Progress chan<- PlaybackProgress
@@ -515,13 +521,31 @@ func playbackProgress(playback *meltysynth.MidiFilePlayback, total time.Duration
     }
 }
 
+func synthesizerSettings(options []PlayOptions) (*meltysynth.SynthesizerSettings, error) {
+    settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
+    settings.MaximumPolyphony = DefaultMaximumPolyphony
+    for _, option := range options {
+        if option.MaximumPolyphony == 0 {
+            continue
+        }
+        if option.MaximumPolyphony < meltysynth.MinimumSupportedPolyphony || option.MaximumPolyphony > meltysynth.MaximumSupportedPolyphony {
+            return nil, fmt.Errorf("music polyphony must be between %d and %d, got %d", meltysynth.MinimumSupportedPolyphony, meltysynth.MaximumSupportedPolyphony, option.MaximumPolyphony)
+        }
+        settings.MaximumPolyphony = option.MaximumPolyphony
+    }
+    return settings, nil
+}
+
 // FIXME: replace smf.SMF with meltysynth.MidiFile
 func playMidi(song *smf.SMF, done context.Context, soundFont *meltysynth.SoundFont, volume float64, events chan MusicEvent, options []PlayOptions) error {
     var buffer bytes.Buffer
     // write out a normal midi file
     song.WriteTo(&buffer)
 
-    settings := meltysynth.NewSynthesizerSettings(audio.SampleRate)
+    settings, err := synthesizerSettings(options)
+    if err != nil {
+        return err
+    }
     synthesizer, err := meltysynth.NewSynthesizer(soundFont, settings)
     if err != nil {
         return err

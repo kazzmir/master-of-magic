@@ -34,9 +34,19 @@ func TestInvalidArguments(t *testing.T) {
 	}
 }
 
+func TestInvalidPolyphony(t *testing.T) {
+	for _, budget := range []string{"-1", "0", "7", "257", "4294967360"} {
+		if err := run([]string{"-polyphony", budget, "115"}); err == nil || !strings.Contains(err.Error(), "polyphony") {
+			t.Fatalf("budget %s: expected polyphony error, got %v", budget, err)
+		}
+	}
+}
+
 func TestExplicitArchiveMissing(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "MUSIC.LBX")
-	if err := run([]string{"-lbx", path, "115"}); err == nil || !strings.Contains(err.Error(), "open music archive") {
-		t.Fatalf("expected archive open error, got %v", err)
+	for _, budget := range []string{"8", "64", "128", "256"} {
+		if err := run([]string{"-polyphony", budget, "-lbx", path, "115"}); err == nil || !strings.Contains(err.Error(), "open music archive") {
+			t.Fatalf("budget %s: expected archive open error, got %v", budget, err)
+		}
 	}
 }
