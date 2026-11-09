@@ -180,6 +180,14 @@ type NoteOffDuration struct {
     index int
 }
 
+func compareNoteOffs(a, b NoteOffDuration) int {
+    if a.Duration == b.Duration {
+        // Preserve the existing xmi2mid-style reverse insertion order for ties.
+        return cmp.Compare(b.index, a.index)
+    }
+    return cmp.Compare(a.Duration, b.Duration)
+}
+
 // FIXME: add a ConvertToMeltySynthMidi instead of smf
 
 // convert from an XMI midi event to a standard midi event by keeping track of note on durations
@@ -289,14 +297,7 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 currentDelay = uint32(adjustDelay(delay.Delay))
 
                 // sort by duration so we emit a note off for the shortest duration first
-                slices.SortFunc(future, func (a, b NoteOffDuration) int {
-                    if a.Duration == b.Duration {
-                        // this sort of matches what xmi2mid does
-                        // reverse order for some reason, I don't know why
-                        return cmp.Compare(b.index, a.index)
-                    }
-                    return cmp.Compare(a.Duration, b.Duration)
-                })
+                slices.SortFunc(future, compareNoteOffs)
 
                 /* compute which notes to turn off */
                 sofar := int64(0)
@@ -329,6 +330,18 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
                 if debug {
                     fmt.Printf("[%d] End of track\n", messageIndex)
                 }
+                // Remaining durations are relative to the source cursor, while
+                // currentDelay is the time since the last emitted MIDI event.
+                // Finish every scheduled note before closing the output track.
+                slices.SortFunc(future, compareNoteOffs)
+                elapsed := int64(0)
+                for _, note := range future {
+                    delta := max(note.Duration - elapsed, 0)
+                    track.Add(currentDelay + uint32(delta), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
+                    currentDelay = 0
+                    elapsed += delta
+                }
+                future = nil
                 track.Close(currentDelay)
             default:
                 fmt.Printf("Unhandled midi message in conversion: %T\n", message)

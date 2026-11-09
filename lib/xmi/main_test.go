@@ -75,3 +75,78 @@ func TestReadEventEntry115DelayBeforeNote(t *testing.T) {
 		t.Fatalf("track = %v, want %v", got, wantTrack)
 	}
 }
+
+func TestConvertToSMFFlushNotesAtEndOfTrack(t *testing.T) {
+	note := func(key uint8, duration int64) MidiMessage {
+		return &MidiMessageNoteOn{Channel: 0, Note: key, Velocity: 100, Duration: duration}
+	}
+	on := func(delta uint32, key uint8) smf.Event {
+		return smf.Event{Delta: delta, Message: midi.NoteOn(0, key, 100).Bytes()}
+	}
+	off := func(delta uint32, key uint8) smf.Event {
+		return smf.Event{Delta: delta, Message: midi.NoteOffVelocity(0, key, 127).Bytes()}
+	}
+	eot := func(delta uint32) smf.Event {
+		return smf.Event{Delta: delta, Message: smf.EOT}
+	}
+	tests := []struct {
+		name     string
+		messages []MidiMessage
+		want     smf.Track
+	}{
+		{
+			name:     "no notes preserves trailing silence",
+			messages: []MidiMessage{&MidiMessageDelay{Delay: 20}},
+			want:     smf.Track{eot(20)},
+		},
+		{
+			name:     "note with no subsequent delay",
+			messages: []MidiMessage{note(60, 100)},
+			want:     smf.Track{on(0, 60), off(100, 60), eot(0)},
+		},
+		{
+			name:     "zero duration note",
+			messages: []MidiMessage{note(60, 0)},
+			want:     smf.Track{on(0, 60), off(0, 60), eot(0)},
+		},
+		{
+			name:     "partially elapsed note",
+			messages: []MidiMessage{note(60, 100), &MidiMessageDelay{Delay: 20}},
+			want:     smf.Track{on(0, 60), off(100, 60), eot(0)},
+		},
+		{
+			name:     "sort pending notes and preserve tie ordering",
+			messages: []MidiMessage{note(60, 100), note(62, 30), note(64, 30)},
+			want:     smf.Track{on(0, 60), on(0, 62), on(0, 64), off(30, 64), off(0, 62), off(70, 60), eot(0)},
+		},
+		{
+			name:     "pending delay after an already emitted note off",
+			messages: []MidiMessage{note(60, 10), note(62, 30), &MidiMessageDelay{Delay: 20}},
+			want:     smf.Track{on(0, 60), on(0, 62), off(10, 60), off(20, 62), eot(0)},
+		},
+		{
+			name:     "note added after a delay",
+			messages: []MidiMessage{note(60, 100), &MidiMessageDelay{Delay: 20}, note(62, 30)},
+			want:     smf.Track{on(0, 60), on(20, 62), off(30, 62), off(50, 60), eot(0)},
+		},
+		{
+			name:     "all notes already finished preserves trailing silence",
+			messages: []MidiMessage{note(60, 10), &MidiMessageDelay{Delay: 20}},
+			want:     smf.Track{on(0, 60), off(10, 60), eot(10)},
+		},
+		{
+			name:     "tempo scaling also applies to final note off",
+			messages: []MidiMessage{&MidiMessageTempoSetting{Tempo: 375000}, note(60, 10)},
+			want:     smf.Track{{Delta: 0, Message: smf.MetaTempo(160).Bytes()}, on(0, 60), off(20, 60), eot(0)},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			event := MidiEvent{Messages: append(test.messages, &MidiMessageEndOfTrack{})}
+			got := event.ConvertToSMF().Tracks[0]
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("track = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
