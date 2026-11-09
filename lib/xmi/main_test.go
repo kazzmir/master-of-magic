@@ -1,8 +1,12 @@
 package xmi
 
 import (
+	"bytes"
 	"reflect"
 	"testing"
+	"time"
+
+	"github.com/kazzmir/master-of-magic/lib/meltysynth"
 
 	"github.com/kazzmir/master-of-magic/lib/midi"
 	"github.com/kazzmir/master-of-magic/lib/midi/smf"
@@ -39,6 +43,7 @@ func TestReadEventAdditiveDelays(t *testing.T) {
 				t.Fatalf("messages = %#v, want %#v", event.Messages, wantMessages)
 			}
 			wantTrack := smf.Track{
+				{Delta: 0, Message: smf.MetaTempo(120).Bytes()},
 				{Delta: uint32(test.want), Message: midi.ProgramChange(0, 5).Bytes()},
 				{Delta: 0, Message: smf.EOT},
 			}
@@ -67,6 +72,7 @@ func TestReadEventEntry115DelayBeforeNote(t *testing.T) {
 		t.Fatalf("messages = %#v, want %#v", event.Messages, wantMessages)
 	}
 	wantTrack := smf.Track{
+		{Delta: 0, Message: smf.MetaTempo(120).Bytes()},
 		{Delta: 127, Message: midi.NoteOn(3, 48, 111).Bytes()},
 		{Delta: 37, Message: midi.NoteOffVelocity(3, 48, 127).Bytes()},
 		{Delta: 0, Message: smf.EOT},
@@ -98,6 +104,11 @@ func TestConvertToSMFFlushNotesAtEndOfTrack(t *testing.T) {
 			name:     "no notes preserves trailing silence",
 			messages: []MidiMessage{&MidiMessageDelay{Delay: 20}},
 			want:     smf.Track{eot(20)},
+		},
+		{
+			name:     "consecutive delays preserve absolute time",
+			messages: []MidiMessage{&MidiMessageDelay{Delay: 10}, &MidiMessageDelay{Delay: 20}},
+			want:     smf.Track{eot(30)},
 		},
 		{
 			name:     "note with no subsequent delay",
@@ -135,18 +146,112 @@ func TestConvertToSMFFlushNotesAtEndOfTrack(t *testing.T) {
 			want:     smf.Track{on(0, 60), off(10, 60), eot(10)},
 		},
 		{
-			name:     "tempo scaling also applies to final note off",
+			name:     "source tempo does not scale final note off",
 			messages: []MidiMessage{&MidiMessageTempoSetting{Tempo: 375000}, note(60, 10)},
-			want:     smf.Track{{Delta: 0, Message: smf.MetaTempo(160).Bytes()}, on(0, 60), off(20, 60), eot(0)},
+			want:     smf.Track{on(0, 60), off(10, 60), eot(0)},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			event := MidiEvent{Messages: append(test.messages, &MidiMessageEndOfTrack{})}
 			got := event.ConvertToSMF().Tracks[0]
-			if !reflect.DeepEqual(got, test.want) {
-				t.Fatalf("track = %v, want %v", got, test.want)
+			want := append(smf.Track{{Delta: 0, Message: smf.MetaTempo(120).Bytes()}}, test.want...)
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("track = %v, want %v", got, want)
 			}
 		})
+	}
+}
+
+func midiLength(t *testing.T, song *smf.SMF) time.Duration {
+	t.Helper()
+	if song.TimeFormat != smf.MetricTicks(60) {
+		t.Fatalf("time format = %v, want 60 PPQN", song.TimeFormat)
+	}
+	var buffer bytes.Buffer
+	if _, err := song.WriteTo(&buffer); err != nil {
+		t.Fatal(err)
+	}
+	file, err := meltysynth.NewMidiFile(&buffer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return file.GetLength()
+}
+
+func TestConvertToSMFFixedClock(t *testing.T) {
+	for _, tempo := range []float64{0, 375000, 500000, 1500000} {
+		event := MidiEvent{}
+		if tempo != 0 {
+			event.Messages = append(event.Messages, &MidiMessageTempoSetting{Tempo: tempo})
+		}
+		event.Messages = append(event.Messages,
+			&MidiMessageNoteOn{Channel: 0, Note: 60, Velocity: 100, Duration: 120},
+			&MidiMessageDelay{Delay: 120},
+			&MidiMessageEndOfTrack{},
+		)
+		if got := midiLength(t, event.ConvertToSMF()); got != time.Second {
+			t.Fatalf("tempo %v: 120 XMI ticks played for %v, want 1s", tempo, got)
+		}
+	}
+}
+
+func TestConvertToSMFTempoChangesDoNotMoveNotes(t *testing.T) {
+	event := MidiEvent{Messages: []MidiMessage{
+		&MidiMessageTempoSetting{Tempo: 600000},
+		&MidiMessageDelay{Delay: 30},
+		&MidiMessageNoteOn{Channel: 0, Note: 60, Velocity: 100, Duration: 120},
+		&MidiMessageDelay{Delay: 30},
+		&MidiMessageTempoSetting{Tempo: 1000000},
+		&MidiMessageNoteOn{Channel: 0, Note: 62, Velocity: 100, Duration: 30},
+		&MidiMessageDelay{Delay: 10},
+		&MidiMessageTempoSetting{Tempo: 250000},
+		&MidiMessageDelay{Delay: 20},
+		&MidiMessageEndOfTrack{},
+	}}
+	song := event.ConvertToSMF()
+	want := smf.Track{
+		{Delta: 0, Message: smf.MetaTempo(120).Bytes()},
+		{Delta: 30, Message: midi.NoteOn(0, 60, 100).Bytes()},
+		{Delta: 30, Message: midi.NoteOn(0, 62, 100).Bytes()},
+		{Delta: 30, Message: midi.NoteOffVelocity(0, 62, 127).Bytes()},
+		{Delta: 60, Message: midi.NoteOffVelocity(0, 60, 127).Bytes()},
+		{Delta: 0, Message: smf.EOT},
+	}
+	if !reflect.DeepEqual(song.Tracks[0], want) {
+		t.Fatalf("track = %v, want %v", song.Tracks[0], want)
+	}
+	if got := midiLength(t, song); got != 1250*time.Millisecond {
+		t.Fatalf("duration = %v, want 1.25s", got)
+	}
+}
+
+func TestConvertToSMFSmallDelaysDoNotDrift(t *testing.T) {
+	event := MidiEvent{Messages: []MidiMessage{
+		&MidiMessageTempoSetting{Tempo: 1500000},
+		&MidiMessageNoteOn{Channel: 0, Note: 60, Velocity: 100, Duration: 120},
+	}}
+	for range 120 {
+		event.Messages = append(event.Messages,
+			&MidiMessageDelay{Delay: 1},
+			&MidiMessageProgramChange{Channel: 0, Program: 5},
+		)
+	}
+	event.Messages = append(event.Messages, &MidiMessageEndOfTrack{})
+	song := event.ConvertToSMF()
+	// MeltySynth truncates each event's timestamp to nanoseconds; allow that
+	// sub-microsecond loss, but verify the MIDI ticks themselves exactly below.
+	if got := midiLength(t, song); got < time.Second-time.Microsecond || got > time.Second+time.Microsecond {
+		t.Fatalf("120 one-tick delays played for %v, want approximately 1s", got)
+	}
+	var tick uint32
+	for _, event := range song.Tracks[0] {
+		tick += event.Delta
+		if reflect.DeepEqual(event.Message.Bytes(), midi.NoteOffVelocity(0, 60, 127).Bytes()) && tick != 120 {
+			t.Fatalf("note off at tick %d, want 120", tick)
+		}
+	}
+	if tick != 120 {
+		t.Fatalf("track ended at tick %d, want 120", tick)
 	}
 }

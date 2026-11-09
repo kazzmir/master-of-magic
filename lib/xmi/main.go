@@ -9,7 +9,6 @@ import (
     "bytes"
     "bufio"
     "encoding/binary"
-    "math"
     "cmp"
     "slices"
 
@@ -175,6 +174,7 @@ type MidiEvent struct {
 type NoteOffDuration struct {
     Channel uint8
     Note uint8
+    // Absolute XMI tick at which the note ends.
     Duration int64
     // used for sorting
     index int
@@ -190,166 +190,89 @@ func compareNoteOffs(a, b NoteOffDuration) int {
 
 // FIXME: add a ConvertToMeltySynthMidi instead of smf
 
-// convert from an XMI midi event to a standard midi event by keeping track of note on durations
+// ConvertToSMF converts XMI's fixed 120-Hz clock to MIDI without rescaling or
+// rounding individual delays. At 60 PPQN and 120 BPM, one MIDI tick is one XMI
+// tick. Source tempo events do not change the XMI event clock.
 func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     object := smf.New()
-
-    // FIXME: where does 97 come from? all the master of magic files seem to use it
-    object.TimeFormat = smf.MetricTicks(97)
+    object.TimeFormat = smf.MetricTicks(60)
 
     var track smf.Track
+    track.Add(0, smf.MetaTempo(120).Bytes())
 
     var future []NoteOffDuration
-
-    // this value will get adjusted once we see a tempo setting (MidiMessageTempoSetting)
-    trueTempo := 80.0
-
-    /* tempo setting hex value: 19 f3 8d
-      at bpm: 35.28
-      delay 34 -> delta 15
-      delay 50 -> delta 22
-      delay 66 -> delta 29
-
-      tempo setting hex value: 09 f3 8d
-      at bpm: 92
-      delay 34 -> delta 39
-      delay 50 -> delta 58
-      delay 66 -> delta 76
-
-      it looks like the formula is delay * (tempo/80)
-    */
-    adjustDelay := func(delay int64) int64 {
-        // return int64(math.Round(float64(delay) * (float64(trueTempo) / 80.0)))
-        return int64(math.Round(float64(delay) * (float64(trueTempo) / 80.0)))
+    currentTick := int64(0)
+    lastTick := int64(0)
+    emitAt := func(tick int64, message []byte) {
+        track.Add(uint32(tick - lastTick), message)
+        lastTick = tick
+    }
+    emit := func(message []byte) {
+        emitAt(currentTick, message)
+    }
+    flushUntil := func(tick int64) {
+        slices.SortFunc(future, compareNoteOffs)
+        count := 0
+        for _, note := range future {
+            if note.Duration > tick {
+                break
+            }
+            emitAt(note.Duration, midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
+            count++
+        }
+        future = future[count:]
     }
 
-    currentDelay := uint32(0)
     for messageIndex, message := range event.Messages {
-        switch message.(type) {
+        switch message := message.(type) {
             case *MidiMessageSMPTEOffset:
-                offset := message.(*MidiMessageSMPTEOffset)
-                // FIXME: what to do with fps?
-                if debug {
-                    fmt.Printf(" emit smpte hour: %v\n", offset.Hour)
-                }
-                track.Add(currentDelay, smf.MetaSMPTE(offset.Hour, offset.Minute, offset.Second, offset.Frame, offset.SubFrame).Bytes())
-                currentDelay = 0
+                // FIXME: preserve the SMPTE frame rate too.
+                emit(smf.MetaSMPTE(message.Hour, message.Minute, message.Second, message.Frame, message.SubFrame).Bytes())
             case *MidiMessageTimeSignature:
-                signature := message.(*MidiMessageTimeSignature)
-                if debug {
-                    fmt.Printf("Set time signature to %+v\n", signature)
-                }
-                track.Add(currentDelay, smf.MetaTimeSig(signature.Numerator, 1<<signature.Denominator, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
-                // track.Add(currentDelay, smf.MetaTimeSig(4, 4, signature.Metronome, signature.DemiSemiQuaverPerQuarter).Bytes())
-                currentDelay = 0
+                emit(smf.MetaTimeSig(message.Numerator, 1<<message.Denominator, message.Metronome, message.DemiSemiQuaverPerQuarter).Bytes())
             case *MidiMessageChannelPrefix:
-                prefix := message.(*MidiMessageChannelPrefix)
-                track.Add(currentDelay, smf.MetaChannel(prefix.Channel).Bytes())
-                currentDelay = 0
+                emit(smf.MetaChannel(message.Channel).Bytes())
             case *MidiMessagePortPrefix:
-                prefix := message.(*MidiMessagePortPrefix)
-                track.Add(currentDelay, smf.MetaPort(prefix.Port).Bytes())
-                currentDelay = 0
+                emit(smf.MetaPort(message.Port).Bytes())
             case *MidiMessageTempoSetting:
-                tempo := message.(*MidiMessageTempoSetting)
-                // TODO: figure out where this constant comes from
-                trueTempo = 60000000.0 / tempo.Tempo
-                track.Add(currentDelay, smf.MetaTempo(trueTempo).Bytes())
-
-                // track.Add(currentDelay, smf.MetaTempo(131).Bytes())
-
-                currentDelay = 0
+                // XMI timestamps and note durations use 120 ticks/second,
+                // regardless of the embedded MIDI tempo metadata.
             case *MidiMessageProgramChange:
-                program := message.(*MidiMessageProgramChange)
-                track.Add(currentDelay, midi.ProgramChange(program.Channel, program.Program).Bytes())
-                currentDelay = 0
+                emit(midi.ProgramChange(message.Channel, message.Program).Bytes())
             case *MidiMessagePitchWheelChange:
-                pitch := message.(*MidiMessagePitchWheelChange)
-                track.Add(currentDelay, midi.Pitchbend(pitch.Channel, pitch.Value).Bytes())
-                currentDelay = 0
+                emit(midi.Pitchbend(message.Channel, message.Value).Bytes())
             case *MidiMessageKeySignature:
-                key := message.(*MidiMessageKeySignature)
-                flats := key.Flats
+                flats := message.Flats
                 if flats < 0 {
                     flats = -flats
                 }
-                track.Add(currentDelay, smf.MetaKey(key.Major, key.Major == 0, uint8(flats), key.Flats < 0).Bytes())
-                currentDelay = 0
+                emit(smf.MetaKey(message.Major, message.Major == 0, uint8(flats), message.Flats < 0).Bytes())
             case *MidiMessageNoteOn:
-                note := message.(*MidiMessageNoteOn)
-                if debug {
-                    fmt.Printf("[%d] Note on: channel=%v note=%v velocity=%v duration=%v\n", messageIndex, note.Channel, note.Note, note.Velocity, adjustDelay(note.Duration))
-                }
-                track.Add(currentDelay, midi.NoteOn(note.Channel, note.Note, note.Velocity).Bytes())
-                future = append(future, NoteOffDuration{Channel: note.Channel, Note: note.Note, Duration: adjustDelay(note.Duration), index: messageIndex})
-                // track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
-                currentDelay = 0
+                emit(midi.NoteOn(message.Channel, message.Note, message.Velocity).Bytes())
+                future = append(future, NoteOffDuration{Channel: message.Channel, Note: message.Note, Duration: currentTick + message.Duration, index: messageIndex})
             case *MidiMessageChannelPressure:
-                pressure := message.(*MidiMessageChannelPressure)
-                track.Add(currentDelay, midi.AfterTouch(pressure.Channel, pressure.Pressure).Bytes())
-                currentDelay = 0
+                emit(midi.AfterTouch(message.Channel, message.Pressure).Bytes())
             case *MidiMessageControlChange:
-                control := message.(*MidiMessageControlChange)
-                track.Add(currentDelay, midi.ControlChange(control.Channel, control.Controller, control.Value).Bytes())
-                currentDelay = 0
+                emit(midi.ControlChange(message.Channel, message.Controller, message.Value).Bytes())
             case *MidiMessageDelay:
-                delay := message.(*MidiMessageDelay)
-                currentDelay = uint32(adjustDelay(delay.Delay))
-
-                // sort by duration so we emit a note off for the shortest duration first
-                slices.SortFunc(future, compareNoteOffs)
-
-                /* compute which notes to turn off */
-                sofar := int64(0)
-                var more []NoteOffDuration
-                for _, note := range future {
-                    note.Duration -= sofar
-                    if note.Duration < 0 {
-                        note.Duration = 0
-                    }
-                    if note.Duration - int64(currentDelay) <= 0 {
-                        track.Add(uint32(note.Duration), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
-                        if debug {
-                            fmt.Printf("[%d] emit note off: delta=%v channel=%v note=%v\n", messageIndex, note.Duration, note.Channel, note.Note)
-                        }
-                        sofar += note.Duration
-                        currentDelay -= uint32(note.Duration)
-                    } else {
-                        note.Duration -= int64(currentDelay)
-                        more = append(more, note)
-                    }
-                }
-                future = more
-                if debug {
-                    if len(future) > 0 {
-                        fmt.Printf("future notes: %+v\n", future)
-                    }
-                }
-
+                currentTick += message.Delay
+                flushUntil(currentTick)
             case *MidiMessageEndOfTrack:
-                if debug {
-                    fmt.Printf("[%d] End of track\n", messageIndex)
-                }
-                // Remaining durations are relative to the source cursor, while
-                // currentDelay is the time since the last emitted MIDI event.
-                // Finish every scheduled note before closing the output track.
-                slices.SortFunc(future, compareNoteOffs)
-                elapsed := int64(0)
+                // Extend the output to finish notes that outlive the source EOT.
+                endTick := currentTick
                 for _, note := range future {
-                    delta := max(note.Duration - elapsed, 0)
-                    track.Add(currentDelay + uint32(delta), midi.NoteOffVelocity(note.Channel, note.Note, 127).Bytes())
-                    currentDelay = 0
-                    elapsed += delta
+                    endTick = max(endTick, note.Duration)
                 }
-                future = nil
-                track.Close(currentDelay)
+                flushUntil(endTick)
+                track.Close(uint32(endTick - lastTick))
+                object.Add(track)
+                return object
             default:
                 fmt.Printf("Unhandled midi message in conversion: %T\n", message)
         }
     }
 
     object.Add(track)
-
     return object
 }
 
