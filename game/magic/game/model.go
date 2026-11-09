@@ -3321,7 +3321,7 @@ func (model *GameModel) createTreasure(encounterType maplib.EncounterType, budge
         }
 }
 
-func (model *GameModel) doEncounter(combatHandler CombatHandler, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
+func (model *GameModel) DoEncounter(combatHandler CombatHandler, player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, mapUse *maplib.Map, x int, y int) combat.CombatState {
     // there was nothing in the encounter, just give treasure
     if len(encounter.Units) == 0 {
         mapUse.RemoveEncounter(x, y)

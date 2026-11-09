@@ -3445,7 +3445,7 @@ func (game *Game) doMoveSelectedUnit(yield coroutine.YieldFunc, player *playerli
                     game.discoverWizards(yield)
 
                     stack.ExhaustMoves()
-                    state := game.Model.doEncounter(&UICombatHandler{Yield: yield, Game: game}, player, stack, encounter, mapUse, stack.X(), stack.Y())
+                    state := game.Model.DoEncounter(&UICombatHandler{Yield: yield, Game: game}, player, stack, encounter, mapUse, stack.X(), stack.Y())
                     // asborb clicks
                     yield()
                     if state == combat.CombatStateAttackerFlee {
@@ -3890,7 +3890,7 @@ func (handlers *GameMoveHandlers) ShowMovement(x int, y int, stack *playerlib.Un
 }
 
 func (handlers *GameMoveHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
-    return handlers.Game.Model.doEncounter(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, encounter, map_, x, y)
+    return handlers.Game.Model.DoEncounter(&UICombatHandler{Yield: handlers.Yield, Game: handlers.Game}, player, stack, encounter, map_, x, y)
 }
 
 func (handlers *GameMoveHandlers) DoCombat(player *playerlib.Player, stack *playerlib.UnitStack, enemy *playerlib.Player, enemyStack *playerlib.UnitStack, zone combat.ZoneType) combat.CombatState {

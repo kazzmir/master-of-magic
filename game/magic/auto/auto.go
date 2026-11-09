@@ -31,7 +31,7 @@ func (handler *HeadlessHandlers) ShowMovement(x int, y int, stack *playerlib.Uni
 }
 
 func (handler *HeadlessHandlers) DoEncounter(player *playerlib.Player, stack *playerlib.UnitStack, encounter *maplib.ExtraEncounter, map_ *maplib.Map, x int, y int) combat.CombatState {
-    return combat.CombatStateDefenderWin
+    return handler.Model.DoEncounter(&CombatHandler{}, player, stack, encounter, map_, x, y)
 }
 
 type CombatHandler struct {
