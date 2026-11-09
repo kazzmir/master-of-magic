@@ -197,6 +197,7 @@ type Music struct {
 
     SoundFont *meltysynth.SoundFont
     XmiCache map[Song]*smf.SMF
+    volumeMutex sync.Mutex // Guards volume and publishing/replacing MusicEvents.
     volume float64 // 1 for loud, 0 for silence
 
     // queue of songs being played. a new song can be pushed on top, or popped off
@@ -220,13 +221,23 @@ func randomChoose[T any](choices... T) T {
 }
 
 func (music *Music) GetVolume() float64 {
+    music.volumeMutex.Lock()
+    defer music.volumeMutex.Unlock()
     return music.volume
 }
 
 func (music *Music) SetVolume(volume float64) {
+    music.volumeMutex.Lock()
+    defer music.volumeMutex.Unlock()
     music.volume = volume
 
     if music.MusicEvents != nil {
+        // The one-slot queue currently carries only volume updates. Replace
+        // an older pending update, rather than dropping the newest value.
+        select {
+            case <-music.MusicEvents:
+            default:
+        }
         select {
             case music.MusicEvents <- MusicEventSetVolume{Volume: volume}:
             default:
@@ -418,7 +429,9 @@ func (music *Music) PlaySong(index Song, options... PlayOptions){
     }
 
     musicEvents := make(chan MusicEvent, 1)
+    music.volumeMutex.Lock()
     music.MusicEvents = musicEvents
+    music.volumeMutex.Unlock()
 
     music.wait.Add(1)
     go func(){
@@ -432,7 +445,7 @@ func (music *Music) PlaySong(index Song, options... PlayOptions){
             }
         }
 
-        err := playMidi(song, music.done, soundFont, music.volume, musicEvents, options)
+        err := playMidi(song, music.done, soundFont, music.GetVolume(), musicEvents, options)
         if err != nil {
             log.Printf("Error: could not play midi %v: %v", index, err)
         }
@@ -443,7 +456,9 @@ func (music *Music) Stop() {
     music.cancel()
     music.wait.Wait()
 
+    music.volumeMutex.Lock()
     music.MusicEvents = nil
+    music.volumeMutex.Unlock()
 }
 
 // implements the io.Reader interface for ebiten's NewPlayerF32 function
