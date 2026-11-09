@@ -188,6 +188,54 @@ func compareNoteOffs(a, b NoteOffDuration) int {
     return cmp.Compare(a.Duration, b.Duration)
 }
 
+// Some MUSIC.LBX entries put Data Entry before their RPN selectors. Only
+// normalize when the remaining same-tick events clearly select pitch-bend
+// sensitivity, before any same-channel note or bend can observe the order.
+func selectsPitchBendRange(messages []MidiMessage, channel uint8, rpn uint16) bool {
+    msb := rpn >> 7 == 0
+    lsb := rpn & 0x7f == 0
+    for _, next := range messages {
+        switch next := next.(type) {
+            case *MidiMessageDelay:
+                if next.Delay != 0 {
+                    return false
+                }
+            case *MidiMessageEndOfTrack:
+                return false
+            case *MidiMessageNoteOn:
+                if next.Channel == channel {
+                    return false
+                }
+            case *MidiMessagePitchWheelChange:
+                if next.Channel == channel {
+                    return false
+                }
+            case *MidiMessageControlChange:
+                if next.Channel != channel {
+                    continue
+                }
+                switch next.Controller {
+                    case midi.RegisteredParameterLSB:
+                        if next.Value != 0 {
+                            return false
+                        }
+                        lsb = true
+                    case midi.RegisteredParameterMSB:
+                        if next.Value != 0 {
+                            return false
+                        }
+                        msb = true
+                    case midi.DataEntryMSB, midi.DataEntryLSB, midi.DataButtonIncrement, midi.DataButtonDecrement, midi.AllControllersOff:
+                        return false
+                }
+        }
+        if msb && lsb {
+            return true
+        }
+    }
+    return false
+}
+
 // FIXME: add a ConvertToMeltySynthMidi instead of smf
 
 // ConvertToSMF converts XMI's fixed 120-Hz clock to MIDI without rescaling or
@@ -201,6 +249,11 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
     track.Add(0, smf.MetaTempo(120).Bytes())
 
     var future []NoteOffDuration
+    var rpn [16]uint16
+    var pendingRange [16]*MidiMessageControlChange
+    for channel := range rpn {
+        rpn[channel] = 0x3fff // No RPN selected on a fresh MIDI channel.
+    }
     currentTick := int64(0)
     lastTick := int64(0)
     emitAt := func(tick int64, message []byte) {
@@ -253,9 +306,32 @@ func (event *MidiEvent) ConvertToSMF() *smf.SMF {
             case *MidiMessageChannelPressure:
                 emit(midi.AfterTouch(message.Channel, message.Pressure).Bytes())
             case *MidiMessageControlChange:
+                channel := message.Channel
+                if channel < 16 {
+                    unselected := rpn[channel] >> 7 == 127 || rpn[channel] & 0x7f == 127
+                    if message.Controller == midi.DataEntryMSB && unselected && selectsPitchBendRange(event.Messages[messageIndex+1:], channel, rpn[channel]) {
+                        // Defer only within this tick, until RPN 0 is selected.
+                        // This preserves the value without adding extra events.
+                        pendingRange[channel] = message
+                        continue
+                    }
+                    switch message.Controller {
+                        case midi.RegisteredParameterLSB:
+                            rpn[channel] = (rpn[channel] & 0x3f80) | uint16(message.Value)
+                        case midi.RegisteredParameterMSB:
+                            rpn[channel] = (rpn[channel] & 0x7f) | (uint16(message.Value) << 7)
+                        case midi.AllControllersOff:
+                            rpn[channel] = 0x3fff
+                    }
+                }
                 // Preserve XMIDI FOR/NEXT (116/117) for XMIDI-aware playback;
                 // standard MIDI itself cannot express an infinite section loop.
-                emit(midi.ControlChange(message.Channel, message.Controller, message.Value).Bytes())
+                emit(midi.ControlChange(channel, message.Controller, message.Value).Bytes())
+                if channel < 16 && rpn[channel] == 0 && pendingRange[channel] != nil {
+                    pending := pendingRange[channel]
+                    emit(midi.ControlChange(channel, pending.Controller, pending.Value).Bytes())
+                    pendingRange[channel] = nil
+                }
             case *MidiMessageDelay:
                 currentTick += message.Delay
                 flushUntil(currentTick)

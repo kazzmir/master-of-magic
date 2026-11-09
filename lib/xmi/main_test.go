@@ -395,3 +395,100 @@ func TestConvertToMidiPropagatesReadErrors(t *testing.T) {
 		t.Fatalf("valid file with short reads: %v", err)
 	}
 }
+
+func TestConvertToSMFNormalizesPitchBendRangeInitialization(t *testing.T) {
+	cc := func(channel, controller, value uint8) MidiMessage {
+		return &MidiMessageControlChange{Channel: channel, Controller: controller, Value: value}
+	}
+	type timedControl struct {
+		tick                       uint32
+		channel, controller, value uint8
+	}
+	for _, test := range []struct {
+		name     string
+		messages []MidiMessage
+		want     []timedControl
+	}{
+		{
+			name:     "data before selectors",
+			messages: []MidiMessage{cc(3, 6, 12), cc(3, 100, 0), cc(3, 101, 0)},
+			want:     []timedControl{{0, 3, 100, 0}, {0, 3, 101, 0}, {0, 3, 6, 12}},
+		},
+		{
+			name:     "reversed selector order",
+			messages: []MidiMessage{cc(2, 6, 12), cc(2, 101, 0), cc(2, 100, 0)},
+			want:     []timedControl{{0, 2, 101, 0}, {0, 2, 100, 0}, {0, 2, 6, 12}},
+		},
+		{
+			name:     "interleaved channels like MUSIC.LBX",
+			messages: []MidiMessage{cc(3, 6, 12), cc(4, 6, 12), cc(3, 100, 0), cc(4, 100, 0), cc(3, 101, 0), cc(4, 101, 0)},
+			want:     []timedControl{{0, 3, 100, 0}, {0, 4, 100, 0}, {0, 3, 101, 0}, {0, 3, 6, 12}, {0, 4, 101, 0}, {0, 4, 6, 12}},
+		},
+		{
+			name:     "partial LSB selection",
+			messages: []MidiMessage{cc(0, 100, 0), cc(0, 6, 12), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 100, 0}, {0, 0, 101, 0}, {0, 0, 6, 12}},
+		},
+		{
+			name:     "partial MSB selection",
+			messages: []MidiMessage{cc(0, 101, 0), cc(0, 6, 12), cc(0, 100, 0)},
+			want:     []timedControl{{0, 0, 101, 0}, {0, 0, 100, 0}, {0, 0, 6, 12}},
+		},
+		{
+			name:     "preserve tick after delay",
+			messages: []MidiMessage{&MidiMessageDelay{Delay: 120}, cc(0, 6, 12), cc(0, 100, 0), &MidiMessageDelay{Delay: 0}, cc(0, 101, 0)},
+			want:     []timedControl{{120, 0, 100, 0}, {120, 0, 101, 0}, {120, 0, 6, 12}},
+		},
+		{
+			name:     "already selected parameter",
+			messages: []MidiMessage{cc(0, 101, 0), cc(0, 100, 1), cc(0, 6, 12), cc(0, 100, 0), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 101, 0}, {0, 0, 100, 1}, {0, 0, 6, 12}, {0, 0, 100, 0}, {0, 0, 101, 0}},
+		},
+		{
+			name:     "later selectors target another parameter",
+			messages: []MidiMessage{cc(0, 6, 12), cc(0, 100, 1), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 6, 12}, {0, 0, 100, 1}, {0, 0, 101, 0}},
+		},
+		{
+			name:     "do not cross nonzero delay",
+			messages: []MidiMessage{cc(0, 6, 12), &MidiMessageDelay{Delay: 1}, cc(0, 100, 0), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 6, 12}, {1, 0, 100, 0}, {1, 0, 101, 0}},
+		},
+		{
+			name:     "do not cross a note",
+			messages: []MidiMessage{cc(0, 6, 12), &MidiMessageNoteOn{Channel: 0, Note: 60, Velocity: 100, Duration: 1}, cc(0, 100, 0), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 6, 12}, {0, 0, 100, 0}, {0, 0, 101, 0}},
+		},
+		{
+			name:     "do not cross a pitch bend",
+			messages: []MidiMessage{cc(0, 6, 12), &MidiMessagePitchWheelChange{Channel: 0, Value: 4096}, cc(0, 100, 0), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 6, 12}, {0, 0, 100, 0}, {0, 0, 101, 0}},
+		},
+		{
+			name:     "missing selectors preserve data entry",
+			messages: []MidiMessage{cc(0, 6, 12)},
+			want:     []timedControl{{0, 0, 6, 12}},
+		},
+		{
+			name:     "controller reset clears selection",
+			messages: []MidiMessage{cc(0, 101, 0), cc(0, 100, 0), cc(0, 121, 0), cc(0, 6, 12), cc(0, 100, 0), cc(0, 101, 0)},
+			want:     []timedControl{{0, 0, 101, 0}, {0, 0, 100, 0}, {0, 0, 121, 0}, {0, 0, 100, 0}, {0, 0, 101, 0}, {0, 0, 6, 12}},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			event := MidiEvent{Messages: append(test.messages, &MidiMessageEndOfTrack{})}
+			var got []timedControl
+			var tick uint32
+			for _, event := range event.ConvertToSMF().Tracks[0] {
+				tick += event.Delta
+				message := event.Message.Bytes()
+				if len(message) == 3 && message[0]&0xf0 == 0xb0 {
+					got = append(got, timedControl{tick, message[0] & 0xf, message[1], message[2]})
+				}
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Fatalf("controls = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
